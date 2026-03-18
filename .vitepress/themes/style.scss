@@ -1,0 +1,16 @@
+/* .vitepress/theme/style.scss */
+
+.VPHero {
+
+    /* 針對首頁大標題與副標題的斷行防禦 */
+    .name,
+    .text {
+        word-break: keep-all;
+        overflow-wrap: break-word;
+
+        /* 你也可以在這裡加入微調，例如讓手機版行距稍微寬鬆一點，增加呼吸感 */
+        @media (max-width: 768px) {
+            line-height: 1.6;
+        }
+    }
+}
