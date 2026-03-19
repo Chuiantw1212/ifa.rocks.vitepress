@@ -148,19 +148,35 @@
                 <el-col :span="12">
                     <el-text type="danger" strong tag="div">建議每月應存金額 (PMT)</el-text>
                     <el-statistic :value="requiredSaving" :precision="0" group-separator=","
-                        value-style="color: var(--el-color-danger);" />
+                        value-style="color: var(--el-color-danger); font-size: 2.8rem; font-weight: 800;" />
                 </el-col>
                 <el-col :span="12" style="text-align: right">
                     <el-text size="small" type="danger">從現在起至退休前，每月須投入市場之金額</el-text>
                 </el-col>
             </el-row>
         </el-card>
+
+        <el-card shadow="always">
+            <template #header>
+                <el-row justify="space-between" align="middle">
+                    <el-space>
+                        <el-icon>
+                            <DataLine />
+                        </el-icon>
+                        <el-text size="large" strong>終身資產模擬曲線</el-text>
+                    </el-space>
+                </el-row>
+            </template>
+            <div style="height: 400px">
+                <AssetCurveChart v-if="assetCurveData.labels.length" :chart-data="assetCurveData" />
+            </div>
+        </el-card>
     </el-space>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { Setting } from '@element-plus/icons-vue'
+import { Setting, DataLine } from '@element-plus/icons-vue'
 import { useTVM } from '../composables/useTVM'
 
 // 參數預設值
@@ -174,6 +190,7 @@ const postRetireReturnRate = ref(4.5)
 const preRetireReturnRate = ref(8)
 const existingAssets = ref(450000)
 
+import AssetCurveChart from './AssetCurveChart.vue'
 const { calcFV, calcPV, calcPMT } = useTVM()
 
 // 輔助計算
@@ -182,7 +199,8 @@ const yearsInRetirement = computed(() => lifeExpectancy.value - retireAge.value)
 const monthsInRetirement = computed(() => yearsInRetirement.value * 12)
 
 const realReturnRate = computed(() => {
-    const real = postRetireReturnRate.value - inflationRate.value
+    // Fisher Equation: (1 + nominal) = (1 + real) * (1 + inflation)
+    const real = ((1 + postRetireReturnRate.value / 100) / (1 + inflationRate.value / 100) - 1) * 100
     return real > 0 ? real : 0
 })
 
@@ -206,6 +224,59 @@ const requiredSaving = computed(() => {
     return gap > 0 ? calcPMT(monthlyReturnRate, monthsToSave, gap) : 0
 })
 
+// 圖表數據
+const assetCurveData = computed(() => {
+    const labels: number[] = [];
+    const accumulationData: (number | null)[] = [];
+    const decumulationData: (number | null)[] = [];
+
+    if (yearsToRetire.value < 0 || yearsInRetirement.value < 0) {
+        return { labels: [], datasets: [] };
+    }
+
+    // --- 累積期 ---
+    let assetValue = existingAssets.value;
+    for (let i = 0; i <= yearsToRetire.value; i++) {
+        const age = currentAge.value + i;
+        labels.push(age);
+        accumulationData.push(Math.round(assetValue));
+        // 計算下一年度初的資產
+        assetValue = assetValue * (1 + preRetireReturnRate.value / 100) + (requiredSaving.value * 12);
+    }
+
+    // 提領期的起點資產
+    let retirementStartAsset = accumulationData[accumulationData.length - 1] as number;
+
+    // 為了讓圖表線條連接，提領期數據的第一點必須是累積期的最後一點
+    for (let i = 0; i < yearsToRetire.value; i++) {
+        decumulationData.push(null);
+    }
+    decumulationData.push(retirementStartAsset);
+
+    // --- 提領期 ---
+    for (let i = 1; i <= yearsInRetirement.value; i++) {
+        const age = retireAge.value + i;
+        labels.push(age);
+
+        // 計算當年度因通膨調整後的提領金額 (假設年底提領)
+        const yearlyWithdrawal = calcFV(inflationRate.value / 100, i - 1, 0, futureExpense.value * 12);
+
+        // 年初資產成長一整年後，再減去年度提領
+        retirementStartAsset = retirementStartAsset * (1 + postRetireReturnRate.value / 100) - yearlyWithdrawal;
+
+        decumulationData.push(Math.round(retirementStartAsset < 0 ? 0 : retirementStartAsset));
+        accumulationData.push(null); // 累積期數據補上 null
+    }
+
+    return {
+        labels,
+        datasets: [
+            { label: '資產累積期', backgroundColor: 'rgba(64, 158, 255, 0.2)', borderColor: 'rgba(64, 158, 255, 1)', data: accumulationData, fill: 'origin', tension: 0.4, },
+            { label: '資產提領期', backgroundColor: 'rgba(245, 108, 108, 0.2)', borderColor: 'rgba(245, 108, 108, 1)', data: decumulationData, fill: 'origin', tension: 0.4, }
+        ]
+    };
+})
+
 // 響應式 el-descriptions 欄位數
 const windowWidth = ref(0)
 
@@ -221,10 +292,9 @@ onMounted(() => {
 onUnmounted(() => {
     window.removeEventListener('resize', handleResize)
 })
-
 </script>
 
-<style lang="scss" scoped>
+<style scoped>
 :deep(.el-descriptions__table) {
     table-layout: fixed;
 }
