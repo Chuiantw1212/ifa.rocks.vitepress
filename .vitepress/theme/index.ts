@@ -4,6 +4,7 @@ import { h } from 'vue'
 
 // 1. 引入 Element Plus 核心與基礎樣式
 import ElementPlus from 'element-plus'
+import { ID_INJECTION_KEY } from 'element-plus'
 import 'element-plus/dist/index.css'
 /* ⚠️ 注意：我們刻意「不」引入下面這行深色樣式！
   這樣才能在 VitePress 的深色背景下，保持 Element Plus 組件為高對比的白底亮色模式。
@@ -14,7 +15,7 @@ import 'element-plus/dist/index.css'
 import './global.scss'
 
 // 3. 引入您開發的小計算機與系統模組
-import LoginModule from './components/LoginModule.vue'
+// import LoginModule from './components/LoginModule.vue'
 // import TvmCalculator from './components/TvmCalculator.vue' // 等 TVM 開發完後取消註解
 // import AssetLiability from './components/AssetLiability.vue' // 等資產負債表開發完後取消註解
 
@@ -48,10 +49,17 @@ export default {
         // 註冊 Element Plus
         app.use(ElementPlus)
 
+        // 為 SSR 提供 ID，以確保水合 (hydration) 過程成功
+        app.provide(ID_INJECTION_KEY, {
+            prefix: Math.floor(Math.random() * 10000),
+            current: 0,
+        })
+
         // 全域註冊您的小計算機元件，讓 Markdown 可以直接使用標籤如 <TvmCalculator />
         // app.component('TvmCalculator', TvmCalculator)
         // app.component('AssetLiability', AssetLiability)
 
+        // @ts-ignore
         if (!import.meta.env.SSR) {
             console.log('Not SSR - Initializing Firebase Compat')
 

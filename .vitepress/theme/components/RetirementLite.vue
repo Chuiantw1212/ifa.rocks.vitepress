@@ -189,7 +189,7 @@ const postRetireReturnRate = ref(4.5)
 const preRetireReturnRate = ref(8)
 const existingAssets = ref(450000)
 
-import AssetCurveChart from './AssetCurveChart.vue'
+import AssetCurveChart from '../charts/AssetCurveChart.vue'
 const { calcFV, calcPV, calcPMT } = useTVM()
 
 // 輔助計算
