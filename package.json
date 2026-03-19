@@ -14,6 +14,10 @@
     "vue": "^3.4.27"
   },
   "dependencies": {
-    "element-plus": "^2.13.5"
+    "chart.js": "^4.5.1",
+    "element-plus": "^2.13.5",
+    "financial": "^0.2.4",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1"
   }
 }

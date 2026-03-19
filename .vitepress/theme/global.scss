@@ -1,0 +1,43 @@
+/* .vitepress/theme/style.scss */
+
+.VPHero {
+
+    /* 針對首頁大標題與副標題的斷行防禦 */
+    .name,
+    .text {
+        word-break: keep-all;
+        overflow-wrap: break-word;
+
+        /* 你也可以在這裡加入微調，例如讓手機版行距稍微寬鬆一點，增加呼吸感 */
+        @media (max-width: 768px) {
+            line-height: 1.6;
+        }
+    }
+}
+
+/* =================================================================
+   修復 VitePress 預設 Markdown 表格樣式污染 Element Plus (el-table) 的問題
+================================================================= */
+.vp-doc .el-table {
+
+    // 1. 強制所有表格行 (tr) 恢復白底
+    tr {
+        background-color: #ffffff !important;
+    }
+
+    // 2. 修復表頭 (th) 的背景色，避免被 VitePress 蓋掉
+    th.el-table__cell {
+        background-color: #f5f7fa !important; // Element Plus 預設的淺灰表頭
+        color: #303133 !important;
+    }
+
+    // 3. 如果您在 el-table 有加上 stripe 屬性，讓斑馬紋恢復為正常的淺灰色
+    tr.el-table__row--striped td.el-table__cell {
+        background-color: #fafafa !important;
+    }
+
+    // 4. 恢復滑鼠懸浮 (hover) 時的微光效果
+    tr:hover>td.el-table__cell {
+        background-color: #f0f2f5 !important;
+    }
+}
