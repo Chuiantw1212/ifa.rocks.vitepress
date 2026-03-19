@@ -1,5 +1,5 @@
 <template>
-    <el-space :size="20" alignment="center" direction="horizontal">
+    <el-space class="login" :size="20" alignment="center" direction="horizontal">
         <el-button type="primary" @click="dialogVisible = true" round size="default">
             登入
         </el-button>
@@ -43,3 +43,10 @@ const handleLogin = () => {
     dialogVisible.value = false
 }
 </script>
+<style lang="scss" scoped>
+.login {
+    display: flex;
+    align-items: center;
+    margin-left: 16px;
+}
+</style>

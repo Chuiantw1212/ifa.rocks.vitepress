@@ -14,6 +14,7 @@
     "vue": "^3.4.27"
   },
   "dependencies": {
+    "@element-plus/icons-vue": "^2.3.2",
     "chart.js": "^4.5.1",
     "element-plus": "^2.13.5",
     "financial": "^0.2.4",
