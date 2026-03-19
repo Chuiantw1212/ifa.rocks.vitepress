@@ -1,0 +1,8 @@
+{
+  "projects": {
+    "default": "ifa-rocks",
+    "enchu": "ifa-rocks"
+  },
+  "targets": {},
+  "etags": {}
+}
