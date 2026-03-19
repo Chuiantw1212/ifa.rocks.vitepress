@@ -6,7 +6,10 @@
     "dev": "vitepress dev",
     "docs:dev": "vitepress dev",
     "docs:build": "vitepress build",
-    "docs:preview": "vitepress preview"
+    "docs:preview": "vitepress preview",
+    "build": "vitepress build",
+    "predeploy": "pnpm run build",
+    "deploy": "firebase use enchu && firebase deploy"
   },
   "devDependencies": {
     "sass": "^1.98.0",
