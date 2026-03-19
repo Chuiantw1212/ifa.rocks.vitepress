@@ -164,15 +164,15 @@ import { Setting } from '@element-plus/icons-vue'
 import { useTVM } from '../composables/useTVM'
 
 // 參數預設值
-const currentAge = ref(38)
-const retireAge = ref(45)
-const lifeExpectancy = ref(90)
+const currentAge = ref(35)
+const retireAge = ref(67)
+const lifeExpectancy = ref(85)
 const inflationRate = ref(3)
 
-const currentExpense = ref(150000)
-const postRetireReturnRate = ref(5)
+const currentExpense = ref(40000)
+const postRetireReturnRate = ref(4.5)
 const preRetireReturnRate = ref(8)
-const existingAssets = ref(0)
+const existingAssets = ref(450000)
 
 const { calcFV, calcPV, calcPMT } = useTVM()
 

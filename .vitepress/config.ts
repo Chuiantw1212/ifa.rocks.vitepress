@@ -20,7 +20,7 @@ export default defineConfig({
 
     sidebar: [
       {
-        text: '輕量快算 (破冰與演示)',
+        text: '輕量快算',
         collapsed: false,
         items: [
           { text: '速算多目標理財規劃', link: '/quick/tvm' },
