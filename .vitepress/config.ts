@@ -116,4 +116,35 @@ export default defineConfig({
       }
     }
   },
+  // Some chunks are larger than 500 kB
+  vite: {
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            // 將大型的 node_modules 依賴包拆分成獨立的 chunk
+            if (id.includes('node_modules')) {
+              if (id.includes('element-plus')) {
+                return 'element-plus';
+              }
+              if (id.includes('firebase')) {
+                return 'firebase';
+              }
+              if (id.includes('chart.js')) {
+                return 'chart.js';
+              }
+              if (id.includes('jspdf')) {
+                return 'jspdf';
+              }
+              if (id.includes('html2canvas')) {
+                return 'html2canvas';
+              }
+              // 其他所有來自 node_modules 的依賴包，可以打包成一個 vendor chunk
+              return 'vendor';
+            }
+          }
+        }
+      }
+    }
+  }
 })
