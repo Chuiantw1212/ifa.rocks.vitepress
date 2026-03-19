@@ -139,8 +139,6 @@ export default defineConfig({
               if (id.includes('html2canvas')) {
                 return 'html2canvas';
               }
-              // 其他所有來自 node_modules 的依賴包，可以打包成一個 vendor chunk
-              return 'vendor';
             }
           }
         }
