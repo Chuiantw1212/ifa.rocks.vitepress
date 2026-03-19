@@ -10,7 +10,6 @@
                         </el-icon>
                         <el-text size="large" strong>退休基本參數設定</el-text>
                     </el-space>
-                    <el-tag type="primary" effect="dark" round>基礎設定</el-tag>
                 </el-row>
             </template>
 
@@ -57,17 +56,17 @@
             </el-form>
 
             <el-descriptions :column="4" border size="small" direction="vertical">
-                <el-descriptions-item label="計算目標">FV (未來終值)</el-descriptions-item>
                 <el-descriptions-item label="N (成長年數)">{{ yearsToRetire }} 年</el-descriptions-item>
                 <el-descriptions-item label="I/Y (年通膨率)">{{ inflationRate }} %</el-descriptions-item>
                 <el-descriptions-item label="PV (今日開支)">$ {{ currentExpense.toLocaleString() }}</el-descriptions-item>
+                <el-descriptions-item label="PMT (年金)">$ 0</el-descriptions-item>
             </el-descriptions>
 
             <el-divider />
 
             <el-row justify="space-between" align="bottom">
                 <el-col :span="12">
-                    <el-text type="info" tag="div">退休後第一個月月開支</el-text>
+                    <el-text type="info" tag="div">退休後第一個月月開支 (FV)</el-text>
                     <el-statistic :value="futureExpense" :precision="0" group-separator="," />
                 </el-col>
                 <el-col :span="12" style="text-align: right">
@@ -94,19 +93,19 @@
             </el-form>
 
             <el-descriptions :column="4" border size="small" direction="vertical">
-                <el-descriptions-item label="計算目標">PV (現值)</el-descriptions-item>
                 <el-descriptions-item label="N (提領月數)">12 個月 × {{ yearsInRetirement }} 年</el-descriptions-item>
                 <el-descriptions-item label="I/Y (實質月投報)">({{ postRetireReturnRate }}% - {{ inflationRate }}%) /
                     12</el-descriptions-item>
                 <el-descriptions-item label="PMT (預計月領)">$ {{ Math.round(futureExpense).toLocaleString()
                     }}</el-descriptions-item>
+                <el-descriptions-item label="FV (未來終值)">$ 0</el-descriptions-item>
             </el-descriptions>
 
             <el-divider />
 
             <el-row justify="space-between" align="bottom">
                 <el-col :span="12">
-                    <el-text type="info" tag="div">應備退休總金庫 (目標值)</el-text>
+                    <el-text type="info" tag="div">應備退休總金庫 (PV)</el-text>
                     <el-statistic :value="targetCorpus" :precision="0" group-separator="," />
                 </el-col>
                 <el-col :span="12" style="text-align: right">
@@ -136,9 +135,9 @@
             </el-form>
 
             <el-descriptions :column="4" border size="small" direction="vertical">
-                <el-descriptions-item label="計算目標">PMT (年金)</el-descriptions-item>
                 <el-descriptions-item label="N (準備月數)">12 個月 × {{ yearsToRetire }} 年</el-descriptions-item>
                 <el-descriptions-item label="I/Y (月投報)">{{ preRetireReturnRate }} % / 12</el-descriptions-item>
+                <el-descriptions-item label="PV (現有資產)">$ {{ existingAssets.toLocaleString() }}</el-descriptions-item>
                 <el-descriptions-item label="FV (目標金庫)">$ {{ Math.round(targetCorpus).toLocaleString()
                     }}</el-descriptions-item>
             </el-descriptions>
@@ -147,9 +146,9 @@
 
             <el-row justify="space-between" align="bottom">
                 <el-col :span="12">
-                    <el-text type="danger" strong tag="div">建議每月應存金額</el-text>
+                    <el-text type="danger" strong tag="div">建議每月應存金額 (PMT)</el-text>
                     <el-statistic :value="requiredSaving" :precision="0" group-separator=","
-                        value-style="color: var(--el-color-danger); font-size: 2.8rem; font-weight: 800;" />
+                        value-style="color: var(--el-color-danger);" />
                 </el-col>
                 <el-col :span="12" style="text-align: right">
                     <el-text size="small" type="danger">從現在起至退休前，每月須投入市場之金額</el-text>
@@ -160,7 +159,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { Setting } from '@element-plus/icons-vue'
 import { useTVM } from '../composables/useTVM'
 
@@ -206,4 +205,27 @@ const requiredSaving = computed(() => {
     const gap = targetCorpus.value - fvOfExisting
     return gap > 0 ? calcPMT(monthlyReturnRate, monthsToSave, gap) : 0
 })
+
+// 響應式 el-descriptions 欄位數
+const windowWidth = ref(0)
+
+const handleResize = () => {
+    windowWidth.value = window.innerWidth
+}
+
+onMounted(() => {
+    window.addEventListener('resize', handleResize)
+    handleResize() // 初始載入時執行一次
+})
+
+onUnmounted(() => {
+    window.removeEventListener('resize', handleResize)
+})
+
 </script>
+
+<style lang="scss" scoped>
+:deep(.el-descriptions__table) {
+    table-layout: fixed;
+}
+</style>

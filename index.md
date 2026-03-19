@@ -5,6 +5,9 @@ hero:
   name: "礪石 IFA 工具箱"
   text: "專為獨立顧問打造的<br>隨身決策終端。"
   tagline: 收斂複雜的財務變數，讓專業建議在指尖即刻產出。
+  image:
+    src: /logo/white_transparent.png
+    alt: 磨刀石
   actions:
     - theme: brand
       text: 啟動退休計算

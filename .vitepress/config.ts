@@ -4,8 +4,11 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   title: "礪石 IFA 工具箱",
   description: "獨立理財顧問的隨身決策終端。礪石工具箱整合退休計算機與多項財務模擬組件，深度優化手機操作感官，拒絕冗餘干擾。將複雜的生命規劃轉化為觸手可及的精確數據，讓專業建議在指尖即刻產出。",
+  head: [
+    ['link', { rel: 'icon', href: 'favicon.ico' }],
+  ],
   appearance: 'dark',
-  lang: 'zh-TW,en-US',
+  lang: 'zh-TW',
   lastUpdated: true,
   cleanUrls: true,
   themeConfig: {
@@ -52,5 +55,65 @@ export default defineConfig({
       //   ]
       // }
     ],
-  }
+    lastUpdated: {
+      text: '上次更新',
+      formatOptions: {
+        forceLocale: true,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: "numeric",
+        minute: "numeric",
+        second: "numeric",
+      }
+    },
+    docFooter: {
+      prev: '上一頁',
+      next: '下一頁',
+    },
+    darkModeSwitchLabel: '深色模式',
+    sidebarMenuLabel: '選單',
+    returnToTopLabel: '回到頂端',
+    outline: {
+      label: '大綱'
+    },
+    footer: {
+      message: 'Powered by <a href="https://vitepress.dev/" target="_blank">Vitepress</a>',
+      copyright: `Copyright © 2023-${new Date().getFullYear()} EN Chu`
+    },
+    logo: {
+      src: '/logo/white_transparent.png',
+      width: '24px',
+      height: '24px',
+    },
+    externalLinkIcon: true,
+    search: {
+      provider: 'local',
+      options: {
+        translations: {
+          button: {
+            buttonText: '搜尋',
+            buttonAriaLabel: '搜尋文件'
+          },
+          modal: {
+            displayDetails: '顯示詳細列表',
+            resetButtonTitle: '清除查詢條件',
+            backButtonTitle: '返回',
+            noResultsText: '無法找到相關結果：',
+            footer: {
+              selectText: '選擇',
+              selectKeyAriaLabel: '按 Enter 鍵選擇',
+
+              navigateText: '切換',
+              navigateUpKeyAriaLabel: '按 向上箭頭 鍵往上',
+              navigateDownKeyAriaLabel: '按 向下箭頭 鍵往下',
+
+              closeText: '關閉',
+              closeKeyAriaLabel: '按 Esc 鍵關閉'
+            }
+          }
+        }
+      }
+    }
+  },
 })
