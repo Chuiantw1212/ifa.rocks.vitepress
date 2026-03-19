@@ -93,9 +93,8 @@
             </el-form>
 
             <el-descriptions :column="4" border size="small" direction="vertical">
-                <el-descriptions-item label="N (提領月數)">12 個月 × {{ yearsInRetirement }} 年</el-descriptions-item>
-                <el-descriptions-item label="I/Y (實質月投報)">({{ postRetireReturnRate }}% - {{ inflationRate }}%) /
-                    12</el-descriptions-item>
+                <el-descriptions-item label="N (提領月數)">{{ monthsInRetirement }} 個月</el-descriptions-item>
+                <el-descriptions-item label="I/Y (實質月投報)">{{ (monthlyRealRate * 100).toFixed(3) }} %</el-descriptions-item>
                 <el-descriptions-item label="PMT (預計月領)">$ {{ Math.round(futureExpense).toLocaleString()
                     }}</el-descriptions-item>
                 <el-descriptions-item label="FV (未來終值)">$ 0</el-descriptions-item>
@@ -135,8 +134,8 @@
             </el-form>
 
             <el-descriptions :column="4" border size="small" direction="vertical">
-                <el-descriptions-item label="N (準備月數)">12 個月 × {{ yearsToRetire }} 年</el-descriptions-item>
-                <el-descriptions-item label="I/Y (月投報)">{{ preRetireReturnRate }} % / 12</el-descriptions-item>
+                <el-descriptions-item label="N (準備月數)">{{ monthsToRetire }} 個月</el-descriptions-item>
+                <el-descriptions-item label="I/Y (月投報率)">{{ (monthlyPreRetireReturnRate * 100).toFixed(3) }} %</el-descriptions-item>
                 <el-descriptions-item label="PV (現有資產)">$ {{ existingAssets.toLocaleString() }}</el-descriptions-item>
                 <el-descriptions-item label="FV (目標金庫)">$ {{ Math.round(targetCorpus).toLocaleString()
                     }}</el-descriptions-item>
@@ -148,7 +147,7 @@
                 <el-col :span="12">
                     <el-text type="danger" strong tag="div">建議每月應存金額 (PMT)</el-text>
                     <el-statistic :value="requiredSaving" :precision="0" group-separator=","
-                        value-style="color: var(--el-color-danger); font-size: 2.8rem; font-weight: 800;" />
+                        value-style="color: var(--el-color-danger);" />
                 </el-col>
                 <el-col :span="12" style="text-align: right">
                     <el-text size="small" type="danger">從現在起至退休前，每月須投入市場之金額</el-text>
@@ -196,32 +195,39 @@ const { calcFV, calcPV, calcPMT } = useTVM()
 // 輔助計算
 const yearsToRetire = computed(() => retireAge.value - currentAge.value)
 const yearsInRetirement = computed(() => lifeExpectancy.value - retireAge.value)
+const monthsToRetire = computed(() => yearsToRetire.value * 12)
 const monthsInRetirement = computed(() => yearsInRetirement.value * 12)
 
-const realReturnRate = computed(() => {
-    // Fisher Equation: (1 + nominal) = (1 + real) * (1 + inflation)
-    const real = ((1 + postRetireReturnRate.value / 100) / (1 + inflationRate.value / 100) - 1) * 100
-    return real > 0 ? real : 0
+const monthlyInflationRate = computed(() => (1 + inflationRate.value / 100) ** (1 / 12) - 1)
+const monthlyPreRetireReturnRate = computed(() => (1 + preRetireReturnRate.value / 100) ** (1 / 12) - 1)
+const monthlyPostRetireReturnRate = computed(() => (1 + postRetireReturnRate.value / 100) ** (1 / 12) - 1)
+
+const monthlyRealRate = computed(() => {
+    return ((1 + monthlyPostRetireReturnRate.value) / (1 + monthlyInflationRate.value)) - 1
 })
 
 // 步驟一結果：FV
 const futureExpense = computed(() => {
-    return calcFV(inflationRate.value / 100, yearsToRetire.value, 0, currentExpense.value)
+    return calcFV(monthlyInflationRate.value, monthsToRetire.value, 0, currentExpense.value)
 })
 
 // 步驟二結果：PV
 const targetCorpus = computed(() => {
-    const monthlyRealRate = realReturnRate.value / 100 / 12
-    return calcPV(monthlyRealRate, monthsInRetirement.value, futureExpense.value)
+    // 使用月實質報酬率和首月提領金額計算退休金總額
+    return calcPV(monthlyRealRate.value, monthsInRetirement.value, futureExpense.value)
 })
 
 // 步驟三結果：PMT
 const requiredSaving = computed(() => {
-    const monthsToSave = yearsToRetire.value * 12
-    const monthlyReturnRate = preRetireReturnRate.value / 100 / 12
-    const fvOfExisting = calcFV(monthlyReturnRate, monthsToSave, 0, existingAssets.value)
+    // 使用名目月報酬率計算
+    const monthlyRate = monthlyPreRetireReturnRate.value;
+    const fvOfExisting = calcFV(monthlyRate, monthsToRetire.value, 0, existingAssets.value)
     const gap = targetCorpus.value - fvOfExisting
-    return gap > 0 ? calcPMT(monthlyReturnRate, monthsToSave, gap) : 0
+
+    // Sinking Fund Formula: PMT = FV * (r / ((1+r)^n - 1))
+    if (gap <= 0) return 0;
+    if (monthlyRate === 0) return gap / monthsToRetire.value;
+    return gap * (monthlyRate / (Math.pow(1 + monthlyRate, monthsToRetire.value) - 1));
 })
 
 // 圖表數據
@@ -235,13 +241,17 @@ const assetCurveData = computed(() => {
     }
 
     // --- 累積期 ---
+    const monthlySaving = requiredSaving.value
     let assetValue = existingAssets.value;
-    for (let i = 0; i <= yearsToRetire.value; i++) {
-        const age = currentAge.value + i;
+    for (let y = 0; y <= yearsToRetire.value; y++) {
+        const age = currentAge.value + y;
         labels.push(age);
         accumulationData.push(Math.round(assetValue));
-        // 計算下一年度初的資產
-        assetValue = assetValue * (1 + preRetireReturnRate.value / 100) + (requiredSaving.value * 12);
+        if (y < yearsToRetire.value) {
+            for (let m = 0; m < 12; m++) {
+                assetValue = assetValue * (1 + monthlyPreRetireReturnRate.value) + monthlySaving;
+            }
+        }
     }
 
     // 提領期的起點資產
@@ -254,18 +264,16 @@ const assetCurveData = computed(() => {
     decumulationData.push(retirementStartAsset);
 
     // --- 提領期 ---
-    for (let i = 1; i <= yearsInRetirement.value; i++) {
-        const age = retireAge.value + i;
+    let monthlyWithdrawal = futureExpense.value;
+    for (let y = 1; y <= yearsInRetirement.value; y++) {
+        for (let m = 0; m < 12; m++) {
+            retirementStartAsset = retirementStartAsset * (1 + monthlyPostRetireReturnRate.value) - monthlyWithdrawal;
+            monthlyWithdrawal = monthlyWithdrawal * (1 + monthlyInflationRate.value);
+        }
+        const age = retireAge.value + y;
         labels.push(age);
-
-        // 計算當年度因通膨調整後的提領金額 (假設年底提領)
-        const yearlyWithdrawal = calcFV(inflationRate.value / 100, i - 1, 0, futureExpense.value * 12);
-
-        // 年初資產成長一整年後，再減去年度提領
-        retirementStartAsset = retirementStartAsset * (1 + postRetireReturnRate.value / 100) - yearlyWithdrawal;
-
+        accumulationData.push(null);
         decumulationData.push(Math.round(retirementStartAsset < 0 ? 0 : retirementStartAsset));
-        accumulationData.push(null); // 累積期數據補上 null
     }
 
     return {
@@ -279,6 +287,9 @@ const assetCurveData = computed(() => {
 
 // 響應式 el-descriptions 欄位數
 const windowWidth = ref(0)
+const descriptionColumns = computed(() => {
+    return windowWidth.value < 768 ? 2 : 4
+})
 
 const handleResize = () => {
     windowWidth.value = window.innerWidth
