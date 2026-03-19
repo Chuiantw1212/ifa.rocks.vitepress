@@ -1,6 +1,8 @@
 {
     "hosting": {
         "public": ".vitepress/dist",
+        "cleanUrls": true,
+        "trailingSlash": false,
         "ignore": [
             "firebase.json",
             "**/.*",

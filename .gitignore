@@ -26,3 +26,5 @@ logs
 # Vitepress
 .vitepress/dist
 .vitepress/cache
+
+*.cache
