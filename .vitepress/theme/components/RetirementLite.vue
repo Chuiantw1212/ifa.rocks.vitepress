@@ -284,25 +284,6 @@ const assetCurveData = computed(() => {
         ]
     };
 })
-
-// 響應式 el-descriptions 欄位數
-const windowWidth = ref(0)
-const descriptionColumns = computed(() => {
-    return windowWidth.value < 768 ? 2 : 4
-})
-
-const handleResize = () => {
-    windowWidth.value = window.innerWidth
-}
-
-onMounted(() => {
-    window.addEventListener('resize', handleResize)
-    handleResize() // 初始載入時執行一次
-})
-
-onUnmounted(() => {
-    window.removeEventListener('resize', handleResize)
-})
 </script>
 
 <style scoped>
