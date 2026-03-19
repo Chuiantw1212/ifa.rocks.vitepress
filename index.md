@@ -8,7 +8,7 @@ hero:
   actions:
     - theme: brand
       text: 啟動退休計算
-      link: /retirement/
+      link: /quick/retirement-lite/
     - theme: alt
       text: 探索全套工具
       link: /tools/

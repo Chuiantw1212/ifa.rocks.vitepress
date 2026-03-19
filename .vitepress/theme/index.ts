@@ -21,13 +21,13 @@ import LoginModule from './components/LoginModule.vue'
 export default {
     extends: DefaultTheme,
 
-    // 佈局擴充：處理 Navbar、Sidebar 等特定位置的插槽
-    Layout() {
-        return h(DefaultTheme.Layout, null, {
-            // 將「登入報告系統」按鈕放置於導航欄右上角
-            'nav-bar-content-after': () => h(LoginModule)
-        })
-    },
+    // // 佈局擴充：處理 Navbar、Sidebar 等特定位置的插槽
+    // Layout() {
+    //     return h(DefaultTheme.Layout, null, {
+    //         // 將「登入報告系統」按鈕放置於導航欄右上角
+    //         'nav-bar-content-after': () => h(LoginModule)
+    //     })
+    // },
 
     // 擴充 Vue 實體：全域註冊套件與自定義元件
     enhanceApp({ app }: EnhanceAppContext) {
