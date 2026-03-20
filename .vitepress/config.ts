@@ -82,7 +82,8 @@ export default defineConfig({
           text: '輕量快算工具 (免註冊)',
           items: [
             { text: '多目標財務規劃', link: '/quick/multi-goals' },
-            { text: '簡易退休規劃', link: '/quick/retirement' }
+            { text: '簡易退休規劃', link: '/quick/retirement' },
+            { text: '代價計時器', link: '/quick/cost-of-delay' }
           ]
         }
       ],
