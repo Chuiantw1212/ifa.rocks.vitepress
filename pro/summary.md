@@ -14,13 +14,13 @@ const annualSurplus = ref(213)    // 年度結餘 (萬元)
 const healthScore = ref(85)       // 財務健康分數
 </script>
 
-# 📊 個案背景與財務摘要
+# 個案背景與財務摘要
 
 > **系統提示**：此頁面為預覽模式，展示 IFA 系統生成之個案摘要排版效果。針對各項數據之深度診斷，請點選左側目錄進入專屬章節查閱。
 
 <el-divider />
 
-### 👤 家庭基本輪廓
+### 家庭基本輪廓
 
 <el-card shadow="never" style="margin-bottom: 24px;">
   <el-descriptions :column="2" border>
@@ -33,7 +33,7 @@ const healthScore = ref(85)       // 財務健康分數
   </el-descriptions>
 </el-card>
 
-### 💰 財務健康快照
+### 財務健康快照
 
 <el-row :gutter="20" style="margin-bottom: 24px;">
   <el-col :xs="24" :md="8" style="margin-bottom: 16px;">
@@ -53,7 +53,7 @@ const healthScore = ref(85)       // 財務健康分數
   </el-col>
 </el-row>
 
-### 🎯 核心理財目標總覽
+### 核心理財目標總覽
 
 <el-row :gutter="20" style="margin-bottom: 32px;">
   <el-col :xs="24" :md="8" style="margin-bottom: 16px;">

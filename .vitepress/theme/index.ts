@@ -15,7 +15,7 @@ import 'element-plus/dist/index.css'
 import './global.scss'
 
 // 3. 引入您開發的小計算機與系統模組
-// import LoginModule from './components/LoginModule.vue'
+import LoginModule from './components/LoginModule.vue'
 // import TvmCalculator from './components/TvmCalculator.vue' // 等 TVM 開發完後取消註解
 // import AssetLiability from './components/AssetLiability.vue' // 等資產負債表開發完後取消註解
 
@@ -36,13 +36,13 @@ const firebaseConfig = {
 export default {
     extends: DefaultTheme,
 
-    // // 佈局擴充：處理 Navbar、Sidebar 等特定位置的插槽
-    // Layout() {
-    //     return h(DefaultTheme.Layout, null, {
-    //         // 將「登入報告系統」按鈕放置於導航欄右上角
-    //         'nav-bar-content-after': () => h(LoginModule)
-    //     })
-    // },
+    // 佈局擴充：處理 Navbar、Sidebar 等特定位置的插槽
+    Layout() {
+        return h(DefaultTheme.Layout, null, {
+            // 將「登入報告系統」按鈕放置於導航欄右上角
+            'nav-bar-content-after': () => h(LoginModule)
+        })
+    },
 
     // 擴充 Vue 實體：全域註冊套件與自定義元件
     enhanceApp({ app }: EnhanceAppContext) {
