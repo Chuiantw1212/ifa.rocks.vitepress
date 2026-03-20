@@ -10,11 +10,11 @@ hero:
     alt: 磨刀石
   actions:
     - theme: brand
-      text: 啟動退休計算
-      link: /quick/retirement-lite/
+      text: 啟動快速試算
+      link: /quick/multi-goals
     - theme: alt
-      text: 探索全套工具
-      link: /tools/
+      text: 預覽專業報告
+      link: /pro/summary
 
 features:
   - title: 一眼看穿缺口
