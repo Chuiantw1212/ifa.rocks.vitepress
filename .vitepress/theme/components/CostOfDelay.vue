@@ -3,7 +3,6 @@
     <el-card>
       <template #header>
         <el-space>
-          <el-avatar :size="24">1</el-avatar>
           <el-text tag="strong" size="large">目標定義</el-text>
         </el-space>
       </template>
@@ -22,7 +21,6 @@
     <el-card>
       <template #header>
         <el-space>
-          <el-avatar :size="24">2</el-avatar>
           <el-text tag="strong" size="large">參數調整</el-text>
         </el-space>
       </template>
@@ -63,7 +61,6 @@
     <el-card>
       <template #header>
         <el-space>
-          <el-avatar :size="24">3</el-avatar>
           <el-text tag="strong" size="large">行動決策</el-text>
         </el-space>
       </template>
