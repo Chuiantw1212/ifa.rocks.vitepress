@@ -6,6 +6,15 @@ export default defineConfig({
   description: "獨立理財顧問的隨身決策終端。礪石工具箱整合退休計算機與多項財務模擬組件，深度優化手機操作感官，拒絕冗餘干擾。將複雜的生命規劃轉化為觸手可及的精確數據，讓專業建議在指尖即刻產出。",
   head: [
     ['link', { rel: 'icon', href: '/favicon.ico' }],
+    // 從本地 public 資料夾載入 FirebaseUI 的 CSS
+    [
+      'link',
+      {
+        type: 'text/css',
+        rel: 'stylesheet',
+        href: '/firebase/firebase-ui-auth.css'
+      }
+    ]
   ],
   appearance: 'force-dark',
   lang: 'zh-TW',

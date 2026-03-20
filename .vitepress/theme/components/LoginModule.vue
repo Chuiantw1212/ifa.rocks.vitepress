@@ -15,64 +15,108 @@
         <el-avatar v-else :size="32" :icon="UserFilled" @click="dialogVisible = true" style="cursor: pointer;" />
     </el-space>
 
-    <el-dialog v-model="dialogVisible" title="理財規劃系統登入" width="400px" align-center :append-to-body="true">
-        <el-form :model="loginForm" label-position="top">
-            <el-form-item label="顧問帳號 / 使用者代碼">
-                <el-input v-model="loginForm.username" placeholder="請輸入帳號" @keyup.enter="handleLogin" />
-            </el-form-item>
-            <el-form-item label="訪問密鑰">
-                <el-input v-model="loginForm.password" type="password" placeholder="請輸入密鑰" show-password />
-            </el-form-item>
-        </el-form>
-
-        <template #footer>
-            <div class="dialog-footer">
-                <el-button @click="dialogVisible = false">取消</el-button>
-                <el-button type="primary" @click="handleLogin">
-                    進入系統
-                </el-button>
-            </div>
-        </template>
+    <el-dialog v-model="dialogVisible" title="理財規劃系統登入" width="400px" align-center :append-to-body="true" :destroy-on-close="true">
+        <!-- FirebaseUI 將會在這個容器中渲染 -->
+        <div id="firebaseui-auth-container"></div>
     </el-dialog>
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import { UserFilled } from '@element-plus/icons-vue'
+// 假設您的 Firebase 設定檔位於 .vitepress/theme/firebaseConfig.js
+import { auth } from '../firebaseConfig'
+import { onAuthStateChanged, signOut, GoogleAuthProvider, EmailAuthProvider } from 'firebase/auth'
 
 const dialogVisible = ref(false)
 const isLoggedIn = ref(false)
 
 const user = reactive({
     username: '',
-    // 這裡未來可以換成從 API 取得的真實頭像 URL
-    avatarUrl: computed(() => `https://api.dicebear.com/8.x/adventurer/svg?seed=${user.username}`)
+    avatarUrl: ''
 })
 
-const loginForm = reactive({
-    username: '',
-    password: ''
+// FirebaseUI instance
+let ui = null;
+
+onMounted(() => {
+    // 監聽 Firebase 身份驗證狀態的變化
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+        if (firebaseUser) {
+            // 使用者已登入
+            isLoggedIn.value = true
+            user.username = firebaseUser.displayName || firebaseUser.email || '使用者'
+            // 優先使用 Firebase 提供的頭像，若無則使用 DiceBear 作為備用
+            user.avatarUrl = firebaseUser.photoURL || `https://api.dicebear.com/8.x/adventurer/svg?seed=${firebaseUser.uid}`
+            
+            // 登入成功後關閉對話框並顯示歡迎訊息
+            if (dialogVisible.value) {
+                dialogVisible.value = false
+                ElMessage.success(`歡迎回來，${user.username}`)
+            }
+        } else {
+            // 使用者已登出
+            isLoggedIn.value = false
+            user.username = ''
+            user.avatarUrl = ''
+        }
+    })
+
+    onBeforeUnmount(() => {
+        // 元件銷毀時，取消監聽
+        unsubscribe()
+    })
 })
 
-const handleLogin = () => {
-    if (!loginForm.username || !loginForm.password) {
-        ElMessage.error('帳號與密鑰不可為空')
-        return
+// 監看 dialogVisible 的變化，當它被打開時，啟動 FirebaseUI
+watch(dialogVisible, (newValue) => {
+    if (newValue) { // 當對話框打開時
+        const launchFirebaseUI = () => {
+            // 使用 nextTick 確保 #firebaseui-auth-container 已被渲染到 DOM 中
+            nextTick(() => {
+                // 取得或建立 FirebaseUI 實例
+                const ui = window.firebaseui.auth.AuthUI.getInstance() || new window.firebaseui.auth.AuthUI(auth);
+                const uiConfig = {
+                    callbacks: {
+                        signInSuccessWithAuthResult: () => false, // 返回 false，讓 onAuthStateChanged 統一處理後續
+                    },
+                    signInFlow: 'popup',
+                    signInOptions: [
+                        GoogleAuthProvider.PROVIDER_ID,
+                        EmailAuthProvider.PROVIDER_ID,
+                    ],
+                };
+                // 在指定的容器中啟動 FirebaseUI
+                ui.start('#firebaseui-auth-container', uiConfig);
+            });
+        };
+
+        // 檢查 UI 腳本是否已載入
+        if (window.firebaseui) {
+            launchFirebaseUI();
+        } else {
+            // 如果尚未載入，則動態建立 script 標籤來載入它
+            const script = document.createElement('script');
+            script.src = '/firebase/firebase-ui-auth__zh_tw.js';
+            script.async = true;
+            script.onload = launchFirebaseUI; // 載入成功後，啟動 UI
+            script.onerror = () => {
+                console.error('Failed to load firebase-ui-auth__zh_tw.js');
+                ElMessage.error('登入模組腳本載入失敗');
+            };
+            document.head.appendChild(script);
+        }
     }
-    // TODO: 這裡未來對接 Neon Serverless Postgres 的 API 驗證
-    console.log('正在驗證帳戶:', loginForm.username)
-    user.username = loginForm.username
-    isLoggedIn.value = true
-    ElMessage.success(`歡迎回來，${user.username}`)
-    dialogVisible.value = false
-}
+});
 
 const handleLogout = () => {
-    isLoggedIn.value = false
-    loginForm.username = ''
-    loginForm.password = ''
-    ElMessage.info('您已成功登出')
+    signOut(auth).then(() => {
+        ElMessage.info('您已成功登出')
+    }).catch((error) => {
+        console.error('Logout Error:', error)
+        ElMessage.error('登出時發生錯誤')
+    })
 }
 </script>
 <style lang="scss" scoped>

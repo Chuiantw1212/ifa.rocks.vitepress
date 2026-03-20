@@ -19,19 +19,8 @@ import LoginModule from './components/LoginModule.vue'
 // import TvmCalculator from './components/TvmCalculator.vue' // 等 TVM 開發完後取消註解
 // import AssetLiability from './components/AssetLiability.vue' // 等資產負債表開發完後取消註解
 
-// Scripts
-import firebase from 'firebase/compat/app'
-import "firebase/compat/performance";
-
-const firebaseConfig = {
-    apiKey: "AIzaSyD6nHPPxRBPZN1b0pfKGNh6L3mn45bpBCM",
-    authDomain: "ifa-rocks.firebaseapp.com",
-    projectId: "ifa-rocks",
-    storageBucket: "ifa-rocks.firebasestorage.app",
-    messagingSenderId: "899902006292",
-    appId: "1:899902006292:web:584c4930a39f7beec67301",
-    measurementId: "G-W25J1NE4SP"
-};
+// 4. 引入我們集中管理的 Firebase 設定檔
+import firebase, { getAnalyticsInstance, getPerformanceInstance } from './firebaseConfig'
 
 export default {
     extends: DefaultTheme,
@@ -61,39 +50,19 @@ export default {
 
         // @ts-ignore
         if (!import.meta.env.SSR) {
-            console.log('Not SSR - Initializing Firebase Compat')
-
-            const firebaseConfig = {
-                apiKey: "AIzaSyADacfSXAMQ3XLIho3-xvzhb04_YcHQ1Vc",
-                authDomain: "enchu-8085a.firebaseapp.com",
-                projectId: "enchu-8085a",
-                storageBucket: "enchu-8085a.firebasestorage.app",
-                messagingSenderId: "592400229145",
-                appId: "1:592400229145:web:858fc1199d18601dc25b88",
-                measurementId: "G-9860DS47Z6"
+            // 關鍵：手動將 firebase 掛載到 window 物件
+            // 這是讓 head 中載入的 firebase-ui-auth__zh_tw.js 能運作的絕對關鍵。
+            // 因為 firebaseConfig.ts 在被 import 時就已經執行過初始化，
+            // 這裡只需確保 window.firebase 這個全域變數存在即可。
+            // @ts-ignore
+            if (!window.firebase) {
+                 // @ts-ignore
+                 window.firebase = firebase
             }
 
-            // 避免重複初始化 (Hot Reload 時可能會發生)
-            if (!firebase.apps.length) {
-                firebase.initializeApp(firebaseConfig)
-
-                // 啟動效能監控
-                firebase.performance()
-
-                // 2. 關鍵修正：手動將 firebase 掛載到 window 物件
-                // 這是讓 firebase-ui-auth__zh_tw.js 能運作的絕對關鍵
-                // @ts-ignore
-                window.firebase = firebase
-
-                console.log('Firebase globally attached to window.firebase')
-            } else {
-                // 如果已經初始化過，也要確保 window上有掛載 (針對 HMR 情境)
-                // @ts-ignore
-                if (!window.firebase) {
-                    // @ts-ignore
-                    window.firebase = firebase
-                }
-            }
+            // 安全地在客戶端初始化需要瀏覽器 API 的服務
+            getAnalyticsInstance();
+            getPerformanceInstance();
         }
     }
 }
