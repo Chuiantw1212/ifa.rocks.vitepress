@@ -83,7 +83,8 @@ export default defineConfig({
           items: [
             { text: '多目標財務規劃', link: '/quick/multi-goals' },
             { text: '簡易退休規劃', link: '/quick/retirement' },
-            { text: '代價計時器', link: '/quick/cost-of-delay' }
+            { text: '代價計時器', link: '/quick/cost-of-delay' },
+            { text: '通膨照妖鏡', link: '/quick/inflation-risk' }
           ]
         }
       ],
