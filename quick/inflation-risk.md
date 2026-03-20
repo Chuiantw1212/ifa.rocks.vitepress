@@ -1,5 +1,7 @@
 # 通膨照妖鏡
 
+小確幸越來越貴了，怎能有人不投資？
+
 <InflationRisk />
 
 <script setup lang="ts">

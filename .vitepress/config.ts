@@ -39,41 +39,41 @@ export default defineConfig({
             { text: '個案背景摘要', link: '/pro/summary' }
           ]
         },
-        {
-          text: '貳、財務現況診斷',
-          collapsed: false,
-          items: [
-            { text: '資產負債現況', link: '/pro/balance-sheet' },
-            { text: '年度收支明細', link: '/pro/cash-flow' },
-            { text: '保險保障評估', link: '/pro/insurance-analysis' },
-            { text: '財務比率診斷', link: '/pro/financial-ratios' }
-          ]
-        },
-        {
-          text: '參、目標需求分析',
-          collapsed: false,
-          items: [
-            { text: '目標優先序與時間軸', link: '/pro/goals-timeline' },
-            { text: '現金流量模擬測試', link: '/pro/cash-flow-sim' }
-          ]
-        },
-        {
-          text: '肆、專屬規劃建議',
-          collapsed: true, // 預設摺疊，減輕視覺壓力
-          items: [
-            { text: '資產配置優化方案', link: '/pro/asset-allocation' },
-            { text: '稅務優化與贈與', link: '/pro/tax-planning' },
-            { text: '傳承與信託規劃', link: '/pro/trust-legacy' }
-          ]
-        },
-        {
-          text: '伍、效益與執行計畫',
-          collapsed: true,
-          items: [
-            { text: '整體效益評估', link: '/pro/benefit-analysis' },
-            { text: '執行計畫與時程', link: '/pro/execution-plan' }
-          ]
-        }
+        // {
+        //   text: '貳、財務現況診斷',
+        //   collapsed: false,
+        //   items: [
+        //     { text: '資產負債現況', link: '/pro/balance-sheet' },
+        //     { text: '年度收支明細', link: '/pro/cash-flow' },
+        //     { text: '保險保障評估', link: '/pro/insurance-analysis' },
+        //     { text: '財務比率診斷', link: '/pro/financial-ratios' }
+        //   ]
+        // },
+        // {
+        //   text: '參、目標需求分析',
+        //   collapsed: false,
+        //   items: [
+        //     { text: '目標優先序與時間軸', link: '/pro/goals-timeline' },
+        //     { text: '現金流量模擬測試', link: '/pro/cash-flow-sim' }
+        //   ]
+        // },
+        // {
+        //   text: '肆、專屬規劃建議',
+        //   collapsed: true, // 預設摺疊，減輕視覺壓力
+        //   items: [
+        //     { text: '資產配置優化方案', link: '/pro/asset-allocation' },
+        //     { text: '稅務優化與贈與', link: '/pro/tax-planning' },
+        //     { text: '傳承與信託規劃', link: '/pro/trust-legacy' }
+        //   ]
+        // },
+        // {
+        //   text: '伍、效益與執行計畫',
+        //   collapsed: true,
+        //   items: [
+        //     { text: '整體效益評估', link: '/pro/benefit-analysis' },
+        //     { text: '執行計畫與時程', link: '/pro/execution-plan' }
+        //   ]
+        // }
       ],
 
       // 當網址進入 /quick/ 開頭時，左側會「完全切換」為輕量工具目錄
