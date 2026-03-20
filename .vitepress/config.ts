@@ -33,7 +33,7 @@ export default defineConfig({
       {
         text: '客戶總覽 (CRM)', // 新增：SaaS 系統的真正首頁
         link: '/pro/dashboard/',     // 指向我們剛討論的 ClientDashboard 頁面
-        activeMatch: '^/dashboard/'
+        activeMatch: '^/pro/dashboard/'
       },
     ],
     // 2. 多側邊欄 (Multi-Sidebar) 配置
@@ -46,7 +46,7 @@ export default defineConfig({
         // 💡 核心 UX 改造：給顧問一條明確的退路
         {
           text: '🔙 返回客戶總覽 (切換客戶)',
-          link: '/dashboard/',
+          link: '/pro/dashboard/',
         },
         // ⬇️ 以下為您規劃的 CFP 標準 5 大篇章 ⬇️
         {
@@ -151,6 +151,34 @@ export default defineConfig({
       height: '24px',
     },
     externalLinkIcon: true,
+    // search: {
+    //   provider: 'local',
+    //   options: {
+    //     translations: {
+    //       button: {
+    //         buttonText: '搜尋',
+    //         buttonAriaLabel: '搜尋文件'
+    //       },
+    //       modal: {
+    //         displayDetails: '顯示詳細列表',
+    //         resetButtonTitle: '清除查詢條件',
+    //         backButtonTitle: '返回',
+    //         noResultsText: '無法找到相關結果：',
+    //         footer: {
+    //           selectText: '選擇',
+    //           selectKeyAriaLabel: '按 Enter 鍵選擇',
+
+    //           navigateText: '切換',
+    //           navigateUpKeyAriaLabel: '按 向上箭頭 鍵往上',
+    //           navigateDownKeyAriaLabel: '按 向下箭頭 鍵往下',
+
+    //           closeText: '關閉',
+    //           closeKeyAriaLabel: '按 Esc 鍵關閉'
+    //         }
+    //       }
+    //     }
+    //   }
+    // }
   },
   // Some chunks are larger than 500 kB
   vite: {
