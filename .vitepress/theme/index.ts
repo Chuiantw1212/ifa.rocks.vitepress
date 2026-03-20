@@ -16,6 +16,7 @@ import './global.scss'
 
 // 3. 引入您開發的小計算機與系統模組
 import LoginModule from './components/LoginModule.vue'
+import UserProfile from './components/UserProfile.vue'
 // import TvmCalculator from './components/TvmCalculator.vue' // 等 TVM 開發完後取消註解
 // import AssetLiability from './components/AssetLiability.vue' // 等資產負債表開發完後取消註解
 
@@ -45,6 +46,7 @@ export default {
         })
 
         // 全域註冊您的小計算機元件，讓 Markdown 可以直接使用標籤如 <TvmCalculator />
+        app.component('UserProfile', UserProfile)
         // app.component('TvmCalculator', TvmCalculator)
         // app.component('AssetLiability', AssetLiability)
 
