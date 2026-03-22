@@ -28,7 +28,6 @@
         </div>
       </div>
     </el-card>
-              @confirm="deleteClient(client)"
 
     <!-- Client Card List -->
     <div v-if="clientList.length > 0" style="display: flex; flex-direction: column; gap: 16px;">

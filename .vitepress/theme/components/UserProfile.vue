@@ -3,44 +3,10 @@
         <template #header>
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <span style="font-weight: bold; font-size: 16px;">基本資料與參數 (Profile)</span>
-
-                <el-space alignment="center">
-
-                    <el-upload ref="uploadRef" v-model:file-list="fileList" :limit="1" :show-file-list="false"
-                        accept=".json" :auto-upload="false" :on-change="handleFileChange" :on-exceed="handleExceed"
-                        style="display: flex;">
-                        <el-button type="info" plain link size="small" icon="Upload">
-                            匯入設定
-                        </el-button>
-                    </el-upload>
-                </el-space>
             </div>
         </template>
 
         <el-row :gutter="40" align="top">
-
-            <el-col :sm="8" :xs="24" style="text-align: center; margin-bottom: 20px;">
-                <div style="padding-top: 10px;">
-
-                    <el-avatar :size="90" :src="user.photoUrl"
-                        style="border: 3px solid var(--el-border-color-lighter); box-shadow: var(--el-box-shadow-light);">
-                        <span style="font-size: 32px; font-weight: bold;">{{ avatarText }}</span>
-                    </el-avatar>
-
-                    <div style="margin-top: 15px;">
-                        <el-text size="large" tag="b" style="display: block; margin-bottom: 4px;">
-                            {{ user.displayName || '訪客' }}
-                        </el-text>
-
-                        <el-tag v-if="user.email" type="info" effect="light" round size="default">
-                            {{ user.email }}
-                        </el-tag>
-                        <el-text v-else type="info" size="small">
-                            本地模式
-                        </el-text>
-                    </div>
-                </div>
-            </el-col>
 
             <el-col :sm="16" :xs="24">
                 <el-form v-if="userPlan.profile" ref="ruleFormRef" label-position="top" :model="userPlan.profile" size="large">

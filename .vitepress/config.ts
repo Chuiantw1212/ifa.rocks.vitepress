@@ -53,7 +53,7 @@ export default defineConfig({
           text: '壹、家庭財務摘要',
           collapsed: false,
           items: [
-            { text: '個案背景摘要', link: '/pro/summary' },
+            // { text: '個案背景摘要', link: '/pro/summary' },
             { text: '客戶基本資料', link: '/pro/profile' }
           ]
         },
