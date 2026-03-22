@@ -43,54 +43,87 @@ export default defineConfig({
 
       // 當網址進入 /pro/ 開頭時，左側會「完全切換」為以下目錄
       '/pro/': [
-        // 💡 核心 UX 改造：給顧問一條明確的退路
         {
-          text: '🔙 返回客戶總覽 (切換客戶)',
-          link: '/pro/dashboard/',
+          text: '🔙 返回客戶總覽',
+          link: '/dashboard/'
         },
-        // ⬇️ 以下為您規劃的 CFP 標準 5 大篇章 ⬇️
+        // ==========================================
+        // 👤 階段零：系統的計算地基
+        // ==========================================
         {
-          text: '壹、家庭財務摘要',
+          text: '👤 關於用戶',
           collapsed: false,
           items: [
-            // { text: '個案背景摘要', link: '/pro/summary' },
-            { text: '客戶基本資料', link: '/pro/profile' }
+            // 獨立意義：換算出「距離退休還剩幾次發薪日」與「家庭責任基準」
+            { text: '基本資料與家庭輪廓', link: '/pro/profile' }
           ]
         },
+        // ==========================================
+        // 💰 階段一：掌握當下的現金流
+        // ==========================================
         {
-          text: '貳、財務現況診斷',
+          text: '📊 一、日常收支與現金流',
           collapsed: false,
           items: [
-            { text: '資產負債現況', link: '/pro/balance-sheet' },
-            { text: '年度收支明細', link: '/pro/cash-flow' }, // 👉 我們討論的「自由買斷天數」會放在這裡
-            { text: '保險保障評估', link: '/pro/insurance-analysis' },
-            { text: '財務比率診斷', link: '/pro/financial-ratios' }
+            { text: '每月收支 (賺多少存多少)', link: '/pro/cashflow/income-expense' },
+            { text: '信用卡與貸款管理', link: '/pro/cashflow/debts' },
+            { text: '年度稅務概況', link: '/pro/cashflow/taxes' }
           ]
         },
+
+        // ==========================================
+        // 🏦 階段二：盤點手邊的籌碼 (純看資產增值與變現)
+        // ==========================================
         {
-          text: '參、目標需求分析',
+          text: '🏦 二、我的資產盤點',
           collapsed: false,
           items: [
-            { text: '目標優先序與時間軸', link: '/pro/goals-timeline' },
-            { text: '現金流量模擬測試', link: '/pro/cash-flow-sim' }
+            { text: '緊急預備金與存款', link: '/pro/assets/emergency-fund' },
+            // 🌟 獨立意義：純粹的進攻引擎 (看波動與報酬)
+            { text: '證券與投資 (股票/基金)', link: '/pro/assets/securities' },
+            // 🌟 獨立意義：防禦型儲蓄 (看保單現金價值與滿期金)
+            { text: '儲蓄與投資型保單', link: '/pro/assets/policies-value' },
+            { text: '不動產 (房屋與土地)', link: '/pro/assets/real-estate' },
+            { text: '副業與其他資產', link: '/pro/assets/side-hustle' }
           ]
         },
+
+        // ==========================================
+        // 🛡️ 階段三：生活防護網 (純看保額與理賠)
+        // ==========================================
         {
-          text: '肆、專屬規劃建議',
-          collapsed: true, // 預設摺疊，減輕視覺壓力
+          text: '🛡️ 三、安全防護網',
+          collapsed: false,
           items: [
-            { text: '資產配置優化方案', link: '/pro/asset-allocation' },
-            { text: '稅務優化與贈與', link: '/pro/tax-planning' },
-            { text: '傳承與信託規劃', link: '/pro/trust-legacy' }
+            // 🌟 獨立意義：這裡檢視的是保單的「理賠槓桿」，而非現金價值
+            { text: '現有保障總覽 (壽險/醫療)', link: '/pro/protection/current-coverage' },
+            { text: '家庭責任與收入中斷', link: '/pro/protection/income-loss' },
+            { text: '醫療與長照準備', link: '/pro/protection/healthcare' }
           ]
         },
+
+        // ==========================================
+        // 🎯 階段四：未來的夢想標價
+        // ==========================================
         {
-          text: '伍、效益與執行計畫',
-          collapsed: true,
+          text: '🎯 四、人生夢想藍圖',
+          collapsed: false,
           items: [
-            { text: '整體效益評估', link: '/pro/benefit-analysis' },
-            { text: '執行計畫與時程', link: '/pro/execution-plan' },
-            { text: '📑 產出最終規劃書', link: '/pro/generate-report' } // 建議加上這個匯出節點
+            { text: '🏖️ 樂活退休準備', link: '/pro/goals/retirement' },
+            { text: '🏠 買房計畫', link: '/pro/goals/house' },
+            { text: '🚗 買車計畫', link: '/pro/goals/car' },
+            { text: '👶 育兒與教育金', link: '/pro/goals/education' },
+            { text: '🎁 財富與資產傳承', link: '/pro/goals/legacy' }
+          ]
+        },
+
+        // ==========================================
+        // 📑 最終輸出
+        // ==========================================
+        {
+          text: '📑 我的專屬規劃',
+          items: [
+            { text: '🚀 產出完整理財規劃書', link: '/pro/generate-report' }
           ]
         }
       ],
