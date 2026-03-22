@@ -1,6 +1,35 @@
 <template>
   <div class="client-crm-container" style="max-width: 1000px; margin: 0 auto; padding: 24px;">
 
+    <!-- Client Overview & Actions -->
+    <el-card shadow="never" style="border-radius: 12px; border: 1px solid #EBEEF5; margin-bottom: 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <el-row :gutter="32" style="flex-grow: 1;">
+          <el-col :xs="12" :sm="6">
+            <el-statistic title="陌生名單" :value="statusSummary['陌生名單']" />
+          </el-col>
+          <el-col :xs="12" :sm="6">
+            <el-statistic title="資料收集" :value="statusSummary['資料收集']" />
+          </el-col>
+          <el-col :xs="12" :sm="6">
+            <el-statistic title="即將提案" :value="statusSummary['即將提案']" />
+          </el-col>
+          <el-col :xs="12" :sm="6">
+            <el-statistic title="已結案" :value="statusSummary['已結案']">
+              <template #suffix>
+                <el-icon style="vertical-align: -0.125em"><Trophy /></el-icon>
+              </template>
+            </el-statistic>
+          </el-col>
+        </el-row>
+        <el-divider direction="vertical" style="height: 4em; margin: 0 32px;" class="hidden-xs-only" />
+        <div style="flex-shrink: 0;" class="hidden-xs-only">
+          <el-button type="primary" round :icon="Plus" @click="dialogVisible = true">建立新客戶</el-button>
+        </div>
+      </div>
+    </el-card>
+              @confirm="deleteClient(client)"
+
     <!-- Client Card List -->
     <div v-if="clientList.length > 0" style="display: flex; flex-direction: column; gap: 16px;">
       <el-card v-for="client in clientList" :key="client.id" shadow="hover" style="border-radius: 12px;">
@@ -42,7 +71,7 @@
                 @confirm="deleteClient(client)"
               >
                 <template #reference>
-                  <el-button type="danger" link icon="Delete">刪除</el-button>
+                  <el-button type="danger" link :icon="Delete">刪除</el-button>
                 </template>
               </el-popconfirm>
             </div>
@@ -80,8 +109,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-
+import { ref, computed } from 'vue'
+import { Trophy, Plus, Delete } from '@element-plus/icons-vue'
 // --- 類型定義 ---
 
 type ClientStatus = '陌生名單' | '資料收集' | '即將提案' | '已結案';
@@ -113,6 +142,21 @@ const clientList = ref<Client[]>([
   { id: 'c003', name: '林志豪', status: '已結案', progress: 100, lastUpdated: '2023-10-20' },
   { id: 'c004', name: '張惠婷', status: '陌生名單', progress: 0, lastUpdated: '2023-10-27' },
 ])
+
+// --- Computed Properties ---
+
+const statusSummary = computed(() => {
+  const initialSummary: Record<ClientStatus, number> = {
+    '陌生名單': 0,
+    '資料收集': 0,
+    '即將提案': 0,
+    '已結案': 0,
+  };
+  return clientList.value.reduce((summary, client) => {
+    summary[client.status]++;
+    return summary;
+  }, initialSummary);
+});
 
 // 狀態對應的顏色標籤
 const getStatusType = (status: ClientStatus) => {
