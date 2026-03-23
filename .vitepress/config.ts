@@ -45,7 +45,7 @@ export default defineConfig({
       '/pro/': [
         {
           text: '🔙 返回客戶總覽',
-          link: '/dashboard/'
+          link: '/pro/dashboard/'
         },
         // ==========================================
         // 👤 階段零：系統的計算地基

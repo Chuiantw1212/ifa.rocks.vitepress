@@ -23,7 +23,10 @@ export function useApi() {
     // 封裝後的 Fetch
     const authFetch = async (endpoint: string, options: AuthFetchOptions = {}) => {
         const auth = getAuth()
-        if (!auth.currentUser) return null
+        if (!auth.currentUser) {
+            // 當使用者未登入時，不回傳 null，而是拋出錯誤，讓呼叫端能統一用 try/catch 處理
+            throw new Error('使用者未登入，無法發送請求 (User not authenticated)')
+        }
 
         let token = await getIdToken()
 

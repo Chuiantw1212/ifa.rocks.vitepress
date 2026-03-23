@@ -8,7 +8,7 @@
 
         <el-row :gutter="40" align="top">
 
-            <el-col :sm="16" :xs="24">
+            <el-col >
                 <el-form v-if="userPlan.profile" ref="ruleFormRef" label-position="top" :model="userPlan.profile" size="large">
                     <el-row :gutter="20">
 
@@ -20,50 +20,28 @@
                             </el-form-item>
                         </el-col>
 
-                        <el-col :span="12" :xs="24">
-                            <el-form-item label="試算年齡 (Age)">
-                                <el-input :disabled="true" :value="userPlan.profile.currentAge ? userPlan.profile.currentAge + ' 歲' : '-'">
-                                    <template #prefix>
-                                        <el-icon>
-                                            <User />
-                                        </el-icon>
-                                    </template>
-                                </el-input>
-                            </el-form-item>
-                        </el-col>
-
+                        
                         <el-col :span="12" :xs="24">
                             <el-form-item label="生理性別 (Gender)" required>
                                 <el-select v-model="userPlan.profile.gender" placeholder="請選擇" style="width: 100%"
-                                    @change="handleUpdate">
-                                    <el-option v-for="item in metadata?.opt_gender?.list" :key="item.code"
-                                        :label="item.label" :value="item.code" />
-                                </el-select>
-                            </el-form-item>
-                        </el-col>
-
-                        <el-col :span="12" :xs="24">
-                            <el-form-item label="職業保險 (Insurance)" required>
-                                <el-select v-model="userPlan.profile.careerInsuranceType" placeholder="投保類型" style="width: 100%"
-                                    @change="handleUpdate">
-                                    <el-option v-for="item in metadata?.opt_social_security?.list" :key="item.code"
-                                        :label="item.label" :value="item.code" :disabled="item.disabled" />
-                                </el-select>
-                            </el-form-item>
-                        </el-col>
-
-                        <el-col :span="12" :xs="24">
-                            <el-form-item label="預估通膨 (Inflation)">
-                                <el-input readonly :value="'3%'" :disabled="true">
-                                    <template #prefix>
-                                        <el-icon>
-                                            <TrendCharts />
-                                        </el-icon>
-                                    </template>
-                                </el-input>
-                            </el-form-item>
-                        </el-col>
-
+                                @change="handleUpdate">
+                                <el-option v-for="item in metadata?.opt_gender?.list" :key="item.code"
+                                :label="item.label" :value="item.code" />
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                    
+                    <el-col :span="12" :xs="24">
+                        <el-form-item label="試算年齡 (Age)">
+                            <el-input :disabled="true" :value="userPlan.profile.currentAge ? userPlan.profile.currentAge + ' 歲' : '-'">
+                                <template #prefix>
+                                    <el-icon>
+                                        <User />
+                                    </el-icon>
+                                </template>
+                            </el-input>
+                        </el-form-item>
+                    </el-col>
                     </el-row>
                 </el-form>
             </el-col>
@@ -83,10 +61,6 @@
                                 target="_blank">國家發展委員會
                                 - 預期壽命推估</el-link>
                         </li>
-                        <li>通貨膨脹(消費者物價指數年增率)：<el-link type="primary"
-                                href="https://www.stat.gov.tw/Point.aspx?sid=t.2&n=3581&sms=11480"
-                                target="_blank">中華民國統計資訊網</el-link></li>
-                        <li>公教人員年金改革到一半，目前沒人知道公保會怎麼調整。</li>
                     </ul>
                 </el-collapse-item>
             </el-collapse>

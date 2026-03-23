@@ -92,6 +92,9 @@
         <el-form-item label="客戶姓名">
           <el-input v-model="newClientForm.name" placeholder="請輸入姓名" />
         </el-form-item>
+        <el-form-item label="Email">
+          <el-input v-model="newClientForm.email" placeholder="請輸入Email" />
+        </el-form-item>
         <el-form-item label="聯絡電話/Line ID">
           <el-input v-model="newClientForm.contact" placeholder="選填" />
         </el-form-item>
@@ -110,6 +113,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { Trophy, Plus, Delete } from '@element-plus/icons-vue'
+import { useApi } from '../composables/useApi'
+import { ElMessage } from 'element-plus'
 // --- 類型定義 ---
 
 type ClientStatus = '陌生名單' | '資料收集' | '即將提案' | '已結案';
@@ -124,15 +129,19 @@ interface Client {
 
 interface NewClientForm {
   name: string;
+  email:string;
   contact?: string;
 }
+
+// API
+const { authFetch } = useApi()
 
 // 模擬的全域狀態：目前正在編輯的客戶 ID
 const currentClientId = ref<string | null>('c001')
 
 // 彈窗控制
 const dialogVisible = ref(false)
-const newClientForm = ref<NewClientForm>({ name: '', contact: '' })
+const newClientForm = ref<NewClientForm>({ name: '', email:'', contact: '' })
 
 // 模擬資料庫中的客戶名單
 const clientList = ref<Client[]>([
@@ -189,19 +198,34 @@ const enterPlan = (client: Client) => {
   console.log(`進入 ${client.name} 的理財規劃書...`)
 }
 
-const createNewClient = () => {
-  // 模擬新增邏輯
-  const newId = `c${String(Date.now()).slice(-4)}`
-  clientList.value.push({
-    id: newId,
-    name: newClientForm.value.name,
-    status: '陌生名單',
-    progress: 0,
-    lastUpdated: getTodayDate()
-  })
-  dialogVisible.value = false
-  currentClientId.value = newId
-  console.log('建立成功並自動切換至新客戶')
+const createNewClient = async () => {
+  if (!newClientForm.value.name || !newClientForm.value.email) {
+    ElMessage.warning('客戶姓名與 Email 為必填欄位')
+    return
+  }
+
+  try {
+    const res = await authFetch('/api/v1/user', {
+      method: 'POST',
+      body: newClientForm.value
+    })
+
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}))
+      throw new Error(errorData.message || `建立客戶失敗 (status: ${res.status})`)
+    }
+
+    const newClient: Client = await res.json()
+    clientList.value.push(newClient)
+    currentClientId.value = newClient.id
+    dialogVisible.value = false
+    newClientForm.value = { name: '', email: '', contact: '' }
+    ElMessage.success('客戶建立成功')
+    console.log('建立成功並自動切換至新客戶')
+  } catch (error: any) {
+    console.error('Create client error:', error)
+    ElMessage.error(error.message || '建立客戶時發生未預期的錯誤')
+  }
 }
 
 const deleteClient = (clientToDelete: Client) => {
