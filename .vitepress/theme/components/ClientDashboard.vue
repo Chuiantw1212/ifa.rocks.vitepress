@@ -42,7 +42,7 @@
                 </el-tag>
               </div>
               <div style="max-width: 350px;">
-                <el-text size="small" type="secondary" style="margin-bottom: 4px; display: block;">理財規劃書進度</el-text>
+                <el-text size="small" type="info" style="margin-bottom: 4px; display: block;">理財規劃書進度</el-text>
                 <el-progress 
                   :percentage="client.progress" 
                   :status="client.progress === 100 ? 'success' : ''"
