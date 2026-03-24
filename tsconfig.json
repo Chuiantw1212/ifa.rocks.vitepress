@@ -1,0 +1,20 @@
+{
+    "compilerOptions": {
+        // ... 您可能有的其他 TypeScript 設定 ...
+        // --- 請確保以下設定存在 ---
+        "baseUrl": ".",
+        "paths": {
+            "@/*": [
+                "src/*"
+            ]
+        }
+    },
+    // 建議也加入 "include" 來指定 TypeScript 應檢查的檔案範圍
+    "include": [
+        "src/**/*.ts",
+        "src/**/*.d.ts",
+        "src/**/*.tsx",
+        "src/**/*.vue",
+        ".vitepress/**/*.ts"
+    ]
+}

@@ -33,13 +33,6 @@ export default {
 
     // 佈局擴充：處理 Navbar、Sidebar 等特定位置的插槽
     Layout() {
-        // 在 Layout 中初始化 Store，確保它在應用程式生命週期中只執行一次
-        // 這是啟動 Firebase 驗證監聽的最佳位置
-        const authStore = useAuthStore()
-        onMounted(() => {
-            authStore.init()
-        })
-
         return h(DefaultTheme.Layout, null, {
             // 將「登入報告系統」按鈕放置於導航欄右上角
             'nav-bar-content-after': () => h(LoginModule)
@@ -69,6 +62,11 @@ export default {
 
         // @ts-ignore
         if (!import.meta.env.SSR) {
+            // 這是啟動 Firebase 驗證監聽的最佳位置。
+            // 它只會在客戶端執行一次，且在 Pinia store 建立之後。
+            const authStore = useAuthStore()
+            authStore.init()
+
             // 關鍵：手動將 firebase 掛載到 window 物件
             // 這是讓 head 中載入的 firebase-ui-auth__zh_tw.js 能運作的絕對關鍵。
             // 因為 firebaseConfig.ts 在被 import 時就已經執行過初始化，

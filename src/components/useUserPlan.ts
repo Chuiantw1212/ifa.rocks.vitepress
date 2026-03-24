@@ -1,5 +1,4 @@
 import { ref, watch } from 'vue'
-import { getAuth, signOut } from "firebase/auth"
 import { ElMessage } from 'element-plus'
 import { useApi } from '@/composables/useApi'
 import { getInitialUserPlan } from '@/composables/initialState'
@@ -16,33 +15,33 @@ export function useUserPlan() {
     const { authFetch } = useApi()
     const authStore = useAuthStore()
 
+    /**
+     * 監聽 authStore 的變化，並據此更新使用者資料。
+     * 這個 watcher 應該在應用程式的根組件或佈局組件中被初始化一次。
+     */
     function initAuthListener() {
-        // 此函式現在改為監聽中央的 auth store，而不是直接監聽 Firebase
-        return watch(() => authStore.isInitialized, async (initialized) => {
-            if (!initialized) return;
+        // 修正：監聽 `authStore.user` 的變化，而不是只在初始化時觸發一次。
+        // 這確保了在登入、登出後，資料狀態都能正確同步。
+        return watch(() => authStore.user, async (firebaseUser) => {
+            // 為了避免競爭條件，我們仍然要等待 authStore 初始化完成。
+            if (!authStore.isInitialized) return;
 
-            const firebaseUser = authStore.user;
             if (firebaseUser) {
                 // [登入狀態]
                 loggedInUser.value = {
                     uid: firebaseUser.uid,
                     displayName: firebaseUser.username,
-                    email: firebaseUser.email,
+                    email: firebaseUser.email || '',
                     photoUrl: firebaseUser.avatarUrl,
                     isAnonymous: false, // 假設都是非匿名登入
                     id: '' // 這個 ID 會在 fetchPlanData 中被後端資料填充
                 }
                 await fetchPlanData()
             } else {
-                // [登出狀態]
-                if (loggedInUser.value.uid) {
-                    _resetToGuest();
-                }
-                if (!isDataReady.value) {
-                    isDataReady.value = true;
-                }
+                // [登出或訪客狀態]
+                _resetToGuest();
             }
-        }, { immediate: true });
+        }, { immediate: true, deep: true });
     }
 
     /**
@@ -61,26 +60,9 @@ export function useUserPlan() {
         loggedInUser.value = {
             id: "", uid: "", displayName: "訪客", email: "", photoUrl: "", isAnonymous: true
         }
-        // 登出時：徹底清空所有欄位資料
         resetClientPlan()
-    }
-
-    async function logout() {
-        try {
-            isDataReady.value = false
-            const auth = getAuth()
-            await signOut(auth)
-
-            _resetToGuest()
-            ElMessage.success('已安全登出')
-        } catch (e: any) {
-            console.error('Logout failed', e)
-            ElMessage.error('登出失敗')
-        } finally {
-            setTimeout(() => {
-                isDataReady.value = true
-            }, 500)
-        }
+        // 訪客狀態也是一種「就緒」狀態
+        isDataReady.value = true
     }
 
     /**
@@ -247,7 +229,6 @@ export function useUserPlan() {
         initAuthListener,
         fetchPlanData,
         importClientPlanData,
-        logout,
         resetClientPlan
     }
 }
