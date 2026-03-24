@@ -2,7 +2,7 @@
  * 勞退 (Labor Pension)
  * 新制退休金個人專戶
  */
-export interface UserLaborPension {
+export interface ClientLaborPension {
     id?: string;
 
     /** 預計退休年齡 */

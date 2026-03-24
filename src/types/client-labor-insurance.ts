@@ -2,7 +2,7 @@
  * 勞保 (Labor Insurance)
  * 老年年金給付
  */
-export interface UserLaborInsurance {
+export interface ClientLaborInsurance {
     id?: string;
 
     /** 預計請領年齡 */

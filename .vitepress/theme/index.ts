@@ -1,6 +1,7 @@
 import DefaultTheme from 'vitepress/theme'
 import type { EnhanceAppContext } from 'vitepress'
-import { h } from 'vue'
+import { h, onMounted } from 'vue'
+import { createPinia } from 'pinia'
 
 // 1. 引入 Element Plus 核心與基礎樣式
 import ElementPlus from 'element-plus'
@@ -15,20 +16,30 @@ import 'element-plus/dist/index.css'
 import './global.scss'
 
 // 3. 引入您開發的小計算機與系統模組
-import LoginModule from './components/LoginModule.vue'
-import UserProfile from './components/UserProfile.vue'
-import ClientDashboard from './components/ClientDashboard.vue'
+import LoginModule from '@/components/LoginModule.vue'
+import UserProfile from '@/components/UserProfile.vue'
+import ClientDashboard from '@/components/ClientDashboard.vue'
 // import TvmCalculator from './components/TvmCalculator.vue' // 等 TVM 開發完後取消註解
 // import AssetLiability from './components/AssetLiability.vue' // 等資產負債表開發完後取消註解
 
 // 4. 引入我們集中管理的 Firebase 設定檔
-import firebase, { getAnalyticsInstance, getPerformanceInstance } from './firebaseConfig'
+import firebase, { getAnalyticsInstance, getPerformanceInstance } from '@/firebaseConfig'
+
+// 5. 引入核心邏輯層的 Pinia Store
+import { useAuthStore } from '@/stores/auth'
 
 export default {
     extends: DefaultTheme,
 
     // 佈局擴充：處理 Navbar、Sidebar 等特定位置的插槽
     Layout() {
+        // 在 Layout 中初始化 Store，確保它在應用程式生命週期中只執行一次
+        // 這是啟動 Firebase 驗證監聽的最佳位置
+        const authStore = useAuthStore()
+        onMounted(() => {
+            authStore.init()
+        })
+
         return h(DefaultTheme.Layout, null, {
             // 將「登入報告系統」按鈕放置於導航欄右上角
             'nav-bar-content-after': () => h(LoginModule)
@@ -37,6 +48,10 @@ export default {
 
     // 擴充 Vue 實體：全域註冊套件與自定義元件
     enhanceApp({ app }: EnhanceAppContext) {
+        // 註冊 Pinia
+        const pinia = createPinia()
+        app.use(pinia)
+
         // 註冊 Element Plus
         app.use(ElementPlus)
 

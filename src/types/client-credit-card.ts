@@ -2,7 +2,7 @@
  * 信用卡 (Credit Card)
  * 用於支出管理與現金流追蹤
  */
-export interface UserCreditCard {
+export interface ClientCreditCard {
     id?: string;
 
     /** Firebase UID */

@@ -2,7 +2,7 @@
  * 退休規劃全週期 (Retirement Lifecycle)
  * 涵蓋 Go-Go, Slow-Go, No-Go 三階段
  */
-export interface UserRetirement {
+export interface ClientRetirement {
     id?: string;
     userId?: string;
     updatedAt?: string;

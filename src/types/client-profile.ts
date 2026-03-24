@@ -1,7 +1,7 @@
 /**
  * 個人基本資料 (Personal Profile)
  */
-export interface UserProfile {
+export interface ClientProfile {
     /** 資料庫唯一識別碼 */
     id?: string;
 

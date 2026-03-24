@@ -3,7 +3,7 @@
  * 商業/副業 (Business / Side Hustle)
  * 例如：太陽能板投資、加盟店、網拍
  */
-export interface UserBusiness {
+export interface ClientBusiness {
     id?: string;
 
     /** 專案名稱 */

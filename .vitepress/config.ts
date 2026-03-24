@@ -242,7 +242,8 @@ export default defineConfig({
     },
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, '../'),
+        // 設定別名，指向你建立的 src 目錄
+        '@': path.resolve(__dirname, '../src'),
       }
     },
   }

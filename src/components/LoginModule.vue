@@ -26,9 +26,9 @@
 import { ref, watch, nextTick, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { UserFilled } from '@element-plus/icons-vue'
-import { auth } from '../firebaseConfig'
+import { auth } from '@/firebaseConfig'
 import { GoogleAuthProvider, EmailAuthProvider } from 'firebase/auth'
-import { useAuthStore } from '../stores/auth'
+import { useAuthStore } from '@/stores/auth'
 
 const dialogVisible = ref(false)
 

@@ -3,7 +3,7 @@
  * 金融資產 (Portfolios)
  * 包含股票、ETF、基金、外幣等
  */
-export interface UserPortfolio {
+export interface ClientPortfolio {
     id?: string;
 
     /** 投資市場代碼 (e.g., 'US', 'TW', 'JP') */

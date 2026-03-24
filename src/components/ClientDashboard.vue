@@ -124,8 +124,8 @@
 import { ref, computed, reactive, watch, onMounted } from 'vue'
 import { useRouter } from 'vitepress'
 import { Trophy, Plus, Delete, Warning } from '@element-plus/icons-vue'
-import { useApi } from '../composables/useApi';
-import { useAuthStore } from '../stores/auth';
+import { useApi } from '@/composables/useApi';
+import { useAuthStore } from '@/stores/auth';
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 // --- 類型定義 ---
 

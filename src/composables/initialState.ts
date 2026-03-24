@@ -1,6 +1,6 @@
-import type { UserPlan } from '../types'
+import type { ClientPlan } from '../types'
 
-export const getInitialUserPlan = (): UserPlan => ({
+export const getInitialUserPlan = (): ClientPlan => ({
     // 1. 個人基本資料 (Personal Profile)
     profile: {
         id: '',

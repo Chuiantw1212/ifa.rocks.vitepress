@@ -29,6 +29,9 @@ importers:
       jspdf:
         specifier: ^4.2.1
         version: 4.2.1
+      pinia:
+        specifier: ^3.0.4
+        version: 3.0.4(vue@3.5.30)
     devDependencies:
       sass:
         specifier: ^1.98.0
@@ -1255,6 +1258,15 @@ packages:
   picomatch@4.0.3:
     resolution: {integrity: sha512-5gTmgEY/sqK6gFXLIsQNH19lWb4ebPDLA4SdLP7dsWkIXHWlG66oPuVvXSGFPppYZz8ZDZq0dYYrbHfBCVUb1Q==}
     engines: {node: '>=12'}
+
+  pinia@3.0.4:
+    resolution: {integrity: sha512-l7pqLUFTI/+ESXn6k3nu30ZIzW5E2WZF/LaHJEpoq6ElcLD+wduZoB2kBN19du6K/4FDpPMazY2wJr+IndBtQw==}
+    peerDependencies:
+      typescript: '>=4.5.0'
+      vue: ^3.5.11
+    peerDependenciesMeta:
+      typescript:
+        optional: true
 
   postcss@8.5.8:
     resolution: {integrity: sha512-OW/rX8O/jXnm82Ey1k44pObPtdblfiuWnrd8X7GJ7emImCOstunGbXUpp7HdBrFQX6rJzn3sPT397Wp5aCwCHg==}
@@ -2767,6 +2779,11 @@ snapshots:
 
   picomatch@4.0.3:
     optional: true
+
+  pinia@3.0.4(vue@3.5.30):
+    dependencies:
+      '@vue/devtools-api': 7.7.9
+      vue: 3.5.30
 
   postcss@8.5.8:
     dependencies:

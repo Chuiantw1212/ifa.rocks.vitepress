@@ -1,13 +1,13 @@
 import { ref, watch } from 'vue'
 import { getAuth, signOut } from "firebase/auth"
 import { ElMessage } from 'element-plus'
-import { useApi } from './useApi'
-import { getInitialUserPlan } from './initialState'
-import type { UserPlan, FirebaseUser } from '../types'
-import { useAuthStore } from '../stores/auth'
+import { useApi } from '@/composables/useApi'
+import { getInitialUserPlan } from '@/composables/initialState'
+import type { ClientPlan, FirebaseClient } from '@/types'
+import { useAuthStore } from '@/stores/auth'
 
-const userPlan = ref<UserPlan>(getInitialUserPlan())
-const loggedInUser = ref<FirebaseUser>({
+const userPlan = ref<ClientPlan>(getInitialUserPlan())
+const loggedInUser = ref<FirebaseClient>({
     id: "", uid: "", displayName: "訪客", email: "", photoUrl: "", isAnonymous: true
 })
 const isDataReady = ref(false)
@@ -49,7 +49,7 @@ export function useUserPlan() {
      * 重置表單資料 (Reset Form Data)
      * 用於訪客重置或登出時清空
      */
-    function resetUserPlan() {
+    function resetClientPlan() {
         userPlan.value = getInitialUserPlan()
     }
 
@@ -62,7 +62,7 @@ export function useUserPlan() {
             id: "", uid: "", displayName: "訪客", email: "", photoUrl: "", isAnonymous: true
         }
         // 登出時：徹底清空所有欄位資料
-        resetUserPlan()
+        resetClientPlan()
     }
 
     async function logout() {
@@ -87,7 +87,7 @@ export function useUserPlan() {
      * [修正邏輯] 清除資料庫 ID (匯入用)
      * 目的：保留「資料內容」，只移除「ID」以便視為新資料
      */
-    function clearDatabaseIds(form: UserPlan) {
+    function clearDatabaseIds(form: ClientPlan) {
         // 單一物件
         if (form.profile) form.profile.id = ""
         if (form.career) form.career.id = ""
@@ -187,7 +187,7 @@ export function useUserPlan() {
         }
     }
 
-    function importPlanData(data: any) {
+    function importClientPlanData(data: any) {
         try {
             if (!data || typeof data !== 'object') throw new Error('無效的資料格式')
 
@@ -246,8 +246,8 @@ export function useUserPlan() {
         isDataReady,
         initAuthListener,
         fetchPlanData,
-        importPlanData,
+        importClientPlanData,
         logout,
-        resetUserPlan
+        resetClientPlan
     }
 }

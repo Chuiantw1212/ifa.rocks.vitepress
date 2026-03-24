@@ -71,13 +71,13 @@
 <script setup lang="ts">
 // 之後會在這裡加入邏輯
 import { ref, computed } from 'vue'
-import { useUserPlan } from '../composables/useUserPlan'
-import { useApi } from '../composables/useApi'
-import type { UserProfile } from '../types'
+import { useUserPlan } from '@/composables/useUserPlan'
+import { useApi } from '@/composables/useApi'
+import type { ClientProfile } from '@/types'
 import type {UploadFile, UploadInstance, UploadProps, UploadRawFile, UploadUserFile } from 'element-plus'
 import { ElMessage, genFileId} from 'element-plus'
-import { FirebaseUser } from '../types'
-import { MetadataMap } from '../types/meta-data'
+import { FirebaseClient } from '@/types'
+import { MetadataMap } from '@/types/meta-data'
 
 // 從全域狀態管理取得資料與方法
 const { userPlan, loggedInUser, importPlanData } = useUserPlan()
@@ -85,7 +85,7 @@ const { authFetch } = useApi()
 
 // Props
 const props = withDefaults(defineProps<{
-    user: FirebaseUser
+    user: FirebaseClient
     metadata?: MetadataMap
 }>(), {
     user: () => ({

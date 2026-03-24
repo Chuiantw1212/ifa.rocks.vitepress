@@ -1,7 +1,7 @@
 /**
  * 職業與收入資料 (Career & Income)
  */
-export interface UserCareer {
+export interface ClientCareer {
     id?: string;
 
     /** 本薪 (Base Salary) */

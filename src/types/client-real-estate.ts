@@ -2,7 +2,7 @@
 /**
  * 不動產資產 (Real Estate)
  */
-export interface UserRealEstate {
+export interface ClientRealEstate {
     id?: string;
 
     /** 物件名稱 (e.g. 板橋自用宅) */
