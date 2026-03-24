@@ -1,9 +1,10 @@
-import { ref } from 'vue'
-import { getAuth, onAuthStateChanged, signOut } from "firebase/auth"
+import { ref, watch } from 'vue'
+import { getAuth, signOut } from "firebase/auth"
 import { ElMessage } from 'element-plus'
 import { useApi } from './useApi'
 import { getInitialUserPlan } from './initialState'
 import type { UserPlan, FirebaseUser } from '../types'
+import { useAuthStore } from '../stores/auth'
 
 const userPlan = ref<UserPlan>(getInitialUserPlan())
 const loggedInUser = ref<FirebaseUser>({
@@ -13,31 +14,35 @@ const isDataReady = ref(false)
 
 export function useUserPlan() {
     const { authFetch } = useApi()
+    const authStore = useAuthStore()
 
     function initAuthListener() {
-        const auth = getAuth()
-        return onAuthStateChanged(auth, async (firebaseUser) => {
+        // 此函式現在改為監聽中央的 auth store，而不是直接監聽 Firebase
+        return watch(() => authStore.isInitialized, async (initialized) => {
+            if (!initialized) return;
+
+            const firebaseUser = authStore.user;
             if (firebaseUser) {
                 // [登入狀態]
                 loggedInUser.value = {
                     uid: firebaseUser.uid,
-                    displayName: firebaseUser.displayName || '會員',
-                    email: firebaseUser.email || '',
-                    photoUrl: firebaseUser.photoURL || '',
-                    isAnonymous: firebaseUser.isAnonymous,
-                    id: ''
+                    displayName: firebaseUser.username,
+                    email: firebaseUser.email,
+                    photoUrl: firebaseUser.avatarUrl,
+                    isAnonymous: false, // 假設都是非匿名登入
+                    id: '' // 這個 ID 會在 fetchPlanData 中被後端資料填充
                 }
                 await fetchPlanData()
             } else {
                 // [登出狀態]
                 if (loggedInUser.value.uid) {
-                    _resetToGuest()
+                    _resetToGuest();
                 }
                 if (!isDataReady.value) {
-                    isDataReady.value = true
+                    isDataReady.value = true;
                 }
             }
-        })
+        }, { immediate: true });
     }
 
     /**

@@ -1,5 +1,6 @@
 <template>
-    <el-space class="login" :size="20" alignment="center" direction="horizontal">
+    <!-- 等待驗證狀態初始化完成後再渲染，避免閃爍 -->
+    <el-space v-if="authStore.isInitialized" class="login" :size="20" alignment="center" direction="horizontal">
         <!-- 登入後顯示使用者頭像與下拉選單 -->
         <el-dropdown v-if="isLoggedIn" trigger="click">
             <el-avatar :size="32" :src="user.avatarUrl" />
@@ -22,51 +23,27 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import { ref, watch, nextTick, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { UserFilled } from '@element-plus/icons-vue'
-// 假設您的 Firebase 設定檔位於 .vitepress/theme/firebaseConfig.js
 import { auth } from '../firebaseConfig'
-import { onAuthStateChanged, signOut, GoogleAuthProvider, EmailAuthProvider } from 'firebase/auth'
+import { GoogleAuthProvider, EmailAuthProvider } from 'firebase/auth'
+import { useAuthStore } from '../stores/auth'
 
 const dialogVisible = ref(false)
-const isLoggedIn = ref(false)
 
-const user = reactive({
-    username: '',
-    avatarUrl: ''
-})
+const authStore = useAuthStore()
 
-// FirebaseUI instance
-let ui = null;
+// 使用 computed 屬性來響應 store 的變化
+const isLoggedIn = computed(() => authStore.isLoggedIn)
+const user = computed(() => authStore.user || { username: '', avatarUrl: '' })
 
-onMounted(() => {
-    // 監聽 Firebase 身份驗證狀態的變化
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-        if (firebaseUser) {
-            // 使用者已登入
-            isLoggedIn.value = true
-            user.username = firebaseUser.displayName || firebaseUser.email || '使用者'
-            // 優先使用 Firebase 提供的頭像，若無則使用 DiceBear 作為備用
-            user.avatarUrl = firebaseUser.photoURL || `https://api.dicebear.com/8.x/adventurer/svg?seed=${firebaseUser.uid}`
-            
-            // 登入成功後關閉對話框並顯示歡迎訊息
-            if (dialogVisible.value) {
-                dialogVisible.value = false
-                ElMessage.success(`歡迎回來，${user.username}`)
-            }
-        } else {
-            // 使用者已登出
-            isLoggedIn.value = false
-            user.username = ''
-            user.avatarUrl = ''
-        }
-    })
-
-    onBeforeUnmount(() => {
-        // 元件銷毀時，取消監聽
-        unsubscribe()
-    })
+// 監聽來自 store 的登入成功狀態，以關閉對話框
+watch(() => authStore.isLoggedIn, (loggedIn, wasLoggedIn) => {
+    if (loggedIn && !wasLoggedIn && dialogVisible.value) {
+        dialogVisible.value = false
+        ElMessage.success(`歡迎回來，${authStore.user.username}`)
+    }
 })
 
 // 監看 dialogVisible 的變化，當它被打開時，啟動 FirebaseUI
@@ -79,7 +56,10 @@ watch(dialogVisible, (newValue) => {
                 const ui = window.firebaseui.auth.AuthUI.getInstance() || new window.firebaseui.auth.AuthUI(auth);
                 const uiConfig = {
                     callbacks: {
-                        signInSuccessWithAuthResult: () => false, // 返回 false，讓 onAuthStateChanged 統一處理後續
+                        // 我們不需要在這裡做任何事，因為 Pinia store 中的 onAuthStateChanged
+                        // 監聽器會統一處理使用者狀態。
+                        // 返回 false 可以避免登入後頁面重新導向。
+                        signInSuccessWithAuthResult: (authResult, redirectUrl) => false,
                     },
                     signInFlow: 'popup',
                     signInOptions: [
@@ -110,13 +90,14 @@ watch(dialogVisible, (newValue) => {
     }
 });
 
-const handleLogout = () => {
-    signOut(auth).then(() => {
+const handleLogout = async () => {
+    try {
+        await authStore.logout()
         ElMessage.info('您已成功登出')
-    }).catch((error) => {
+    } catch (error) {
         console.error('Logout Error:', error)
         ElMessage.error('登出時發生錯誤')
-    })
+    }
 }
 </script>
 <style lang="scss" scoped>

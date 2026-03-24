@@ -30,73 +30,83 @@
     </el-card>
 
     <!-- Client Card List -->
-    <div v-if="clientList.length > 0" style="display: flex; flex-direction: column; gap: 16px;">
-      <el-card v-for="client in clientList" :key="client.id" shadow="hover" style="border-radius: 12px;">
-          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-            <!-- Info Section -->
-            <div style="flex-grow: 1; padding-right: 24px;">
-              <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
-                <span style="font-weight: bold; color: #303133; font-size: 18px;">{{ client.name }}</span>
-                <el-tag :type="getStatusType(client.status)" effect="light" round>
-                  {{ client.status }}
-                </el-tag>
+    <div v-loading="isLoading" style="min-height: 150px;">
+      <div v-if="clientList.length > 0" style="display: flex; flex-direction: column; gap: 16px;">
+        <el-card v-for="client in clientList" :key="client.id" shadow="hover" style="border-radius: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <!-- Info Section -->
+              <div style="flex-grow: 1; padding-right: 24px;">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                  <span style="font-weight: bold; color: #303133; font-size: 18px;">{{ client.name }}</span>
+                  <el-tag :type="getStatusType(client.status)" effect="light" round>
+                    {{ client.status }}
+                  </el-tag>
+                </div>
+                <div style="max-width: 350px;">
+                  <el-text size="small" type="info" style="margin-bottom: 4px; display: block;">理財規劃書進度</el-text>
+                  <el-progress 
+                    :percentage="client.progress" 
+                    :status="client.progress === 100 ? 'success' : ''"
+                  />
+                </div>
               </div>
-              <div style="max-width: 350px;">
-                <el-text size="small" type="info" style="margin-bottom: 4px; display: block;">理財規劃書進度</el-text>
-                <el-progress 
-                  :percentage="client.progress" 
-                  :status="client.progress === 100 ? 'success' : ''"
-                />
+              
+              <!-- Actions Section -->
+              <div style="display: flex; align-items: center; flex-shrink: 0;">
+                <el-button
+                  type="primary"
+                  link
+                  style="font-weight: bold;"
+                  @click="enterPlan(client)"
+                >
+                  進入規劃書 👉
+                </el-button>
+                <el-divider direction="vertical" />
+                <el-popconfirm
+                  title="確定要刪除這位客戶嗎？"
+                  confirm-button-text="確定"
+                  cancel-button-text="取消"
+                  :icon="Warning"
+                  icon-color="#F56C6C"
+                  @confirm="deleteClient(client)"
+                >
+                  <template #reference>
+                    <el-button type="danger" link :icon="Delete">刪除</el-button>
+                  </template>
+                </el-popconfirm>
               </div>
             </div>
-            
-            <!-- Actions Section -->
-            <div style="display: flex; align-items: center; flex-shrink: 0;">
-              <el-button
-                type="primary"
-                link
-                style="font-weight: bold;"
-                @click="enterPlan(client)"
-              >
-                進入規劃書 👉
-              </el-button>
-              <el-divider direction="vertical" />
-              <el-popconfirm
-                title="確定要刪除這位客戶嗎？"
-                confirm-button-text="確定"
-                cancel-button-text="取消"
-                icon="Warning"
-                icon-color="#F56C6C"
-                @confirm="deleteClient(client)"
-              >
-                <template #reference>
-                  <el-button type="danger" link :icon="Delete">刪除</el-button>
-                </template>
-              </el-popconfirm>
+            <el-divider style="margin: 16px 0;" />
+            <div style="display: flex; justify-content: flex-end;">
+              <el-text size="small" type="info">最後更新: {{ client.lastUpdated }}</el-text>
             </div>
-          </div>
-          <el-divider style="margin: 16px 0;" />
-          <div style="display: flex; justify-content: flex-end;">
-            <el-text size="small" type="info">最後更新: {{ client.lastUpdated }}</el-text>
-          </div>
+        </el-card>
+      </div>
+
+      <!-- Empty State -->
+      <el-card v-else-if="!isLoading" shadow="never" style="border-radius: 12px; border: 1px solid #EBEEF5; text-align: center; padding: 32px 0;">
+        <el-empty description="還沒有任何客戶，快來建立第一筆吧！" />
       </el-card>
     </div>
 
-    <!-- Empty State -->
-    <el-card v-else shadow="never" style="border-radius: 12px; border: 1px solid #EBEEF5; text-align: center; padding: 32px 0;">
-      <el-empty description="還沒有任何客戶，快來建立第一筆吧！" />
-    </el-card>
-
     <el-dialog v-model="dialogVisible" title="建立新客戶檔案" width="400px" destroy-on-close>
-      <el-form :model="newClientForm" label-position="top">
-        <el-form-item label="客戶姓名">
-          <el-input v-model="newClientForm.name" placeholder="請輸入姓名" />
+      <el-form
+        ref="ruleFormRef"
+        :model="newClientForm"
+        :rules="rules"
+        label-position="top"
+      >
+        <el-form-item label="客戶姓名" prop="name">
+          <el-input v-model="newClientForm.name" placeholder="請輸入姓名" autocomplete="name" />
         </el-form-item>
-        <el-form-item label="Email">
-          <el-input v-model="newClientForm.email" placeholder="請輸入Email" />
+        <el-form-item label="Email" prop="email">
+          <el-input v-model="newClientForm.email" placeholder="請輸入Email" autocomplete="email" />
         </el-form-item>
-        <el-form-item label="聯絡電話/Line ID">
-          <el-input v-model="newClientForm.contact" placeholder="選填" />
+        <el-form-item label="聯絡電話" prop="phone">
+          <el-input v-model="newClientForm.phone" placeholder="選填" autocomplete="tel" />
+        </el-form-item>
+        <el-form-item label="Line ID" prop="lineId">
+          <el-input v-model="newClientForm.lineId" placeholder="選填" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -111,10 +121,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { Trophy, Plus, Delete } from '@element-plus/icons-vue'
-import { useApi } from '../composables/useApi'
-import { ElMessage } from 'element-plus'
+import { ref, computed, reactive, watch, onMounted } from 'vue'
+import { useRouter } from 'vitepress'
+import { Trophy, Plus, Delete, Warning } from '@element-plus/icons-vue'
+import { useApi } from '../composables/useApi';
+import { useAuthStore } from '../stores/auth';
+import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 // --- 類型定義 ---
 
 type ClientStatus = '陌生名單' | '資料收集' | '即將提案' | '已結案';
@@ -129,27 +141,81 @@ interface Client {
 
 interface NewClientForm {
   name: string;
-  email:string;
-  contact?: string;
+  email: string;
+  phone?: string;
+  lineId?: string;
 }
 
 // API
 const { authFetch } = useApi()
+const router = useRouter()
+const authStore = useAuthStore()
 
 // 模擬的全域狀態：目前正在編輯的客戶 ID
-const currentClientId = ref<string | null>('c001')
+const currentClientId = ref<string | null>(null)
 
 // 彈窗控制
 const dialogVisible = ref(false)
-const newClientForm = ref<NewClientForm>({ name: '', email:'', contact: '' })
+const ruleFormRef = ref<FormInstance>()
+const newClientForm = ref<NewClientForm>({ name: '', email: '', phone: '', lineId: '' })
 
-// 模擬資料庫中的客戶名單
-const clientList = ref<Client[]>([
-  { id: 'c001', name: '王大明', status: '資料收集', progress: 40, lastUpdated: '2023-10-25' },
-  { id: 'c002', name: '陳美玲', status: '即將提案', progress: 90, lastUpdated: '2023-10-26' },
-  { id: 'c003', name: '林志豪', status: '已結案', progress: 100, lastUpdated: '2023-10-20' },
-  { id: 'c004', name: '張惠婷', status: '陌生名單', progress: 0, lastUpdated: '2023-10-27' },
-])
+watch(dialogVisible, (isOpening) => {
+  if (isOpening) {
+    // 每次打開彈窗時重置表單數據
+    newClientForm.value = { name: '', email: '', phone: '', lineId: '' }
+  }
+})
+
+const rules = reactive<FormRules<NewClientForm>>({
+  name: [{ required: true, message: '請輸入客戶姓名', trigger: 'blur' }],
+  email: [
+    { required: true, message: '請輸入Email', trigger: 'blur' },
+    { type: 'email', message: '請輸入有效的Email格式', trigger: ['blur', 'change'] }
+  ],
+  phone: [{ pattern: /^[0-9-+#() ]*$/, message: '請輸入有效的電話號碼', trigger: 'blur' }],
+  lineId: [{ pattern: /^[a-zA-Z0-9._-]*$/, message: '請輸入有效的Line ID', trigger: 'blur' }]
+})
+
+const isLoading = ref(true)
+const clientList = ref<Client[]>([])
+
+const fetchClients = async () => {
+  isLoading.value = true
+  try {
+    const res = await authFetch('/api/v1/clients')
+    if (!res.ok) {
+      throw new Error(`取得客戶列表失敗 (status: ${res.status})`)
+    }
+    const data = await res.json()
+    clientList.value = data
+
+    if (clientList.value.length > 0 && !currentClientId.value) {
+      currentClientId.value = clientList.value[0].id
+    }
+  } catch (error: any) {
+    console.error('Fetch clients error:', error)
+    ElMessage.error(error.message || '取得客戶列表時發生未預期的錯誤')
+    clientList.value = [] // 發生錯誤時清空列表
+  } finally {
+    isLoading.value = false
+  }
+}
+
+onMounted(() => {
+  // 監聽 auth store 是否已初始化
+  const unwatch = watch(() => authStore.isInitialized, (initialized) => {
+    if (initialized) {
+      // 初始化完成後，檢查使用者是否登入，然後才擷取客戶資料
+      if (authStore.isLoggedIn) {
+        fetchClients();
+      } else {
+        isLoading.value = false; // 如果未登入，也結束載入狀態
+      }
+      // 停止監聽，這個檢查只需要執行一次
+      unwatch();
+    }
+  }, { immediate: true }); // 使用 immediate: true，如果 store 已初始化，則立即執行
+})
 
 // --- Computed Properties ---
 
@@ -177,14 +243,6 @@ const getStatusType = (status: ClientStatus) => {
   return map[status]
 }
 
-const getTodayDate = (): string => {
-  const today = new Date();
-  const yyyy = today.getFullYear();
-  const mm = String(today.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
-  const dd = String(today.getDate()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}`;
-}
-
 // 動作邏輯
 const handleClientSwitch = (newId: string) => {
   const client = clientList.value.find(c => c.id === newId)
@@ -192,40 +250,45 @@ const handleClientSwitch = (newId: string) => {
   console.log(`全域環境已切換至：${client?.name}`)
 }
 
-const enterPlan = (client: Client) => {
+const enterPlan = async (client: Client) => {
   currentClientId.value = client.id
-  // 實務上這裡會搭配 Vue Router: router.push(`/plan/profile`)
-  console.log(`進入 ${client.name} 的理財規劃書...`)
+  await router.go(`/plan/profile`)
 }
 
 const createNewClient = async () => {
-  if (!newClientForm.value.name || !newClientForm.value.email) {
-    ElMessage.warning('客戶姓名與 Email 為必填欄位')
-    return
-  }
+  const formEl = ruleFormRef.value
+  if (!formEl) return
 
-  try {
-    const res = await authFetch('/api/v1/user', {
-      method: 'POST',
-      body: newClientForm.value
-    })
+  await formEl.validate(async (valid) => {
+    if (valid) {
+      try {
+        const res = await authFetch('/api/v1/clients', {
+          method: 'POST',
+          body: newClientForm.value
+        })
 
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => ({}))
-      throw new Error(errorData.message || `建立客戶失敗 (status: ${res.status})`)
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}))
+          throw new Error(errorData.message || `建立客戶失敗 (status: ${res.status})`)
+        }
+
+        const newClient: Client = await res.json()
+        clientList.value.push(newClient)
+        currentClientId.value = newClient.id
+        dialogVisible.value = false
+        ElMessage.success('客戶建立成功')
+        console.log('建立成功並自動切換至新客戶')
+
+        // 跳轉到客戶基本資料頁面
+        await router.go('/pro/profile')
+      } catch (error: any) {
+        console.error('Create client error:', error)
+        ElMessage.error(error.message || '建立客戶時發生未預期的錯誤')
+      }
+    } else {
+      ElMessage.error('請修正表單中的錯誤後再試一次')
     }
-
-    const newClient: Client = await res.json()
-    clientList.value.push(newClient)
-    currentClientId.value = newClient.id
-    dialogVisible.value = false
-    newClientForm.value = { name: '', email: '', contact: '' }
-    ElMessage.success('客戶建立成功')
-    console.log('建立成功並自動切換至新客戶')
-  } catch (error: any) {
-    console.error('Create client error:', error)
-    ElMessage.error(error.message || '建立客戶時發生未預期的錯誤')
-  }
+  })
 }
 
 const deleteClient = (clientToDelete: Client) => {
