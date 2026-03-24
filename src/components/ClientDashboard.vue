@@ -123,36 +123,21 @@
 <script setup lang="ts">
 import { ref, computed, reactive, watch, onMounted } from 'vue'
 import { useRouter } from 'vitepress'
+import { storeToRefs } from 'pinia'
 import { Trophy, Plus, Delete, Warning } from '@element-plus/icons-vue'
-import { useApi } from '@/composables/useApi';
-import { useAuthStore } from '@/stores/auth';
-import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
+import { useClientsStore, type NewClientForm, type Client } from '@/stores/clients'
+import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 // --- 類型定義 ---
 
 type ClientStatus = '陌生名單' | '資料收集' | '即將提案' | '已結案';
 
-interface Client {
-  id: string;
-  name: string;
-  status: ClientStatus;
-  progress: number;
-  lastUpdated: string;
-}
-
-interface NewClientForm {
-  name: string;
-  email: string;
-  phone?: string;
-  lineId?: string;
-}
-
 // API
-const { authFetch } = useApi()
 const router = useRouter()
-const authStore = useAuthStore()
 
-// 模擬的全域狀態：目前正在編輯的客戶 ID
-const currentClientId = ref<string | null>(null)
+// 改為使用集中管理的 Client Store
+const clientsStore = useClientsStore()
+// 使用 storeToRefs 維持響應性
+const { clientList, isLoading, currentClientId, statusSummary } = storeToRefs(clientsStore)
 
 // 彈窗控制
 const dialogVisible = ref(false)
@@ -176,61 +161,10 @@ const rules = reactive<FormRules<NewClientForm>>({
   lineId: [{ pattern: /^[a-zA-Z0-9._-]*$/, message: '請輸入有效的Line ID', trigger: 'blur' }]
 })
 
-const isLoading = ref(true)
-const clientList = ref<Client[]>([])
-
-const fetchClients = async () => {
-  isLoading.value = true
-  try {
-    const res = await authFetch('/api/v1/clients')
-    if (!res.ok) {
-      throw new Error(`取得客戶列表失敗 (status: ${res.status})`)
-    }
-    const data = await res.json()
-    clientList.value = data
-
-    if (clientList.value.length > 0 && !currentClientId.value) {
-      currentClientId.value = clientList.value[0].id
-    }
-  } catch (error: any) {
-    console.error('Fetch clients error:', error)
-    ElMessage.error(error.message || '取得客戶列表時發生未預期的錯誤')
-    clientList.value = [] // 發生錯誤時清空列表
-  } finally {
-    isLoading.value = false
-  }
-}
-
 onMounted(() => {
-  // 監聽 auth store 是否已初始化
-  const unwatch = watch(() => authStore.isInitialized, (initialized) => {
-    if (initialized) {
-      // 初始化完成後，檢查使用者是否登入，然後才擷取客戶資料
-      if (authStore.isLoggedIn) {
-        fetchClients();
-      } else {
-        isLoading.value = false; // 如果未登入，也結束載入狀態
-      }
-      // 停止監聽，這個檢查只需要執行一次
-      unwatch();
-    }
-  }, { immediate: true }); // 使用 immediate: true，如果 store 已初始化，則立即執行
+  // Client Store 內部會監聽 auth 狀態，但為了確保儀表板顯示時資料最新，可以主動觸發一次
+  clientsStore.fetchClients()
 })
-
-// --- Computed Properties ---
-
-const statusSummary = computed(() => {
-  const initialSummary: Record<ClientStatus, number> = {
-    '陌生名單': 0,
-    '資料收集': 0,
-    '即將提案': 0,
-    '已結案': 0,
-  };
-  return clientList.value.reduce((summary, client) => {
-    summary[client.status]++;
-    return summary;
-  }, initialSummary);
-});
 
 // 狀態對應的顏色標籤
 const getStatusType = (status: ClientStatus) => {
@@ -244,14 +178,13 @@ const getStatusType = (status: ClientStatus) => {
 }
 
 // 動作邏輯
-const handleClientSwitch = (newId: string) => {
-  const client = clientList.value.find(c => c.id === newId)
+const handleClientSwitch = (newId: string | null) => {
+  clientsStore.setCurrentClientId(newId)
   // 實務上這裡會呼叫 Pinia action: store.setCurrentClient(newId)
-  console.log(`全域環境已切換至：${client?.name}`)
 }
 
 const enterPlan = async (client: Client) => {
-  currentClientId.value = client.id
+  clientsStore.setCurrentClientId(client.id)
   await router.go(`/plan/profile`)
 }
 
@@ -262,25 +195,14 @@ const createNewClient = async () => {
   await formEl.validate(async (valid) => {
     if (valid) {
       try {
-        const res = await authFetch('/api/v1/clients', {
-          method: 'POST',
-          body: newClientForm.value
-        })
-
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => ({}))
-          throw new Error(errorData.message || `建立客戶失敗 (status: ${res.status})`)
-        }
-
-        const newClient: Client = await res.json()
-        clientList.value.push(newClient)
-        currentClientId.value = newClient.id
+        await clientsStore.createClient(newClientForm.value)
         dialogVisible.value = false
         ElMessage.success('客戶建立成功')
-        console.log('建立成功並自動切換至新客戶')
 
-        // 跳轉到客戶基本資料頁面
-        await router.go('/pro/profile')
+        // 如果 store 成功設定了 currentClientId，則跳轉
+        if (clientsStore.currentClientId) {
+          await router.go('/pro/profile')
+        }
       } catch (error: any) {
         console.error('Create client error:', error)
         ElMessage.error(error.message || '建立客戶時發生未預期的錯誤')
@@ -291,25 +213,13 @@ const createNewClient = async () => {
   })
 }
 
-const deleteClient = (clientToDelete: Client) => {
-  const index = clientList.value.findIndex(c => c.id === clientToDelete.id)
-  if (index > -1) {
-    clientList.value.splice(index, 1)
-    console.log(`客戶 ${clientToDelete.name} 已被刪除`)
-
-    // 如果刪除的是當前正在編輯的客戶
-    if (currentClientId.value === clientToDelete.id) {
-      // 如果客戶列表不為空，則切換到第一個客戶
-      if (clientList.value.length > 0) {
-        const newCurrentClient = clientList.value[0]
-        currentClientId.value = newCurrentClient.id
-        handleClientSwitch(newCurrentClient.id)
-      } else {
-        // 如果列表空了，就設為 null
-        currentClientId.value = null
-        console.log('所有客戶都已刪除。')
-      }
-    }
+const deleteClient = async (clientToDelete: Client) => {
+  try {
+    await clientsStore.deleteClient(clientToDelete.id)
+    ElMessage.success(`客戶 ${clientToDelete.name} 已被刪除`)
+  } catch (error: any) {
+    console.error('Delete client error:', error)
+    ElMessage.error(error.message || '刪除客戶時發生未預期的錯誤')
   }
 }
 </script>

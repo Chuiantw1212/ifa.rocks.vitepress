@@ -11,8 +11,3 @@
 ## 規劃完整性提醒
 
 <PlanningReminder />
-
-<script setup lang="ts">
-import RetirementLite from '../.vitepress/theme/components/RetirementLite.vue'
-import PlanningReminder from '../.vitepress/theme/components/PlanningReminder.vue'
-</script>

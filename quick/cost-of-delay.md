@@ -11,8 +11,3 @@
 ## 規劃完整性提醒
 
 <PlanningReminder />
-
-<script setup lang="ts">
-import CostOfDelay from '../.vitepress/theme/components/CostOfDelay.vue'
-import PlanningReminder from '../.vitepress/theme/components/PlanningReminder.vue'
-</script>

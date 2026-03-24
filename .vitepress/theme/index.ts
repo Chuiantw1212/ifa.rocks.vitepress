@@ -19,20 +19,33 @@ import './global.scss'
 import LoginModule from '@/components/LoginModule.vue'
 import UserProfile from '@/components/UserProfile.vue'
 import ClientDashboard from '@/components/ClientDashboard.vue'
-// import TvmCalculator from './components/TvmCalculator.vue' // 等 TVM 開發完後取消註解
-// import AssetLiability from './components/AssetLiability.vue' // 等資產負債表開發完後取消註解
+
+// 引入所有速算工具與共用元件
+import TvmCalculator from '@/components/TvmCalculator.vue'
+import PlanningReminder from '@/components/PlanningReminder.vue'
+import RetirementLite from '@/components/RetirementLite.vue'
+import CostOfDelay from '@/components/CostOfDelay.vue'
+import InflationRisk from '@/components/InflationRisk.vue'
 
 // 4. 引入我們集中管理的 Firebase 設定檔
 import firebase, { getAnalyticsInstance, getPerformanceInstance } from '@/firebaseConfig'
+import { useAgentPlan } from '@/composables/useAgentPlan'
 
 // 5. 引入核心邏輯層的 Pinia Store
-import { useAuthStore } from '@/stores/auth'
+import { useAgentStore } from '@/stores/agent'
 
 export default {
     extends: DefaultTheme,
 
     // 佈局擴充：處理 Navbar、Sidebar 等特定位置的插槽
     Layout() {
+        // 在 Layout 中初始化 Agent (顧問) 的資料監聽器。
+        // 這確保了只要 Agent 登入，其自身的理財規劃書資料就會被同步。
+        const { initAgentListener } = useAgentPlan()
+        onMounted(() => {
+            initAgentListener()
+        })
+
         return h(DefaultTheme.Layout, null, {
             // 將「登入報告系統」按鈕放置於導航欄右上角
             'nav-bar-content-after': () => h(LoginModule)
@@ -57,15 +70,18 @@ export default {
         // 全域註冊您的小計算機元件，讓 Markdown 可以直接使用標籤如 <TvmCalculator />
         app.component('UserProfile', UserProfile)
         app.component('ClientDashboard', ClientDashboard)
-        // app.component('TvmCalculator', TvmCalculator)
-        // app.component('AssetLiability', AssetLiability)
+        app.component('TvmCalculator', TvmCalculator)
+        app.component('PlanningReminder', PlanningReminder)
+        app.component('RetirementLite', RetirementLite)
+        app.component('CostOfDelay', CostOfDelay)
+        app.component('InflationRisk', InflationRisk)
 
         // @ts-ignore
         if (!import.meta.env.SSR) {
             // 這是啟動 Firebase 驗證監聽的最佳位置。
             // 它只會在客戶端執行一次，且在 Pinia store 建立之後。
-            const authStore = useAuthStore()
-            authStore.init()
+            const agentStore = useAgentStore()
+            agentStore.init()
 
             // 關鍵：手動將 firebase 掛載到 window 物件
             // 這是讓 head 中載入的 firebase-ui-auth__zh_tw.js 能運作的絕對關鍵。

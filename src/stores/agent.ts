@@ -3,22 +3,22 @@ import { defineStore } from 'pinia'
 import { auth } from '../firebaseConfig'
 import { onAuthStateChanged, signOut, type User as FirebaseUser } from 'firebase/auth'
 
-// 為了程式碼清晰，定義使用者物件的型別
-export interface AuthUser {
+// 為了程式碼清晰，定義 Agent (顧問) 物件的型別
+export interface Agent {
     uid: string;
     username: string;
     email: string | null;
     avatarUrl: string;
 }
 
-export const useAuthStore = defineStore('auth', () => {
+export const useAgentStore = defineStore('agent', () => {
     // --- State ---
-    const user = ref<AuthUser | null>(null)
+    const agent = ref<Agent | null>(null)
     // 這個旗標用來追蹤 Firebase 的初始驗證狀態是否已確認
     const isInitialized = ref(false)
 
     // --- Getters ---
-    const isLoggedIn = computed(() => !!user.value)
+    const isLoggedIn = computed(() => !!agent.value)
 
     // --- Actions ---
     let unsubscribe: (() => void) | null = null;
@@ -32,25 +32,21 @@ export const useAuthStore = defineStore('auth', () => {
 
         unsubscribe = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
             if (firebaseUser) {
-                // 使用者已登入
-                user.value = {
+                // 顧問已登入
+                agent.value = {
                     uid: firebaseUser.uid,
-                    username: firebaseUser.displayName || firebaseUser.email || '使用者',
+                    username: firebaseUser.displayName || firebaseUser.email || '顧問',
                     email: firebaseUser.email,
                     avatarUrl: firebaseUser.photoURL || `https://api.dicebear.com/8.x/adventurer/svg?seed=${firebaseUser.uid}`
                 }
-                if (import.meta.env.DEV) {
-                    console.log(`[AuthStore] 使用者 ${user.value.username} 於 ${new Date().toLocaleString()} 登入。`);
-                }
             } else {
-                // 使用者已登出
-                user.value = null
+                // 顧問已登出
+                agent.value = null
             }
 
             // 在第一次狀態確認後，將 isInitialized 設為 true
             if (!isInitialized.value) {
                 isInitialized.value = true;
-                console.log('[AuthStore] 驗證狀態已初始化。');
             }
         });
     }
@@ -59,5 +55,5 @@ export const useAuthStore = defineStore('auth', () => {
         await signOut(auth);
     }
 
-    return { user, isInitialized, isLoggedIn, init, logout }
+    return { agent, isInitialized, isLoggedIn, init, logout }
 })

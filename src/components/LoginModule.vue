@@ -1,12 +1,12 @@
 <template>
     <!-- 等待驗證狀態初始化完成後再渲染，避免閃爍 -->
-    <el-space v-if="authStore.isInitialized" class="login" :size="20" alignment="center" direction="horizontal">
+    <el-space v-if="agentStore.isInitialized" class="login" :size="20" alignment="center" direction="horizontal">
         <!-- 登入後顯示使用者頭像與下拉選單 -->
         <el-dropdown v-if="isLoggedIn" trigger="click">
-            <el-avatar :size="32" :src="user.avatarUrl" />
+            <el-avatar :size="32" :src="agent.avatarUrl" />
             <template #dropdown>
                 <el-dropdown-menu>
-                    <el-dropdown-item disabled>{{ user.username }}</el-dropdown-item>
+                    <el-dropdown-item disabled>{{ agent.username }}</el-dropdown-item>
                     <el-dropdown-item divided @click="handleLogout">登出系統</el-dropdown-item>
                 </el-dropdown-menu>
             </template>
@@ -27,22 +27,22 @@ import { ref, watch, nextTick, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { UserFilled } from '@element-plus/icons-vue'
 import { auth } from '@/firebaseConfig'
-import { GoogleAuthProvider, EmailAuthProvider } from 'firebase/auth'
-import { useAuthStore } from '@/stores/auth'
+import { GoogleAuthProvider, EmailAuthProvider } from 'firebase/auth';
+import { useAgentStore } from '@/stores/agent';
 
 const dialogVisible = ref(false)
 
-const authStore = useAuthStore()
+const agentStore = useAgentStore()
 
 // 使用 computed 屬性來響應 store 的變化
-const isLoggedIn = computed(() => authStore.isLoggedIn)
-const user = computed(() => authStore.user || { username: '', avatarUrl: '' })
+const isLoggedIn = computed(() => agentStore.isLoggedIn)
+const agent = computed(() => agentStore.agent || { username: '', avatarUrl: '' })
 
 // 監聽來自 store 的登入成功狀態，以關閉對話框
-watch(() => authStore.isLoggedIn, (loggedIn, wasLoggedIn) => {
+watch(() => agentStore.isLoggedIn, (loggedIn, wasLoggedIn) => {
     if (loggedIn && !wasLoggedIn && dialogVisible.value) {
         dialogVisible.value = false
-        ElMessage.success(`歡迎回來，${authStore.user.username}`)
+        ElMessage.success(`歡迎回來，${agentStore.agent.username}`)
     }
 })
 
@@ -92,7 +92,7 @@ watch(dialogVisible, (newValue) => {
 
 const handleLogout = async () => {
     try {
-        await authStore.logout()
+        await agentStore.logout()
         ElMessage.info('您已成功登出')
     } catch (error) {
         console.error('Logout Error:', error)

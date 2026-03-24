@@ -71,7 +71,7 @@
 <script setup lang="ts">
 // 之後會在這裡加入邏輯
 import { ref, computed } from 'vue'
-import { useUserPlan } from '@/composables/useUserPlan'
+import { useAgentPlan } from '@/composables/useAgentPlan'
 import { useApi } from '@/composables/useApi'
 import type { ClientProfile } from '@/types'
 import type {UploadFile, UploadInstance, UploadProps, UploadRawFile, UploadUserFile } from 'element-plus'
@@ -80,7 +80,7 @@ import { FirebaseClient } from '@/types'
 import { MetadataMap } from '@/types/meta-data'
 
 // 從全域狀態管理取得資料與方法
-const { userPlan, loggedInUser, importPlanData } = useUserPlan()
+const { agentPlan: userPlan, loggedInUser, importAgentPlanData: importPlanData } = useAgentPlan()
 const { authFetch } = useApi()
 
 // Props
@@ -169,11 +169,14 @@ function handleBirthdayChange(val: string | null) {
         userPlan.value.profile.currentAge = 0
     } else {
         const birthDateObj = new Date(val)
-        const birthYear = birthDateObj.getFullYear()
-        const currentYear = new Date().getFullYear()
-        const newAge = currentYear - birthYear
+        const today = new Date()
+        let age = today.getFullYear() - birthDateObj.getFullYear()
+        const monthDifference = today.getMonth() - birthDateObj.getMonth()
+        if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < birthDateObj.getDate())) {
+            age--
+        }
         userPlan.value.profile.birthDate = val
-        userPlan.value.profile.currentAge = newAge
+        userPlan.value.profile.currentAge = age
     }
     handleUpdate()
 }
