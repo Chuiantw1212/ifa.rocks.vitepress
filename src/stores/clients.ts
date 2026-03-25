@@ -70,30 +70,35 @@ export const useClientsStore = defineStore('clients', () => {
     }
 
     async function createClient(form: NewClientForm) {
-        const res = await authFetch('/api/v1/clients', {
-            method: 'POST',
-            body: form
-        })
+        const res = await authFetch('/api/v1/client-profiles', { method: 'POST', body: form });
         if (!res.ok) {
-            const errorData = await res.json().catch(() => ({}))
-            throw new Error(errorData.message || `建立客戶失敗 (status: ${res.status})`)
+            const errorData = await res.json().catch(() => ({}));
+            throw new Error(errorData.message || `建立客戶失敗 (status: ${res.status})`);
         }
-        await fetchClients() // 重新獲取列表
-        const newClient = clientList.value[clientList.value.length - 1]
-        if (newClient) {
-            setCurrentClientId(newClient.id)
+        const newClientData = await res.json();
+
+        // 優化：直接將新客戶加入列表，避免重新 fetch
+        const newClientForList = {
+            ...newClientData,
+            progress: newClientData.progress || 0,
+            lastUpdated: new Date().toISOString().split('T')[0],
+        };
+        clientList.value.unshift(newClientForList); // 加到列表最前面，讓使用者馬上看到
+
+        if (newClientData && newClientData.id) {
+            setCurrentClientId(newClientData.id);
         }
     }
 
     async function deleteClient(clientId: string) {
         try {
-            const res = await authFetch(`/api/v1/clients/${clientId}`, { method: 'DELETE' });
+            const res = await authFetch(`/api/v1/client-profiles/${clientId}`, { method: 'DELETE' });
             if (!res.ok) {
                 const errorData = await res.json().catch(() => ({}));
                 throw new Error(errorData.message || `刪除客戶失敗 (status: ${res.status})`);
             }
-            // 只在刪除成功後才重新獲取列表
-            await fetchClients();
+            // 優化：直接從列表中移除，避免重新 fetch
+            clientList.value = clientList.value.filter(c => c.id !== clientId);
             if (currentClientId.value === clientId) {
                 currentClientId.value = clientList.value.length > 0 ? clientList.value[0].id : null;
             }

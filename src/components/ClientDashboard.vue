@@ -148,7 +148,7 @@ const handleClientSwitch = (newId: string | null) => {
 
 const enterPlan = async (client: Client) => {
   clientsStore.setCurrentClientId(client.id)
-  await router.go(`/pro/profile`)
+  await router.go(`/pro/profile?id=${client.id}`)
 }
 
 const createNewClient = async () => {
@@ -164,7 +164,7 @@ const createNewClient = async () => {
 
         // 如果 store 成功設定了 currentClientId，則跳轉
         if (clientsStore.currentClientId) {
-          await router.go('/pro/profile')
+          await router.go(`/pro/profile?id=${clientsStore.currentClientId}`)
         }
       } catch (error: any) {
         console.error('Create client error:', error)

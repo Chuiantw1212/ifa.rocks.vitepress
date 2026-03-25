@@ -70,12 +70,12 @@
 
 <script setup lang="ts">
 // 之後會在這裡加入邏輯
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vitepress'
 import { storeToRefs } from 'pinia'
 import { useAgentPlan } from '@/composables/useAgentPlan'
 import { useApi } from '@/composables/useApi'
 import { useClientsStore } from '@/stores/clients'
-import type { ClientProfile } from '@/types'
 import type {UploadFile, UploadInstance, UploadProps, UploadRawFile, UploadUserFile } from 'element-plus'
 import { ElMessage, genFileId} from 'element-plus'
 import { FirebaseClient } from '@/types'
@@ -85,7 +85,9 @@ import { MetadataMap } from '@/types/meta-data'
 const { agentPlan: clientPlan, loggedInUser, importAgentPlanData: importPlanData } = useAgentPlan()
 const { authFetch } = useApi()
 const clientsStore = useClientsStore()
-const { currentClientId } = storeToRefs(clientsStore)
+const { currentClientId, isLoading: isClientsLoading } = storeToRefs(clientsStore)
+const route = useRoute()
+const router = useRouter()
 
 async function fetchProfile(clientId: string) {
     if (!clientPlan.value) return;
@@ -105,13 +107,45 @@ async function fetchProfile(clientId: string) {
     }
 }
 
-watch(currentClientId, (newId) => {
-    if (newId) {
-        fetchProfile(newId);
-    } else if (clientPlan.value) {
-        clientPlan.value.profile = null;
+onMounted(() => {
+    const handleRouteChange = () => {
+        const newId = new URL(window.location.href).searchParams.get('id');
+
+        // 重新整理頁面時，等到客戶列表載入完成後才設定 currentClientId，
+        // 避免其他地方 watch currentClientId 時，因 clientList 尚未載入而找不到對應的客戶資料，導致錯誤。
+        if (isClientsLoading.value && newId) {
+            const unwatch = watch(isClientsLoading, (loading) => {
+                if (!loading) {
+                    handleRouteChange(); // 載入完成後，重新執行一次
+                    unwatch();
+                }
+            });
+            return;
+        }
+
+        const clientExists = newId ? clientsStore.clientList.some(c => c.id === newId) : false;
+
+        if (newId && clientExists) {
+            // 確認 ID 存在於列表中，才進行設定和資料獲取
+            clientsStore.setCurrentClientId(newId);
+            fetchProfile(newId);
+        } else if (newId && !isClientsLoading.value) {
+            // 列表已載入，但找不到來自 URL 的 client ID，這可能是個無效/過期的連結
+            console.warn(`Client with ID ${newId} not found in client list after loading.`);
+            ElMessage.error('找不到指定的客戶資料，可能已被刪除或連結已失效。');
+            if (clientPlan.value) clientPlan.value.profile = null;
+            clientsStore.setCurrentClientId(null);
+        } else {
+            if (clientPlan.value) {
+                clientPlan.value.profile = null;
+            }
+            clientsStore.setCurrentClientId(null);
+        }
     }
-}, { immediate: true });
+
+    router.onAfterRouteChanged = handleRouteChange;
+    handleRouteChange(); // 首次載入時執行
+});
 
 // Props
 const props = withDefaults(defineProps<{
