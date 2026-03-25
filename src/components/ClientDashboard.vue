@@ -17,8 +17,9 @@
             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
               <!-- Info Section -->
               <div style="flex-grow: 1; padding-right: 24px;">
-                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                <div style="margin-bottom: 16px;">
                   <span style="font-weight: bold; color: #303133; font-size: 18px;">{{ client.name }}</span>
+                  <el-text v-if="client.email" type="info" size="small" style="display: block; margin-top: 4px;">{{ client.email }}</el-text>
                 </div>
                 <div style="max-width: 350px;">
                   <el-text size="small" type="info" style="margin-bottom: 4px; display: block;">理財規劃書進度</el-text>
@@ -147,7 +148,7 @@ const handleClientSwitch = (newId: string | null) => {
 
 const enterPlan = async (client: Client) => {
   clientsStore.setCurrentClientId(client.id)
-  await router.go(`/plan/profile`)
+  await router.go(`/pro/profile`)
 }
 
 const createNewClient = async () => {
