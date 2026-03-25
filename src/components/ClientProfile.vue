@@ -64,25 +64,6 @@
                 </el-form>
             </el-col>
         </el-row>
-
-        <template #footer>
-            <el-collapse accordion>
-                <el-collapse-item name="1">
-                    <template #title>
-                        <el-icon style="margin-right: 5px;">
-                            <InfoFilled />
-                        </el-icon> 試算參數與資料來源說明
-                    </template>
-                    <ul style="padding-left: 20px; line-height: 1.8; color: var(--el-text-color-regular);">
-                        <li>所有功能不須登入也可以用，登入註冊只是比較方便而已。</li>
-                        <li>預期餘命：<el-link type="primary" href="https://data.gov.tw/dataset/39493"
-                                target="_blank">國家發展委員會
-                                - 預期壽命推估</el-link>
-                        </li>
-                    </ul>
-                </el-collapse-item>
-            </el-collapse>
-        </template>
     </el-card>
 </template>
 
@@ -98,8 +79,6 @@ import { useMetadataStore } from '@/stores/metadata'
 import type {UploadFile, UploadInstance, UploadProps, UploadRawFile, UploadUserFile } from 'element-plus'
 import { ElMessage, genFileId} from 'element-plus'
 import { InfoFilled, User } from '@element-plus/icons-vue'
-import { FirebaseClient } from '@/types'
-import { MetadataMap } from '@/types/meta-data'
 
 // 從全域狀態管理取得資料與方法
 const { agentPlan: clientPlan, loggedInUser, importAgentPlanData: importPlanData } = useAgent()
@@ -240,7 +219,12 @@ async function handleUpdate() {
             method: 'PATCH',
             body: clientPlan.value.profile,
         })
-        if (!res || !res.ok) {
+        if (res.ok) {
+            const updatedProfile = await res.json();
+            if (clientPlan.value) {
+                clientPlan.value.profile = updatedProfile;
+            }
+        } else {
             console.error(`Profile update failed: ${res?.status}`)
             ElMessage.error('更新基本資料失敗')
         }
