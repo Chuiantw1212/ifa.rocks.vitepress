@@ -58,6 +58,10 @@ export const useClientsStore = defineStore('clients', () => {
                     progress: profile.progress || 0,
                     lastUpdated: profile.lastUpdated || new Date().toISOString().split('T')[0],
                 }))
+                // 新增邏輯：如果客戶列表不為空，且當前沒有選擇任何客戶，則預設選擇第一個
+                if (clientList.value.length > 0 && !currentClientId.value) {
+                    setCurrentClientId(clientList.value[0].id)
+                }
             } else {
                 console.warn('API /api/v1/client-profiles 並未回傳一個有效的列表物件', data)
                 clientList.value = []
@@ -72,7 +76,7 @@ export const useClientsStore = defineStore('clients', () => {
     }
 
     async function createClient(form: NewClientForm) {
-        const res = await authFetch('/api/v1/client-profiles', { method: 'POST', body: form });
+        const res = await authFetch('/api/v1/client', { method: 'POST', body: form });
         if (!res.ok) {
             const errorData = await res.json().catch(() => ({}));
             throw new Error(errorData.message || `建立客戶失敗 (status: ${res.status})`);
