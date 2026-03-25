@@ -148,7 +148,7 @@ function handleFileChange(uploadFile: UploadFile) {
 
 async function handleUpdate() {
     try {
-        const res = await authFetch(`/api/v1/user/profile`, {
+        const res = await authFetch(`/api/v1/client/profile`, {
             method: 'PUT',
             body: userPlan.value.profile,
         })

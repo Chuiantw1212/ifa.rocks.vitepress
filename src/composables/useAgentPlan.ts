@@ -82,9 +82,9 @@ export function useAgentPlan() {
     async function fetchAgentPlanData() {
         try {
             isDataReady.value = false
-            const userRes = await authFetch('/api/v1/user/me').catch(error => {
+            const userRes = await authFetch('/api/v1/client/me').catch(error => {
                 console.warn('無法取得使用者資料，嘗試建立新使用者...', error);
-                return authFetch('/api/v1/user/me', { method: 'POST' });
+                return authFetch('/api/v1/client/me', { method: 'POST' });
             });
             const baseUserData = await userRes.json()
             if (baseUserData) {
@@ -104,10 +104,10 @@ export function useAgentPlan() {
                 }
             }
             const [portfolioRes, realEstateRes, businessesRes, creditCardsRes] = await Promise.all([
-                authFetch('/api/v1/user/portfolios'),
-                authFetch('/api/v1/user/real-estates'),
-                authFetch('/api/v1/user/businesses', { params: { currentPage: 1, pageSize: 100 } }),
-                authFetch('/api/v1/user/credit-cards'),
+                authFetch('/api/v1/client/portfolios'),
+                authFetch('/api/v1/client/real-estates'),
+                authFetch('/api/v1/client/businesses', { params: { currentPage: 1, pageSize: 100 } }),
+                authFetch('/api/v1/client/credit-cards'),
             ])
             if (portfolioRes.ok) {
                 const data = await portfolioRes.json()
