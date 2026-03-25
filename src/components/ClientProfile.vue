@@ -9,12 +9,12 @@
         <el-row :gutter="40" align="top">
 
             <el-col >
-                <el-form v-if="userPlan.profile" ref="ruleFormRef" label-position="top" :model="userPlan.profile" size="large">
+                <el-form v-if="clientPlan.profile" ref="ruleFormRef" label-position="top" :model="clientPlan.profile" size="large">
                     <el-row :gutter="20">
 
                         <el-col :span="12" :xs="24">
                             <el-form-item label="出生日期 (Birthday)" required>
-                                <el-date-picker v-model="userPlan.profile.birthDate" type="date" placeholder="請選擇生日"
+                                <el-date-picker v-model="clientPlan.profile.birthDate" type="date" placeholder="請選擇生日"
                                     format="YYYY/MM/DD" value-format="YYYY-MM-DD" :disabled-date="disableFutureDates"
                                     @change="handleBirthdayChange" style="width: 100%" />
                             </el-form-item>
@@ -23,7 +23,7 @@
                         
                         <el-col :span="12" :xs="24">
                             <el-form-item label="生理性別 (Gender)" required>
-                                <el-select v-model="userPlan.profile.gender" placeholder="請選擇" style="width: 100%"
+                                <el-select v-model="clientPlan.profile.gender" placeholder="請選擇" style="width: 100%"
                                 @change="handleUpdate">
                                 <el-option v-for="item in metadata?.opt_gender?.list" :key="item.code"
                                 :label="item.label" :value="item.code" />
@@ -33,7 +33,7 @@
                     
                     <el-col :span="12" :xs="24">
                         <el-form-item label="試算年齡 (Age)">
-                            <el-input :disabled="true" :value="userPlan.profile.currentAge ? userPlan.profile.currentAge + ' 歲' : '-'">
+                            <el-input :disabled="true" :value="clientPlan.profile.currentAge ? clientPlan.profile.currentAge + ' 歲' : '-'">
                                 <template #prefix>
                                     <el-icon>
                                         <User />
@@ -70,9 +70,11 @@
 
 <script setup lang="ts">
 // 之後會在這裡加入邏輯
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useAgentPlan } from '@/composables/useAgentPlan'
 import { useApi } from '@/composables/useApi'
+import { useClientsStore } from '@/stores/clients'
 import type { ClientProfile } from '@/types'
 import type {UploadFile, UploadInstance, UploadProps, UploadRawFile, UploadUserFile } from 'element-plus'
 import { ElMessage, genFileId} from 'element-plus'
@@ -80,8 +82,36 @@ import { FirebaseClient } from '@/types'
 import { MetadataMap } from '@/types/meta-data'
 
 // 從全域狀態管理取得資料與方法
-const { agentPlan: userPlan, loggedInUser, importAgentPlanData: importPlanData } = useAgentPlan()
+const { agentPlan: clientPlan, loggedInUser, importAgentPlanData: importPlanData } = useAgentPlan()
 const { authFetch } = useApi()
+const clientsStore = useClientsStore()
+const { currentClientId } = storeToRefs(clientsStore)
+
+async function fetchProfile(clientId: string) {
+    if (!clientPlan.value) return;
+    try {
+        const res = await authFetch(`/api/v1/client-profiles/${clientId}`);
+        const data = await res.json();
+        if (res.ok) {
+            clientPlan.value.profile = data;
+        } else {
+            ElMessage.error(data.message || '取得客戶基本資料失敗');
+            clientPlan.value.profile = null;
+        }
+    } catch (e) {
+        console.error('Fetch profile error:', e);
+        ElMessage.error('取得客戶基本資料時發生錯誤');
+        if (clientPlan.value) clientPlan.value.profile = null;
+    }
+}
+
+watch(currentClientId, (newId) => {
+    if (newId) {
+        fetchProfile(newId);
+    } else if (clientPlan.value) {
+        clientPlan.value.profile = null;
+    }
+}, { immediate: true });
 
 // Props
 const props = withDefaults(defineProps<{
@@ -94,7 +124,7 @@ const props = withDefaults(defineProps<{
     metadata: () => ({})
 })
 
-// 直接使用從 useUserPlan() 來的響應式物件
+// 直接使用從 useAgentPlan() 來的響應式物件
 const user = computed(() => loggedInUser.value)
 
 const loginDialogVisible = ref(false)
@@ -147,14 +177,23 @@ function handleFileChange(uploadFile: UploadFile) {
 }
 
 async function handleUpdate() {
+    if (!currentClientId.value) {
+        console.warn('無法更新 Profile：尚未選擇任何客戶 (currentClientId is null)。')
+        // 在沒有選擇客戶的情況下，不進行後端更新。
+        return
+    }
     try {
-        const res = await authFetch(`/api/v1/client/profile`, {
+        const res = await authFetch(`/api/v1/client-profiles/${currentClientId.value}`, {
             method: 'PUT',
-            body: userPlan.value.profile,
+            body: clientPlan.value.profile,
         })
-        if (!res || !res.ok) console.error(`Profile update failed: ${res?.status}`)
+        if (!res || !res.ok) {
+            console.error(`Profile update failed: ${res?.status}`)
+            ElMessage.error('更新基本資料失敗')
+        }
     } catch (e) {
         console.error('Profile update error:', e)
+        ElMessage.error('更新基本資料時發生錯誤')
     }
 }
 
@@ -163,10 +202,10 @@ const disableFutureDates = (time: Date) => {
 }
 
 function handleBirthdayChange(val: string | null) {
-    if (!userPlan.value.profile) return
+    if (!clientPlan.value.profile) return
     if (!val) {
-        userPlan.value.profile.birthDate = ''
-        userPlan.value.profile.currentAge = 0
+        clientPlan.value.profile.birthDate = ''
+        clientPlan.value.profile.currentAge = 0
     } else {
         const birthDateObj = new Date(val)
         const today = new Date()
@@ -175,8 +214,8 @@ function handleBirthdayChange(val: string | null) {
         if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < birthDateObj.getDate())) {
             age--
         }
-        userPlan.value.profile.birthDate = val
-        userPlan.value.profile.currentAge = age
+        clientPlan.value.profile.birthDate = val
+        clientPlan.value.profile.currentAge = age
     }
     handleUpdate()
 }
