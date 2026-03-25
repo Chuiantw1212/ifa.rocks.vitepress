@@ -73,7 +73,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vitepress'
 import { storeToRefs } from 'pinia'
-import { useAgentPlan } from '@/composables/useAgentPlan'
+import { useAgent } from '@/composables/useAgent'
 import { useApi } from '@/composables/useApi'
 import { useClientsStore } from '@/stores/clients'
 import { useMetadataStore } from '@/stores/metadata'
@@ -84,7 +84,7 @@ import { FirebaseClient } from '@/types'
 import { MetadataMap } from '@/types/meta-data'
 
 // 從全域狀態管理取得資料與方法
-const { agentPlan: clientPlan, loggedInUser, importAgentPlanData: importPlanData } = useAgentPlan()
+const { agentPlan: clientPlan, loggedInUser, importAgentPlanData: importPlanData } = useAgent()
 const { authFetch } = useApi()
 const clientsStore = useClientsStore()
 const metadataStore = useMetadataStore()
@@ -150,15 +150,6 @@ onMounted(() => {
     router.onAfterRouteChanged = handleRouteChange;
     handleRouteChange(); // 首次載入時執行
 });
-
-// Props
-const props = withDefaults(defineProps<{
-    user: FirebaseClient
-}>(), {
-    user: () => ({
-        id: '', uid: '', displayName: '', email: '', photoUrl: '', isAnonymous: true
-    })
-})
 
 // 直接使用從 useAgentPlan() 來的響應式物件
 const user = computed(() => loggedInUser.value)

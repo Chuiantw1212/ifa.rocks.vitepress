@@ -1,6 +1,6 @@
 import DefaultTheme from 'vitepress/theme'
 import type { EnhanceAppContext } from 'vitepress'
-import { h, onMounted } from 'vue'
+import { defineComponent, h, onMounted } from 'vue'
 import { createPinia } from 'pinia'
 
 // 1. 引入 Element Plus 核心與基礎樣式
@@ -29,7 +29,7 @@ import InflationRisk from '@/components/InflationRisk.vue'
 
 // 4. 引入我們集中管理的 Firebase 設定檔
 import firebase, { getAnalyticsInstance, getPerformanceInstance } from '@/firebaseConfig'
-import { useAgentPlan } from '@/composables/useAgentPlan'
+import { useAgent } from '@/composables/useAgent'
 
 // 5. 引入核心邏輯層的 Pinia Store
 import { useAgentStore } from '@/stores/agent'
@@ -39,22 +39,22 @@ export default {
     extends: DefaultTheme,
 
     // 佈局擴充：處理 Navbar、Sidebar 等特定位置的插槽
-    Layout() {
-        // 在 Layout 中初始化 Agent (顧問) 的資料監聽器。
-        // 這確保了只要 Agent 登入，其自身的理財規劃書資料就會被同步。
-        const { initAgentListener } = useAgentPlan()
-        onMounted(() => {
-            initAgentListener()
-        })
+    Layout: defineComponent({
+        setup() {
+            // 在 Layout 中初始化 Agent (顧問) 的狀態監聽器。
+            const { initAgentListener } = useAgent()
+            onMounted(() => {
+                initAgentListener()
+            })
 
-        // 這個 Composable 會設定監聽器，自動更新側邊欄連結
-        useDynamicSidebar()
+            // 這個 Composable 會設定監聽器，自動更新側邊欄連結
+            useDynamicSidebar()
 
-        return h(DefaultTheme.Layout, null, {
-            // 將「登入報告系統」按鈕放置於導航欄右上角
-            'nav-bar-content-after': () => h(LoginModule)
-        })
-    },
+            return () => h(DefaultTheme.Layout, null, {
+                'nav-bar-content-after': () => h(LoginModule)
+            })
+        }
+    }),
 
     // 擴充 Vue 實體：全域註冊套件與自定義元件
     enhanceApp({ app }: EnhanceAppContext) {

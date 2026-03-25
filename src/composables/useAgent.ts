@@ -4,7 +4,6 @@ import { useApi } from '@/composables/useApi'
 import { getInitialUserPlan } from '@/composables/initialState'
 import type { ClientPlan, FirebaseClient } from '@/types'
 import { useAgentStore } from '@/stores/agent'
-import { getAuth, signOut } from 'firebase/auth'
 
 const agentPlan = ref<ClientPlan>(getInitialUserPlan())
 const loggedInUser = ref<FirebaseClient>({
@@ -12,7 +11,7 @@ const loggedInUser = ref<FirebaseClient>({
 })
 const isDataReady = ref(false)
 
-export function useAgentPlan() {
+export function useAgent() {
     const { authFetch } = useApi()
     const agentStore = useAgentStore()
 
@@ -33,23 +32,12 @@ export function useAgentPlan() {
                     isAnonymous: false,
                     id: ''
                 }
-                await fetchAgentPlanData()
+                // 登入後不需再額外抓取 agent 自己的資料，相關客戶資料由 clientStore 處理
+                isDataReady.value = true;
             } else {
                 _resetToGuest();
             }
         }, { immediate: true, deep: true });
-    }
-
-    async function logout() {
-        try {
-            isDataReady.value = false
-            const auth = getAuth()
-            await signOut(auth)
-            ElMessage.success('已安全登出')
-        } catch (e: any) {
-            console.error('Logout failed', e)
-            ElMessage.error('登出失敗')
-        }
     }
 
     function resetAgentPlan() {
@@ -76,66 +64,6 @@ export function useAgentPlan() {
         form.creditCards?.forEach(i => i.id = "")
         if (form.businesses && Array.isArray(form.businesses.list)) {
             form.businesses.list.forEach(i => i.id = "")
-        }
-    }
-
-    async function fetchAgentPlanData() {
-        try {
-            isDataReady.value = false
-            const userRes = await authFetch('/api/v1/client/me').catch(error => {
-                console.warn('無法取得使用者資料，嘗試建立新使用者...', error);
-                return authFetch('/api/v1/client/me', { method: 'POST' });
-            });
-            const baseUserData = await userRes.json()
-            if (baseUserData) {
-                for (const key in baseUserData) {
-                    if (Object.prototype.hasOwnProperty.call(baseUserData, key)) {
-                        if (['portfolios', 'realEstates', 'businesses', 'creditCards'].includes(key)) {
-                            continue;
-                        }
-                        const apiValue = baseUserData[key];
-                        if (apiValue !== null && agentPlan.value.hasOwnProperty(key)) {
-                            (agentPlan.value as any)[key] = apiValue;
-                        }
-                    }
-                }
-                if (baseUserData.id) {
-                    loggedInUser.value.id = String(baseUserData.id)
-                }
-            }
-            const [portfolioRes, realEstateRes, businessesRes, creditCardsRes] = await Promise.all([
-                authFetch('/api/v1/client/portfolios'),
-                authFetch('/api/v1/client/real-estates'),
-                authFetch('/api/v1/client/businesses', { params: { currentPage: 1, pageSize: 100 } }),
-                authFetch('/api/v1/client/credit-cards'),
-            ])
-            if (portfolioRes.ok) {
-                const data = await portfolioRes.json()
-                if (Array.isArray(data)) agentPlan.value.portfolios = data
-            }
-            if (realEstateRes.ok) {
-                const data = await realEstateRes.json()
-                if (Array.isArray(data)) agentPlan.value.realEstates = data
-            }
-            if (businessesRes.ok) {
-                const data = await businessesRes.json()
-                if (data && Array.isArray(data.list)) {
-                    agentPlan.value.businesses = data
-                }
-            }
-            if (creditCardsRes.ok) {
-                const data = await creditCardsRes.json();
-                if (Array.isArray(data)) {
-                    agentPlan.value.creditCards = data;
-                } else if (data && Array.isArray(data.list)) {
-                    agentPlan.value.creditCards = data.list;
-                }
-            }
-        } catch (e) {
-            console.error("fetchAgentPlanData error:", e)
-            ElMessage.error('同步雲端資料時發生錯誤')
-        } finally {
-            isDataReady.value = true
         }
     }
 
@@ -183,9 +111,7 @@ export function useAgentPlan() {
         loggedInUser,
         isDataReady,
         initAgentListener,
-        fetchAgentPlanData,
         importAgentPlanData,
-        logout,
         resetAgentPlan
     }
 }
