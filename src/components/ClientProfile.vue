@@ -131,6 +131,14 @@ async function fetchProfile(clientId: string) {
 
 onMounted(() => {
     const handleRouteChange = () => {
+        // 關鍵修正：此邏輯只應該在客戶資料頁面 (`/pro/profile`) 作用。
+        // 當導航到其他頁面（如客戶總覽 `/pro/dashboard`）時，
+        // 我們不應該清除 currentClientId，這樣當使用者從側邊欄點擊回來時，
+        // 才能保持上一個客戶的上下文。
+        if (!route.path.startsWith('/pro/profile')) {
+            return;
+        }
+
         const newId = new URL(window.location.href).searchParams.get('id');
 
         // 重新整理頁面時，等到客戶列表載入完成後才設定 currentClientId，
