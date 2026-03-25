@@ -76,7 +76,7 @@ export const useClientsStore = defineStore('clients', () => {
     }
 
     async function createClient(form: NewClientForm) {
-        const res = await authFetch('/api/v1/client', { method: 'POST', body: form });
+        const res = await authFetch('/api/v1/clients', { method: 'POST', body: form });
         if (!res.ok) {
             const errorData = await res.json().catch(() => ({}));
             throw new Error(errorData.message || `建立客戶失敗 (status: ${res.status})`);
