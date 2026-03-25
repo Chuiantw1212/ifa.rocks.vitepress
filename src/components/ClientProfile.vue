@@ -42,6 +42,24 @@
                             </el-input>
                         </el-form-item>
                     </el-col>
+
+                    <el-col :span="12" :xs="24">
+                        <el-form-item label="現在餘命 (Life Expectancy)">
+                            <el-input :disabled="true" :value="clientPlan.profile.lifeExpectancy ? clientPlan.profile.lifeExpectancy + ' 年' : '-'" />
+                        </el-form-item>
+                    </el-col>
+
+                    <el-col :span="12" :xs="24">
+                        <el-form-item label="預計退休年齡 (Retirement Age)">
+                            <el-input-number v-model="clientPlan.profile.retirementAge" :min="clientPlan.profile.currentAge || 0" :max="100" @change="handleUpdate" style="width: 100%" placeholder="請輸入" />
+                        </el-form-item>
+                    </el-col>
+
+                    <el-col :span="12" :xs="24">
+                        <el-form-item label="退休後餘命 (Post-Retirement Life Expectancy)">
+                            <el-input :disabled="true" :value="clientPlan.profile.lifeExpectancyAtRetirement ? clientPlan.profile.lifeExpectancyAtRetirement + ' 年' : '-'" />
+                        </el-form-item>
+                    </el-col>
                     </el-row>
                 </el-form>
             </el-col>
