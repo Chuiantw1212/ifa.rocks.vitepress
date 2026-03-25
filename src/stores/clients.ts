@@ -3,6 +3,7 @@ import { ref, computed, watch } from 'vue'
 import { useApi } from '@/composables/useApi'
 import { ElMessage } from 'element-plus'
 import { useAgentStore } from './agent'
+import { useMetadataStore } from './metadata'
 
 // 這些類型定義未來可以集中到 src/types.ts
 export interface Client {
@@ -32,6 +33,7 @@ export interface NewClientForm {
 export const useClientsStore = defineStore('clients', () => {
     const { authFetch } = useApi()
     const agentStore = useAgentStore()
+    const metadataStore = useMetadataStore()
 
     const clientList = ref<Client[]>([])
     const isLoading = ref(true)
@@ -117,7 +119,8 @@ export const useClientsStore = defineStore('clients', () => {
     // 這樣更可靠，能確保在登入狀態確立後才去獲取資料，完美解決您提出的設計。
     watch(() => agentStore.isLoggedIn, (isLoggedIn) => {
         if (isLoggedIn) {
-            fetchClients()
+            fetchClients();
+            metadataStore.fetchMetadata();
         } else {
             // 登出時清空資料
             clientList.value = []

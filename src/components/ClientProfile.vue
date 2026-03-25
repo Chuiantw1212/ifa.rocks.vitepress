@@ -76,6 +76,7 @@ import { storeToRefs } from 'pinia'
 import { useAgentPlan } from '@/composables/useAgentPlan'
 import { useApi } from '@/composables/useApi'
 import { useClientsStore } from '@/stores/clients'
+import { useMetadataStore } from '@/stores/metadata'
 import type {UploadFile, UploadInstance, UploadProps, UploadRawFile, UploadUserFile } from 'element-plus'
 import { ElMessage, genFileId} from 'element-plus'
 import { InfoFilled, User } from '@element-plus/icons-vue'
@@ -86,7 +87,9 @@ import { MetadataMap } from '@/types/meta-data'
 const { agentPlan: clientPlan, loggedInUser, importAgentPlanData: importPlanData } = useAgentPlan()
 const { authFetch } = useApi()
 const clientsStore = useClientsStore()
+const metadataStore = useMetadataStore()
 const { currentClientId, isLoading: isClientsLoading } = storeToRefs(clientsStore)
+const { metadata } = storeToRefs(metadataStore)
 const route = useRoute()
 const router = useRouter()
 
@@ -151,12 +154,10 @@ onMounted(() => {
 // Props
 const props = withDefaults(defineProps<{
     user: FirebaseClient
-    metadata?: MetadataMap
 }>(), {
     user: () => ({
         id: '', uid: '', displayName: '', email: '', photoUrl: '', isAnonymous: true
-    }),
-    metadata: () => ({})
+    })
 })
 
 // 直接使用從 useAgentPlan() 來的響應式物件
