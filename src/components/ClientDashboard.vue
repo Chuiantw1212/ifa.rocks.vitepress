@@ -3,26 +3,7 @@
 
     <!-- Client Overview & Actions -->
     <el-card shadow="never" style="border-radius: 12px; border: 1px solid #EBEEF5; margin-bottom: 24px;">
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <el-row :gutter="32" style="flex-grow: 1;">
-          <el-col :xs="12" :sm="6">
-            <el-statistic title="陌生名單" :value="statusSummary['陌生名單']" />
-          </el-col>
-          <el-col :xs="12" :sm="6">
-            <el-statistic title="資料收集" :value="statusSummary['資料收集']" />
-          </el-col>
-          <el-col :xs="12" :sm="6">
-            <el-statistic title="即將提案" :value="statusSummary['即將提案']" />
-          </el-col>
-          <el-col :xs="12" :sm="6">
-            <el-statistic title="已結案" :value="statusSummary['已結案']">
-              <template #suffix>
-                <el-icon style="vertical-align: -0.125em"><Trophy /></el-icon>
-              </template>
-            </el-statistic>
-          </el-col>
-        </el-row>
-        <el-divider direction="vertical" style="height: 4em; margin: 0 32px;" class="hidden-xs-only" />
+      <div style="display: flex; justify-content: flex-end; align-items: center;">
         <div style="flex-shrink: 0;" class="hidden-xs-only">
           <el-button type="primary" round :icon="Plus" @click="dialogVisible = true">建立新客戶</el-button>
         </div>
@@ -38,9 +19,6 @@
               <div style="flex-grow: 1; padding-right: 24px;">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
                   <span style="font-weight: bold; color: #303133; font-size: 18px;">{{ client.name }}</span>
-                  <el-tag :type="getStatusType(client.status)" effect="light" round>
-                    {{ client.status }}
-                  </el-tag>
                 </div>
                 <div style="max-width: 350px;">
                   <el-text size="small" type="info" style="margin-bottom: 4px; display: block;">理財規劃書進度</el-text>
@@ -126,18 +104,18 @@ import { useRouter } from 'vitepress'
 import { storeToRefs } from 'pinia'
 import { Trophy, Plus, Delete, Warning } from '@element-plus/icons-vue'
 import { useClientsStore, type NewClientForm, type Client } from '@/stores/clients'
+import { useAgentStore } from '@/stores/agent'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 // --- 類型定義 ---
-
-type ClientStatus = '陌生名單' | '資料收集' | '即將提案' | '已結案';
-
 // API
 const router = useRouter()
 
 // 改為使用集中管理的 Client Store
 const clientsStore = useClientsStore()
 // 使用 storeToRefs 維持響應性
-const { clientList, isLoading, currentClientId, statusSummary } = storeToRefs(clientsStore)
+const { clientList, isLoading, currentClientId } = storeToRefs(clientsStore)
+
+const agentStore =  useAgentStore()
 
 // 彈窗控制
 const dialogVisible = ref(false)
@@ -160,22 +138,6 @@ const rules = reactive<FormRules<NewClientForm>>({
   phone: [{ pattern: /^[0-9-+#() ]*$/, message: '請輸入有效的電話號碼', trigger: 'blur' }],
   lineId: [{ pattern: /^[a-zA-Z0-9._-]*$/, message: '請輸入有效的Line ID', trigger: 'blur' }]
 })
-
-onMounted(() => {
-  // Client Store 內部會監聽 auth 狀態，但為了確保儀表板顯示時資料最新，可以主動觸發一次
-  clientsStore.fetchClients()
-})
-
-// 狀態對應的顏色標籤
-const getStatusType = (status: ClientStatus) => {
-  const map: Record<ClientStatus, 'info' | 'warning' | 'primary' | 'success'> = {
-    '陌生名單': 'info',
-    '資料收集': 'warning',
-    '即將提案': 'primary',
-    '已結案': 'success'
-  }
-  return map[status]
-}
 
 // 動作邏輯
 const handleClientSwitch = (newId: string | null) => {

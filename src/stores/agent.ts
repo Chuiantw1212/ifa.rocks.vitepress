@@ -48,6 +48,8 @@ export const useAgentStore = defineStore('agent', () => {
             if (!isInitialized.value) {
                 isInitialized.value = true;
             }
+
+            console.log('Firebase 驗證狀態已更新')
         });
     }
 
