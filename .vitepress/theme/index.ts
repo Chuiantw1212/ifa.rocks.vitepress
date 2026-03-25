@@ -33,6 +33,7 @@ import { useAgentPlan } from '@/composables/useAgentPlan'
 
 // 5. 引入核心邏輯層的 Pinia Store
 import { useAgentStore } from '@/stores/agent'
+import { useDynamicSidebar } from '@/composables/useDynamicSidebar'
 
 export default {
     extends: DefaultTheme,
@@ -45,6 +46,9 @@ export default {
         onMounted(() => {
             initAgentListener()
         })
+
+        // 這個 Composable 會設定監聽器，自動更新側邊欄連結
+        useDynamicSidebar()
 
         return h(DefaultTheme.Layout, null, {
             // 將「登入報告系統」按鈕放置於導航欄右上角
@@ -83,10 +87,6 @@ export default {
             const agentStore = useAgentStore()
             agentStore.init()
 
-            // 關鍵：手動將 firebase 掛載到 window 物件
-            // 這是讓 head 中載入的 firebase-ui-auth__zh_tw.js 能運作的絕對關鍵。
-            // 因為 firebaseConfig.ts 在被 import 時就已經執行過初始化，
-            // 這裡只需確保 window.firebase 這個全域變數存在即可。
             // @ts-ignore
             if (!window.firebase) {
                  // @ts-ignore

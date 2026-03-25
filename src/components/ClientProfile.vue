@@ -78,6 +78,7 @@ import { useApi } from '@/composables/useApi'
 import { useClientsStore } from '@/stores/clients'
 import type {UploadFile, UploadInstance, UploadProps, UploadRawFile, UploadUserFile } from 'element-plus'
 import { ElMessage, genFileId} from 'element-plus'
+import { InfoFilled, User } from '@element-plus/icons-vue'
 import { FirebaseClient } from '@/types'
 import { MetadataMap } from '@/types/meta-data'
 
@@ -218,7 +219,7 @@ async function handleUpdate() {
     }
     try {
         const res = await authFetch(`/api/v1/client-profiles/${currentClientId.value}`, {
-            method: 'PUT',
+            method: 'PATCH',
             body: clientPlan.value.profile,
         })
         if (!res || !res.ok) {
