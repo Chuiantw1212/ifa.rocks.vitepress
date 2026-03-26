@@ -3,15 +3,13 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "vitepress dev",
-    "docs:dev": "vitepress dev",
-    "docs:build": "vitepress build",
-    "docs:preview": "vitepress preview",
-    "build": "vitepress build",
+    "dev": "cross-env VITE_API_BASE_URL=\"http://localhost:8080/\" vitepress dev",
+    "build": "cross-env VITE_API_BASE_URL=\"https://ifa-rocks-899902006292.asia-east1.run.app/\" vitepress build",
     "predeploy": "pnpm run build",
     "deploy": "firebase use enchu && firebase deploy"
   },
   "devDependencies": {
+    "cross-env": "^10.1.0",
     "sass": "^1.98.0",
     "vite": "^8.0.2",
     "vitepress": "^1.2.2",

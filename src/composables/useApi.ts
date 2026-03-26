@@ -1,6 +1,7 @@
 // composables/useApi.ts
 import { getAuth } from "firebase/auth"
 import firebase from 'firebase/compat/app'
+import { API_BASE_URL } from '@/firebaseConfig'
 import { ElMessage } from 'element-plus'
 
 // 定義擴充的 Options 介面
@@ -65,9 +66,8 @@ export function useApi() {
         const separator = endpoint.includes('?') ? '&' : '?'
         const finalEndpoint = queryString ? `${endpoint}${separator}${queryString}` : endpoint
 
-        // @ts-ignore
-        const baseUrl = import.meta.env?.VITE_BASE_URL || ''
-        const serviceUrl = `${baseUrl}${finalEndpoint}`
+        // 使用 new URL() 來安全地組合基礎 URL 和路徑，它會自動處理斜線問題
+        const serviceUrl = new URL(finalEndpoint, API_BASE_URL).href
 
         // 效能監控 (可選)
         const perf = firebase.performance()
