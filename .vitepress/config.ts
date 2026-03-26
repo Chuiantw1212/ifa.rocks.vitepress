@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitepress'
+import * as path from 'path'
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
@@ -6,55 +7,154 @@ export default defineConfig({
   description: "獨立理財顧問的隨身決策終端。礪石工具箱整合退休計算機與多項財務模擬組件，深度優化手機操作感官，拒絕冗餘干擾。將複雜的生命規劃轉化為觸手可及的精確數據，讓專業建議在指尖即刻產出。",
   head: [
     ['link', { rel: 'icon', href: '/favicon.ico' }],
+    // 從本地 public 資料夾載入 FirebaseUI 的 CSS
+    [
+      'link',
+      {
+        type: 'text/css',
+        rel: 'stylesheet',
+        href: '/firebase/firebase-ui-auth.css'
+      }
+    ]
   ],
-  appearance: 'dark',
+  appearance: 'force-dark',
   lang: 'zh-TW',
   lastUpdated: true,
   cleanUrls: true,
+  sitemap: {
+    hostname: 'https://ifa.rocks'
+  },
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     nav: [
-      { text: 'Home', link: '/' },
-      { text: 'Examples', link: '/markdown-examples' }
-    ],
-
-    sidebar: [
       {
-        text: '輕量快算',
-        collapsed: false,
-        items: [
-          { text: '速算多目標理財規劃', link: '/quick/tvm' },
-          { text: '極簡退休缺口試算', link: '/quick/retirement-lite' },
-          // { text: '複利與通膨速算', link: '/quick/compound-interest' }
-        ]
+        text: '快速試算',
+        link: '/quick/multi-goals',
+        // 使用正規表達式，確保只要在 /quick/ 路徑下，此 Nav 就會保持高亮
+        activeMatch: '^/quick/'
       },
-      // {
-      //   text: '底層參數 (盤點現實)',
-      //   collapsed: false,
-      //   items: [
-      //     { text: '家庭結構與相依性', link: '/core/family' },
-      //     { text: '收入品質與人力資本', link: '/core/income' }
-      //   ]
-      // },
-      // {
-      //   text: '生命里程碑 (試算慾望)',
-      //   collapsed: false,
-      //   items: [
-      //     { text: '購車現金流評估', link: '/milestones/car' },
-      //     { text: '購屋與房貸計畫', link: '/milestones/housing' },
-      //     { text: '育兒與教育基金', link: '/milestones/education' },
-      //     { text: '退休藍圖與提領', link: '/milestones/retirement' }
-      //   ]
-      // },
-      // {
-      //   text: '系統檢驗 (收斂變數)',
-      //   collapsed: false,
-      //   items: [
-      //     { text: '資產負債總覽', link: '/overview/balance-sheet' },
-      //     { text: '全域壓力測試', link: '/overview/stress-test' }
-      //   ]
-      // }
+      {
+        text: '客戶總覽', // 新增：SaaS 系統的真正首頁
+        link: '/pro/dashboard/',     // 指向我們剛討論的 ClientDashboard 頁面
+        activeMatch: '^/pro/dashboard/'
+      },
     ],
+    // 2. 多側邊欄 (Multi-Sidebar) 配置
+    // 注意：這裡必須是 Object，以路徑作為 Key
+    // 注意：這裡必須是 Object，以路徑作為 Key
+    sidebar: {
+
+      // 當網址進入 /pro/ 開頭時，左側會「完全切換」為以下目錄
+      '/pro/': [
+        {
+          text: '🔙 返回客戶總覽',
+          link: '/pro/dashboard/'
+        },
+        // ==========================================
+        // 👤 階段零：系統的計算地基
+        // ==========================================
+        {
+          text: '👤 關於用戶',
+          collapsed: false,
+          items: [
+            // 獨立意義：換算出「距離退休還剩幾次發薪日」與「家庭責任基準」
+            { text: '基本資料與餘命', link: '/pro/profile' }
+          ]
+        },
+        // ==========================================
+        // 💰 階段一：掌握當下的現金流
+        // ==========================================
+      //   {
+      //     text: '📊 一、日常收支與現金流',
+      //     collapsed: false,
+      //     items: [
+      //       { text: '每月收支 (賺多少存多少)', link: '/pro/cashflow/income-expense' },
+      //       { text: '信用卡與貸款管理', link: '/pro/cashflow/debts' },
+      //       { text: '年度稅務概況', link: '/pro/cashflow/taxes' }
+      //     ]
+      //   },
+
+      //   // ==========================================
+      //   // 🏦 階段二：盤點手邊的籌碼 (純看資產增值與變現)
+      //   // ==========================================
+      //   {
+      //     text: '🏦 二、我的資產盤點',
+      //     collapsed: false,
+      //     items: [
+      //       { text: '緊急預備金與存款', link: '/pro/assets/emergency-fund' },
+      //       // 🌟 獨立意義：純粹的進攻引擎 (看波動與報酬)
+      //       { text: '證券與投資 (股票/基金)', link: '/pro/assets/securities' },
+      //       // 🌟 獨立意義：防禦型儲蓄 (看保單現金價值與滿期金)
+      //       { text: '儲蓄與投資型保單', link: '/pro/assets/policies-value' },
+      //       { text: '不動產 (房屋與土地)', link: '/pro/assets/real-estate' },
+      //       { text: '副業與其他資產', link: '/pro/assets/side-hustle' }
+      //     ]
+      //   },
+
+      //   // ==========================================
+      //   // 🛡️ 階段三：生活防護網 (純看保額與理賠)
+      //   // ==========================================
+      //   {
+      //     text: '🛡️ 三、安全防護網',
+      //     collapsed: false,
+      //     items: [
+      //       // 🌟 獨立意義：這裡檢視的是保單的「理賠槓桿」，而非現金價值
+      //       { text: '現有保障總覽 (壽險/醫療)', link: '/pro/protection/current-coverage' },
+      //       { text: '家庭責任與收入中斷', link: '/pro/protection/income-loss' },
+      //       { text: '醫療與長照準備', link: '/pro/protection/healthcare' }
+      //     ]
+      //   },
+
+      //   // ==========================================
+      //   // 🎯 階段四：未來的夢想標價
+      //   // ==========================================
+      //   {
+      //     text: '🎯 四、人生夢想藍圖',
+      //     collapsed: false,
+      //     items: [
+      //       { text: '🏖️ 樂活退休準備', link: '/pro/goals/retirement' },
+      //       { text: '🏠 買房計畫', link: '/pro/goals/house' },
+      //       { text: '🚗 買車計畫', link: '/pro/goals/car' },
+      //       { text: '👶 育兒與教育金', link: '/pro/goals/education' },
+      //       { text: '🎁 財富與資產傳承', link: '/pro/goals/legacy' }
+      //     ]
+      //   },
+
+      //   // ==========================================
+      //   // 📑 最終輸出
+      //   // ==========================================
+      //   {
+      //     text: '📑 我的專屬規劃',
+      //     items: [
+      //       { text: '🚀 產出完整理財規劃書', link: '/pro/generate-report' }
+      //     ]
+      //   }
+      ],
+
+      // 當網址進入 /quick/ 開頭時，左側會「完全切換」為輕量工具目錄
+      '/quick/': [
+        {
+          text: '輕量快算工具 (免註冊)',
+          items: [
+            { text: '多目標財務規劃', link: '/quick/multi-goals' },
+            { text: '簡易退休規劃', link: '/quick/retirement' },
+            { text: '代價計時器', link: '/quick/cost-of-delay' },
+            { text: '通膨照妖鏡', link: '/quick/inflation-risk' }
+          ]
+        }
+      ],
+
+      // 當網址進入 /about/ 開頭時的側邊欄
+      '/about/': [
+        {
+          text: '服務說明',
+          items: [
+            { text: '顧問責任與義務', link: '/about/responsibility' },
+            { text: '定期檢視機制', link: '/about/review' }
+          ]
+        }
+      ]
+    },
     lastUpdated: {
       text: '上次更新',
       formatOptions: {
@@ -82,39 +182,39 @@ export default defineConfig({
       copyright: `Copyright © 2023-${new Date().getFullYear()} EN Chu`
     },
     logo: {
-      src: '/logo/white_transparent.png',
+      src: '/logo/logo.webp',
       width: '24px',
       height: '24px',
     },
     externalLinkIcon: true,
-    search: {
-      provider: 'local',
-      options: {
-        translations: {
-          button: {
-            buttonText: '搜尋',
-            buttonAriaLabel: '搜尋文件'
-          },
-          modal: {
-            displayDetails: '顯示詳細列表',
-            resetButtonTitle: '清除查詢條件',
-            backButtonTitle: '返回',
-            noResultsText: '無法找到相關結果：',
-            footer: {
-              selectText: '選擇',
-              selectKeyAriaLabel: '按 Enter 鍵選擇',
+    // search: {
+    //   provider: 'local',
+    //   options: {
+    //     translations: {
+    //       button: {
+    //         buttonText: '搜尋',
+    //         buttonAriaLabel: '搜尋文件'
+    //       },
+    //       modal: {
+    //         displayDetails: '顯示詳細列表',
+    //         resetButtonTitle: '清除查詢條件',
+    //         backButtonTitle: '返回',
+    //         noResultsText: '無法找到相關結果：',
+    //         footer: {
+    //           selectText: '選擇',
+    //           selectKeyAriaLabel: '按 Enter 鍵選擇',
 
-              navigateText: '切換',
-              navigateUpKeyAriaLabel: '按 向上箭頭 鍵往上',
-              navigateDownKeyAriaLabel: '按 向下箭頭 鍵往下',
+    //           navigateText: '切換',
+    //           navigateUpKeyAriaLabel: '按 向上箭頭 鍵往上',
+    //           navigateDownKeyAriaLabel: '按 向下箭頭 鍵往下',
 
-              closeText: '關閉',
-              closeKeyAriaLabel: '按 Esc 鍵關閉'
-            }
-          }
-        }
-      }
-    }
+    //           closeText: '關閉',
+    //           closeKeyAriaLabel: '按 Esc 鍵關閉'
+    //         }
+    //       }
+    //     }
+    //   }
+    // }
   },
   // Some chunks are larger than 500 kB
   vite: {
@@ -142,6 +242,12 @@ export default defineConfig({
           }
         }
       }
-    }
+    },
+    resolve: {
+      alias: {
+        // 設定別名，指向你建立的 src 目錄
+        '@': path.resolve(__dirname, '../src'),
+      }
+    },
   }
 })

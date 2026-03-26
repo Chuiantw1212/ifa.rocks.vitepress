@@ -6,15 +6,15 @@ hero:
   text: "專為獨立顧問打造的<br>隨身決策終端。"
   tagline: 收斂複雜的財務變數，讓專業建議在指尖即刻產出。
   image:
-    src: /logo/white_transparent.png
+    src: /logo/logo.webp
     alt: 磨刀石
   actions:
     - theme: brand
-      text: 啟動退休計算
-      link: /quick/retirement-lite/
+      text: 啟動快速試算
+      link: /quick/multi-goals
     - theme: alt
-      text: 探索全套工具
-      link: /tools/
+      text: 預覽專業報告
+      link: /pro/summary
 
 features:
   - title: 一眼看穿缺口

@@ -46,14 +46,18 @@
 // 全域樣式覆寫
 
 .el-descriptions__cell {
-  background: #fff !important;
+    background: #fff !important;
 }
 
 // 讓 el-descriptions 寬度永遠填滿其容器
 .el-descriptions {
-  width: 100%;
+    width: 100%;
 }
 
-.el-descriptions__body{
-  width: 100%;
+.el-descriptions__body {
+    width: 100%;
+}
+
+.VPNavBarExtra {
+    display: none !important;
 }
