@@ -38,25 +38,24 @@
                   style="font-weight: bold;"
                   @click="enterPlan(client)"
                 >
-                  進入規劃書 👉
+                  進入規劃書
                 </el-button>
-                <el-divider direction="vertical" />
-                <el-popconfirm
-                  title="確定要刪除這位客戶嗎？"
-                  confirm-button-text="確定"
-                  cancel-button-text="取消"
-                  :icon="Warning"
-                  icon-color="#F56C6C"
-                  @confirm="deleteClient(client)"
-                >
-                  <template #reference>
-                    <el-button type="danger" link :icon="Delete">刪除</el-button>
-                  </template>
-                </el-popconfirm>
               </div>
             </div>
             <el-divider style="margin: 16px 0;" />
-            <div style="display: flex; justify-content: flex-end;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <el-popconfirm
+                title="確定要刪除這位客戶嗎？"
+                confirm-button-text="確定"
+                cancel-button-text="取消"
+                :icon="Warning"
+                icon-color="#F56C6C"
+                @confirm="deleteClient(client)"
+              >
+                <template #reference>
+                  <el-button type="danger" link :icon="Delete">刪除</el-button>
+                </template>
+              </el-popconfirm>
               <el-text size="small" type="info">最後更新: {{ client.lastUpdated }}</el-text>
             </div>
         </el-card>

@@ -31,7 +31,7 @@ export default defineConfig({
         activeMatch: '^/quick/'
       },
       {
-        text: '客戶總覽 (CRM)', // 新增：SaaS 系統的真正首頁
+        text: '客戶總覽', // 新增：SaaS 系統的真正首頁
         link: '/pro/dashboard/',     // 指向我們剛討論的 ClientDashboard 頁面
         activeMatch: '^/pro/dashboard/'
       },

@@ -98,7 +98,7 @@ export const useClientsStore = defineStore('clients', () => {
 
     async function deleteClient(clientId: string) {
         try {
-            const res = await authFetch(`/api/v1/client-profiles/${clientId}`, { method: 'DELETE' });
+            const res = await authFetch(`/api/v1/clients/${clientId}`, { method: 'DELETE' });
             if (!res.ok) {
                 const errorData = await res.json().catch(() => ({}));
                 throw new Error(errorData.message || `刪除客戶失敗 (status: ${res.status})`);
