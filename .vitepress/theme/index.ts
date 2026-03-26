@@ -1,6 +1,5 @@
 import DefaultTheme from 'vitepress/theme'
 import type { EnhanceAppContext } from 'vitepress'
-import { defineComponent, h, onMounted } from 'vue'
 import { createPinia } from 'pinia'
 
 // 1. 引入 Element Plus 核心與基礎樣式
@@ -29,33 +28,17 @@ import CostOfDelay from '@/components/CostOfDelay.vue'
 import InflationRisk from '@/components/InflationRisk.vue'
 
 // 4. 引入我們集中管理的 Firebase 設定檔
-import firebase, { getAnalyticsInstance, getPerformanceInstance } from '@/firebaseConfig'
-import { useAgent } from '@/composables/useAgent'
+import firebase, { getAnalyticsInstance, getPerformanceInstance } from '@/firebaseConfig';
 
 // 5. 引入核心邏輯層的 Pinia Store
 import { useAgentStore } from '@/stores/agent'
-import { useDynamicSidebar } from '@/composables/useDynamicSidebar'
+
+// 6. 引入我們統一管理的自訂 Layout
+import Layout from './Layout.vue'
 
 export default {
-    extends: DefaultTheme,
-
-    // 佈局擴充：處理 Navbar、Sidebar 等特定位置的插槽
-    Layout: defineComponent({
-        setup() {
-            // 在 Layout 中初始化 Agent (顧問) 的狀態監聽器。
-            const { initAgentListener } = useAgent()
-            onMounted(() => {
-                initAgentListener()
-            })
-
-            // 這個 Composable 會設定監聽器，自動更新側邊欄連結
-            useDynamicSidebar()
-
-            return () => h(DefaultTheme.Layout, null, {
-                'nav-bar-content-after': () => h(LoginModule)
-            })
-        }
-    }),
+    ...DefaultTheme,
+    Layout,
 
     // 擴充 Vue 實體：全域註冊套件與自定義元件
     enhanceApp({ app }: EnhanceAppContext) {

@@ -3,17 +3,17 @@
     <el-space v-if="agentStore.isInitialized" class="login" :size="20" alignment="center" direction="horizontal">
         <!-- 登入後顯示使用者頭像與下拉選單 -->
         <el-dropdown v-if="isLoggedIn" trigger="click">
-            <el-avatar :size="32" :src="agent.avatarUrl" />
+            <el-avatar :size="32" :src="agent.avatarUrl" :alt="agent.username" aria-label="使用者選單" />
             <template #dropdown>
                 <el-dropdown-menu>
-                    <el-dropdown-item disabled>{{ agent.username }}</el-dropdown-item>
+                    <el-dropdown-item disabled>系統設定</el-dropdown-item>
                     <el-dropdown-item divided @click="handleLogout">登出系統</el-dropdown-item>
                 </el-dropdown-menu>
             </template>
         </el-dropdown>
 
         <!-- 未登入時顯示可點擊的登入頭像 -->
-        <el-avatar v-else :size="32" :icon="UserFilled" @click="dialogVisible = true" style="cursor: pointer;" />
+        <el-avatar v-else :size="32" :icon="UserFilled" @click="dialogVisible = true" aria-label="登入或註冊" />
     </el-space>
 
     <el-dialog v-model="dialogVisible" title="理財規劃系統登入" width="400px" align-center :append-to-body="true" :destroy-on-close="true">
@@ -104,6 +104,7 @@ const handleLogout = async () => {
 .login {
     display: flex;
     align-items: center;
+    cursor: pointer;
     // margin-left: 16px;
 }
 </style>
