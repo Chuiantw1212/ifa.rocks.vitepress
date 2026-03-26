@@ -1,4 +1,5 @@
 // .vitepress/theme/firebaseConfig.ts
+
 // 1. 引入 Firebase 套件
 // 引入相容性套件 (compat) 是為了讓舊版 firebase-ui-auth.js 腳本可以運作
 import firebase from 'firebase/compat/app'
@@ -6,8 +7,9 @@ import 'firebase/compat/auth'
 
 // 引入模組化套件 (modular) 是為了在 Vue 元件中享有更現代、更輕量的 API
 import { getAuth } from 'firebase/auth'
-import { Analytics, getAnalytics, isSupported as isAnalyticsSupported } from 'firebase/analytics'
-import { FirebasePerformance, getPerformance, isSupported as isPerformanceSupported } from 'firebase/performance'
+import { Analytics, getAnalytics, isSupported as isAnalyticsSupported } from 'firebase/analytics';
+import { FirebasePerformance } from 'firebase/performance';
+import * as performance from 'firebase/performance';
 
 // 2. 唯一的 Firebase 設定來源 (Single Source of Truth)
 // !! 注意：我在您的 index.ts 中發現了兩組不同的設定。
@@ -69,18 +71,8 @@ export const getPerformanceInstance = async (): Promise<FirebasePerformance | un
 
     isPerformanceInitialized = true; // 立刻標記，防止重複進入
 
-    if (import.meta.env.PROD) {
-        // 在正式環境，非同步地載入真實模組，使其脫離初始打包檔案
-        if (await isPerformanceSupported()) {
-            await import('firebase/compat/performance'); // 為了相容舊的 `firebase.performance()` 呼叫
-            performanceInstance = getPerformance(app);
-            console.log('Firebase Performance Monitoring 已在此會話中啟用。');
-        }
-    } else {
-        // 在開發環境，提供一個模擬物件以防止出錯，但不載入任何腳本
-        console.log('Firebase Performance Monitoring 在開發環境中已停用。');
-        (firebase as any).performance = () => ({ trace: () => ({ start: () => {}, stop: () => {} }) });
-    }
+    await import('firebase/compat/performance'); // 為了相容舊的 `firebase.performance()` 呼叫
+    performanceInstance = performance.getPerformance(app);
 
     return performanceInstance;
 }
