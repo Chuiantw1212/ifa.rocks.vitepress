@@ -5,6 +5,7 @@ import { useData, withBase } from 'vitepress'
 import { useDynamicSidebar } from '@/composables/useDynamicSidebar'
 import { useAgent } from '@/composables/useAgent'
 import LoginModule from '@/components/LoginModule.vue'
+import LineBrowserGuard from '@/components/LineBrowserGuard.vue'
 
 const { Layout } = DefaultTheme
 const { frontmatter } = useData()
@@ -32,6 +33,7 @@ onMounted(() => {
 </script>
 
 <template>
+  <LineBrowserGuard />
   <Layout>
     <template #nav-bar-content-after>
       <LoginModule />
