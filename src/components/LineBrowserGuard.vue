@@ -1,6 +1,5 @@
 <template>
   <div v-if="showOverlay" class="line-guard-overlay">
-    <el-card class="line-guard-card" shadow="always" v-loading="status === 'initializing'" element-loading-text="正在為您跳轉至預設瀏覽器...">
     <el-card class="line-guard-card" shadow="always" v-loading="status === 'initializing'" :element-loading-text="loadingText">
       <el-result
         v-if="status !== 'initializing'"
@@ -12,7 +11,7 @@
         </template>
         <template #extra>
           <el-alert
-            title="為了獲得最佳體驗，請點擊左下或是右上角的「...」選單，然後選擇「使用預設瀏覽器開啟」。"
+            title="為了獲得最佳體驗，請點擊右上角的「...」選單，然後選擇「使用預設瀏覽器開啟」。"
             type="info"
             :closable="false"
             center
@@ -58,12 +57,6 @@ const initializeLiffAndRedirect = async () => {
     await liff.init({ liffId: LIFF_ID });
 
     if (liff.isInClient()) {
-      // Immediately try to open the current page in an external browser
-      liff.openWindow({
-        url: window.location.href,
-        external: true
-      });
-      // The page will be left, but we keep the overlay in case it fails or is slow.
       if (!liff.isLoggedIn()) {
         // 如果使用者尚未登入 LINE，引導他們登入。
         // 登入後，LINE 會自動重新導向回此頁面，屆時 liff.isLoggedIn() 會是 true。
@@ -84,7 +77,6 @@ const initializeLiffAndRedirect = async () => {
     }
   } catch (err) {
     console.error('LIFF Error:', err);
-    errorMessage.value = err.message || 'LIFF 初始化或跳轉失敗，建議手動開啟。';
     errorMessage.value = err.message || 'LIFF 初始化或跳轉失敗，建議您手動操作。';
     status.value = 'error';
     // Keep the overlay visible to show the error and fallback message.
