@@ -9,7 +9,10 @@ import 'firebase/compat/auth'
 import { getAuth } from 'firebase/auth'
 import { Analytics, getAnalytics, isSupported as isAnalyticsSupported } from 'firebase/analytics';
 import { FirebasePerformance } from 'firebase/performance';
-import * as performance from 'firebase/performance';
+
+// --- API 端點設定 ---
+// API_BASE_URL 會根據 .env.development 或 .env.production 自動載入對應的 URL
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 // 2. 唯一的 Firebase 設定來源 (Single Source of Truth)
 // !! 注意：我在您的 index.ts 中發現了兩組不同的設定。
@@ -71,8 +74,25 @@ export const getPerformanceInstance = async (): Promise<FirebasePerformance | un
 
     isPerformanceInitialized = true; // 立刻標記，防止重複進入
 
-    await import('firebase/compat/performance'); // 為了相容舊的 `firebase.performance()` 呼叫
-    performanceInstance = performance.getPerformance(app);
+    if (import.meta.env.PROD) {
+        // 在正式環境，我們嘗試初始化效能監控。
+        // 我們將其包在 try...catch 中，因為 getPerformance() 在不支援的環境中會拋出錯誤，
+        // 這比導入有問題的 isSupported() 函式更穩健。
+        try {
+            const { getPerformance } = await import('firebase/performance');
+            performanceInstance = getPerformance(app);
+            await import('firebase/compat/performance'); // 為了相容舊的 `firebase.performance()` 呼叫
+            console.log('Firebase Performance Monitoring 已在正式環境中啟用。');
+        } catch (error) {
+            console.log('Firebase Performance Monitoring is not supported in this browser or is disabled.', error);
+            // 確保在初始化失敗時，舊的 compat 呼叫仍然有模擬物件可用。
+            (firebase as any).performance = () => ({ trace: () => ({ start: () => {}, stop: () => {} }) });
+        }
+    } else {
+        // 在開發環境，提供一個模擬物件以防止出錯，但不載入任何腳本
+        console.log('Firebase Performance Monitoring 在開發環境中已停用。');
+        (firebase as any).performance = () => ({ trace: () => ({ start: () => {}, stop: () => {} }) });
+    }
 
     return performanceInstance;
 }
