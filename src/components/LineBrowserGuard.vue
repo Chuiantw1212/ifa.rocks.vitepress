@@ -1,12 +1,13 @@
 <template>
-  <div v-if="isLineBrowser" class="line-guard-overlay">
-    <el-card class="line-guard-card" shadow="always">
+  <div v-if="showOverlay" class="line-guard-overlay">
+    <el-card class="line-guard-card" shadow="always" v-loading="status === 'initializing'" element-loading-text="正在為您跳轉至預設瀏覽器...">
       <el-result
+        v-if="status !== 'initializing'"
         icon="warning"
         title="請使用預設瀏覽器開啟"
       >
         <template #sub-title>
-          <p>您似乎正在使用 LINE 的內建瀏覽器，這可能會導致部分功能 (如登入或報表產生) 無法正常運作。</p>
+          <p>{{ status === 'error' ? errorMessage : '您似乎正在使用 LINE 的內建瀏覽器，這可能會導致部分功能無法正常運作。' }}</p>
         </template>
         <template #extra>
           <el-alert
@@ -21,6 +22,8 @@
           </el-button>
         </template>
       </el-result>
+      <!-- This div is for the loading spinner to have a size -->
+      <div v-if="status === 'initializing'" style="height: 280px;"></div>
     </el-card>
   </div>
 </template>
@@ -28,13 +31,56 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 
-const isLineBrowser = ref(false)
+// --- LIFF 設定 ---
+// 請到 LINE Developers Console > LIFF 頁面取得您的 LIFF ID
+const LIFF_ID = '2009612107-pP5vEEoY';
+
+const status = ref('idle'); // idle, initializing, error
+const errorMessage = ref('');
+const showOverlay = ref(false);
 const currentUrl = ref('')
 
+const initializeLiffAndRedirect = async () => {
+  try {
+    // Dynamically load LIFF SDK
+    const script = document.createElement('script');
+    script.src = 'https://static.line-scdn.net/liff/edge/2/sdk.js';
+    document.head.appendChild(script);
+
+    await new Promise((resolve, reject) => {
+      script.onload = resolve;
+      script.onerror = () => reject(new Error('LIFF SDK 載入失敗。'));
+    });
+
+    // Initialize LIFF
+    await liff.init({ liffId: LIFF_ID });
+
+    if (liff.isInClient()) {
+      // Immediately try to open the current page in an external browser
+      liff.openWindow({
+        url: window.location.href,
+        external: true
+      });
+      // The page will be left, but we keep the overlay in case it fails or is slow.
+    } else {
+      // If not in a LINE client, we shouldn't be here. Hide the overlay.
+      showOverlay.value = false;
+    }
+  } catch (err) {
+    console.error('LIFF Error:', err);
+    errorMessage.value = err.message || 'LIFF 初始化或跳轉失敗，建議手動開啟。';
+    status.value = 'error';
+    // Keep the overlay visible to show the error and fallback message.
+  }
+};
+
 onMounted(() => {
+  currentUrl.value = window.location.href;
+  // Check if we are in the LINE client
   if (navigator.userAgent.match(/Line/i)) {
-    isLineBrowser.value = true
-    currentUrl.value = window.location.href
+    showOverlay.value = true;
+    status.value = 'initializing';
+    initializeLiffAndRedirect();
   }
 })
 </script>
@@ -46,7 +92,8 @@ onMounted(() => {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: var(--vp-c-bg-soft);
+  background-color: rgba(0, 0, 0, 0.5); /* Darker overlay */
+  backdrop-filter: blur(5px);
   display: flex;
   justify-content: center;
   align-items: center;
