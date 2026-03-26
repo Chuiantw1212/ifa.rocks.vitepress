@@ -1,6 +1,7 @@
 <template>
   <div v-if="showOverlay" class="line-guard-overlay">
     <el-card class="line-guard-card" shadow="always" v-loading="status === 'initializing'" element-loading-text="正在為您跳轉至預設瀏覽器...">
+    <el-card class="line-guard-card" shadow="always" v-loading="status === 'initializing'" :element-loading-text="loadingText">
       <el-result
         v-if="status !== 'initializing'"
         icon="warning"
@@ -11,7 +12,7 @@
         </template>
         <template #extra>
           <el-alert
-            title="為了獲得最佳體驗，請點擊右上角的「...」選單，然後選擇「使用預設瀏覽器開啟」。"
+            title="為了獲得最佳體驗，請點擊左下或是右上角的「...」選單，然後選擇「使用預設瀏覽器開啟」。"
             type="info"
             :closable="false"
             center
@@ -39,6 +40,7 @@ const status = ref('idle'); // idle, initializing, error
 const errorMessage = ref('');
 const showOverlay = ref(false);
 const currentUrl = ref('')
+const loadingText = ref('正在初始化服務...')
 
 const initializeLiffAndRedirect = async () => {
   try {
@@ -62,6 +64,20 @@ const initializeLiffAndRedirect = async () => {
         external: true
       });
       // The page will be left, but we keep the overlay in case it fails or is slow.
+      if (!liff.isLoggedIn()) {
+        // 如果使用者尚未登入 LINE，引導他們登入。
+        // 登入後，LINE 會自動重新導向回此頁面，屆時 liff.isLoggedIn() 會是 true。
+        loadingText.value = '偵測到 LINE 環境，正在引導您登入...';
+        liff.login({ redirectUri: window.location.href });
+      } else {
+        // 如果使用者已登入 LINE，則直接嘗試在外部瀏覽器開啟。
+        loadingText.value = '登入成功，正在為您跳轉至預設瀏覽器...';
+        liff.openWindow({
+          url: window.location.href,
+          external: true
+        });
+        // 頁面即將跳轉，但為防萬一，我們保留覆蓋層。
+      }
     } else {
       // If not in a LINE client, we shouldn't be here. Hide the overlay.
       showOverlay.value = false;
@@ -69,6 +85,7 @@ const initializeLiffAndRedirect = async () => {
   } catch (err) {
     console.error('LIFF Error:', err);
     errorMessage.value = err.message || 'LIFF 初始化或跳轉失敗，建議手動開啟。';
+    errorMessage.value = err.message || 'LIFF 初始化或跳轉失敗，建議您手動操作。';
     status.value = 'error';
     // Keep the overlay visible to show the error and fallback message.
   }
