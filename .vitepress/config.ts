@@ -179,7 +179,7 @@ export default defineConfig({
       copyright: `Copyright © 2023-${new Date().getFullYear()} EN Chu`
     },
     logo: {
-      src: '/logo/white_transparent.png',
+      src: '/logo/logo.webp',
       width: '24px',
       height: '24px',
     },

@@ -84,20 +84,26 @@ export default {
 
         // @ts-ignore
         if (!import.meta.env.SSR) {
-            // 這是啟動 Firebase 驗證監聽的最佳位置。
-            // 它只會在客戶端執行一次，且在 Pinia store 建立之後。
-            const agentStore = useAgentStore()
-            agentStore.init()
+            // --- 效能優化：延遲 Firebase 初始化 ---
+            // 將 Firebase 相關的初始化（特別是 Auth）延遲到下一個事件循環。
+            // 這可以讓 VitePress 的主要內容優先渲染，顯著降低「最大關鍵路徑延遲」，
+            // 從而改善 Lighthouse 分數和使用者體感速度，且不會影響功能。
+            setTimeout(() => {
+                // 這是啟動 Firebase 驗證監聽的最佳位置。
+                // 它只會在客戶端執行一次，且在 Pinia store 建立之後。
+                const agentStore = useAgentStore()
+                agentStore.init()
 
-            // @ts-ignore
-            if (!window.firebase) {
-                 // @ts-ignore
-                 window.firebase = firebase
-            }
+                // @ts-ignore
+                if (!window.firebase) {
+                    // @ts-ignore
+                    window.firebase = firebase
+                }
 
-            // 安全地在客戶端初始化需要瀏覽器 API 的服務
-            getAnalyticsInstance();
-            getPerformanceInstance();
+                // 安全地在客戶端初始化需要瀏覽器 API 的服務
+                getAnalyticsInstance();
+                getPerformanceInstance();
+            }, 0)
         }
     }
 }
