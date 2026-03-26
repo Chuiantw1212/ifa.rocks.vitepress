@@ -21,6 +21,9 @@ export default defineConfig({
   lang: 'zh-TW',
   lastUpdated: true,
   cleanUrls: true,
+  sitemap: {
+    hostname: 'https://ifa.rocks'
+  },
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     nav: [
