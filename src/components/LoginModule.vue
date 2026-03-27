@@ -105,6 +105,6 @@ const handleLogout = async () => {
     display: flex;
     align-items: center;
     cursor: pointer;
-    // margin-left: 16px;
+    margin-left: 16px;
 }
 </style>

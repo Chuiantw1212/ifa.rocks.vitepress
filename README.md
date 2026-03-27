@@ -35,6 +35,11 @@
 *   **後端驗證**: Firebase Authentication
 *   **後端 API**: Google Cloud Run
 
+## 相關專案
+
+*   **後端 API 程式碼庫**: [ifa.rocks.spring](https://github.com/Chuiantw1212/ifa.rocks.spring)
+
+
 ## 專案結構
 
 ```
