@@ -30,10 +30,11 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useAgentStore } from '@/stores/agent'
 
 // --- LIFF 設定 ---
 // 請到 LINE Developers Console > LIFF 頁面取得您的 LIFF ID
-const LIFF_ID = '2009612107-pP5vEEoY';
+const LIFF_ID = '2009612107-QeSJSRV2';
 
 const status = ref('idle'); // idle, initializing, error
 const errorMessage = ref('');
@@ -41,7 +42,9 @@ const showOverlay = ref(false);
 const currentUrl = ref('')
 const loadingText = ref('正在初始化服務...')
 
-const initializeLiffAndRedirect = async () => {
+const agentStore = useAgentStore();
+
+const initializeLiffAndLogin = async () => {
   try {
     // Dynamically load LIFF SDK
     const script = document.createElement('script');
@@ -63,13 +66,19 @@ const initializeLiffAndRedirect = async () => {
         loadingText.value = '偵測到 LINE 環境，正在引導您登入...';
         liff.login({ redirectUri: window.location.href });
       } else {
-        // 如果使用者已登入 LINE，則直接嘗試在外部瀏覽器開啟。
-        loadingText.value = '登入成功，正在為您跳轉至預設瀏覽器...';
-        liff.openWindow({
-          url: window.location.href,
-          external: true
-        });
-        // 頁面即將跳轉，但為防萬一，我們保留覆蓋層。
+        // 使用者已登入 LINE，嘗試登入我們的系統
+        loadingText.value = 'LINE 登入成功，正在驗證您的顧問身份...';
+        const idToken = liff.getIDToken();
+        if (!idToken) {
+          throw new Error('無法取得 LINE ID Token，請確認 LIFF 已開啟 OpenID Connect 權限。');
+        }
+
+        // 呼叫 Pinia store 的 action 來處理後續登入流程
+        await agentStore.loginWithLiff(idToken);
+
+        // 如果 loginWithLiff 成功，isLoggedIn 狀態會改變，
+        // 相關的 watcher 會處理後續 UI。我們就可以隱藏這個覆蓋層。
+        showOverlay.value = false;
       }
     } else {
       // If not in a LINE client, we shouldn't be here. Hide the overlay.
@@ -77,7 +86,7 @@ const initializeLiffAndRedirect = async () => {
     }
   } catch (err) {
     console.error('LIFF Error:', err);
-    errorMessage.value = err.message || 'LIFF 初始化或跳轉失敗，建議您手動操作。';
+    errorMessage.value = err.message || 'LIFF 登入失敗，建議使用外部瀏覽器開啟。';
     status.value = 'error';
     // Keep the overlay visible to show the error and fallback message.
   }
@@ -89,7 +98,7 @@ onMounted(() => {
   if (navigator.userAgent.match(/Line/i)) {
     showOverlay.value = true;
     status.value = 'initializing';
-    initializeLiffAndRedirect();
+    initializeLiffAndLogin();
   }
 })
 </script>
