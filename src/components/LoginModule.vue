@@ -2,12 +2,12 @@
     <!-- 等待驗證狀態初始化完成後再渲染，避免閃爍 -->
     <el-space v-if="agentStore.isInitialized" class="login" :size="20" alignment="center" direction="horizontal">
         <!-- 登入後顯示使用者頭像與下拉選單 -->
-        <el-dropdown v-if="isLoggedIn" trigger="click">
+        <el-dropdown v-if="isLoggedIn" trigger="click" @command="handleCommand">
             <el-avatar :size="32" :src="agent.avatarUrl" :alt="agent.username" aria-label="使用者選單" />
             <template #dropdown>
                 <el-dropdown-menu>
-                    <el-dropdown-item disabled>系統設定</el-dropdown-item>
-                    <el-dropdown-item divided @click="handleLogout">登出系統</el-dropdown-item>
+                    <el-dropdown-item command="account">帳號管理</el-dropdown-item>
+                    <el-dropdown-item command="logout" divided>登出系統</el-dropdown-item>
                 </el-dropdown-menu>
             </template>
         </el-dropdown>
@@ -23,7 +23,8 @@
 </template>
 
 <script setup>
-import { ref, watch, nextTick, computed } from 'vue'
+import { ref, watch, nextTick, computed } from 'vue';
+import { useRouter } from 'vitepress';
 import { ElMessage } from 'element-plus'
 import { UserFilled } from '@element-plus/icons-vue'
 import { auth } from '@/firebaseConfig'
@@ -37,6 +38,8 @@ const agentStore = useAgentStore()
 // 使用 computed 屬性來響應 store 的變化
 const isLoggedIn = computed(() => agentStore.isLoggedIn)
 const agent = computed(() => agentStore.agent || { username: '', avatarUrl: '' })
+
+const router = useRouter();
 
 // 監聽來自 store 的登入成功狀態，以關閉對話框
 watch(() => agentStore.isLoggedIn, (loggedIn, wasLoggedIn) => {
@@ -64,7 +67,13 @@ watch(dialogVisible, (newValue) => {
                     signInFlow: 'popup',
                     signInOptions: [
                         GoogleAuthProvider.PROVIDER_ID,
-                        EmailAuthProvider.PROVIDER_ID,
+                        {
+                            provider: EmailAuthProvider.PROVIDER_ID,
+                            // 明確指定我們就是要走傳統的密碼登入路線
+                            signInMethod: 'password', 
+                            // 如果你的註冊流程不需要強迫使用者填寫暱稱，可以設為 false 減少摩擦
+                            requireDisplayName: false 
+                        },
                     ],
                 };
                 // 在指定的容器中啟動 FirebaseUI
@@ -98,6 +107,17 @@ const handleLogout = async () => {
         console.error('Logout Error:', error)
         ElMessage.error('登出時發生錯誤')
     }
+};
+
+const handleCommand = (command) => {
+    switch (command) {
+        case 'account':
+            router.go('/pro/account');
+            break;
+        case 'logout':
+            handleLogout();
+            break;
+    }
 }
 </script>
 <style lang="scss" scoped>
@@ -105,6 +125,6 @@ const handleLogout = async () => {
     display: flex;
     align-items: center;
     cursor: pointer;
-    // margin-left: 16px;
+    margin-left: 16px;
 }
 </style>

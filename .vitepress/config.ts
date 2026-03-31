@@ -3,8 +3,8 @@ import * as path from 'path'
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
-  title: "礪石 IFA 工具箱",
-  description: "獨立理財顧問的隨身決策終端。礪石工具箱整合退休計算機與多項財務模擬組件，深度優化手機操作感官，拒絕冗餘干擾。將複雜的生命規劃轉化為觸手可及的精確數據，讓專業建議在指尖即刻產出。",
+  title: "鍛石 IFA 工具箱",
+  description: "獨立理財顧問的隨身決策終端。鍛石工具箱整合退休計算機與多項財務模擬組件，深度優化手機操作感官，拒絕冗餘干擾。將複雜的生命規劃轉化為觸手可及的精確數據，讓專業建議在指尖即刻產出。",
   head: [
     ['link', { rel: 'icon', href: '/favicon.ico' }],
     // 從本地 public 資料夾載入 FirebaseUI 的 CSS
@@ -64,71 +64,71 @@ export default defineConfig({
         // ==========================================
         // 💰 階段一：掌握當下的現金流
         // ==========================================
-      //   {
-      //     text: '📊 一、日常收支與現金流',
-      //     collapsed: false,
-      //     items: [
-      //       { text: '每月收支 (賺多少存多少)', link: '/pro/cashflow/income-expense' },
-      //       { text: '信用卡與貸款管理', link: '/pro/cashflow/debts' },
-      //       { text: '年度稅務概況', link: '/pro/cashflow/taxes' }
-      //     ]
-      //   },
+        //   {
+        //     text: '📊 一、日常收支與現金流',
+        //     collapsed: false,
+        //     items: [
+        //       { text: '每月收支 (賺多少存多少)', link: '/pro/cashflow/income-expense' },
+        //       { text: '信用卡與貸款管理', link: '/pro/cashflow/debts' },
+        //       { text: '年度稅務概況', link: '/pro/cashflow/taxes' }
+        //     ]
+        //   },
 
-      //   // ==========================================
-      //   // 🏦 階段二：盤點手邊的籌碼 (純看資產增值與變現)
-      //   // ==========================================
-      //   {
-      //     text: '🏦 二、我的資產盤點',
-      //     collapsed: false,
-      //     items: [
-      //       { text: '緊急預備金與存款', link: '/pro/assets/emergency-fund' },
-      //       // 🌟 獨立意義：純粹的進攻引擎 (看波動與報酬)
-      //       { text: '證券與投資 (股票/基金)', link: '/pro/assets/securities' },
-      //       // 🌟 獨立意義：防禦型儲蓄 (看保單現金價值與滿期金)
-      //       { text: '儲蓄與投資型保單', link: '/pro/assets/policies-value' },
-      //       { text: '不動產 (房屋與土地)', link: '/pro/assets/real-estate' },
-      //       { text: '副業與其他資產', link: '/pro/assets/side-hustle' }
-      //     ]
-      //   },
+        //   // ==========================================
+        //   // 🏦 階段二：盤點手邊的籌碼 (純看資產增值與變現)
+        //   // ==========================================
+        //   {
+        //     text: '🏦 二、我的資產盤點',
+        //     collapsed: false,
+        //     items: [
+        //       { text: '緊急預備金與存款', link: '/pro/assets/emergency-fund' },
+        //       // 🌟 獨立意義：純粹的進攻引擎 (看波動與報酬)
+        //       { text: '證券與投資 (股票/基金)', link: '/pro/assets/securities' },
+        //       // 🌟 獨立意義：防禦型儲蓄 (看保單現金價值與滿期金)
+        //       { text: '儲蓄與投資型保單', link: '/pro/assets/policies-value' },
+        //       { text: '不動產 (房屋與土地)', link: '/pro/assets/real-estate' },
+        //       { text: '副業與其他資產', link: '/pro/assets/side-hustle' }
+        //     ]
+        //   },
 
-      //   // ==========================================
-      //   // 🛡️ 階段三：生活防護網 (純看保額與理賠)
-      //   // ==========================================
-      //   {
-      //     text: '🛡️ 三、安全防護網',
-      //     collapsed: false,
-      //     items: [
-      //       // 🌟 獨立意義：這裡檢視的是保單的「理賠槓桿」，而非現金價值
-      //       { text: '現有保障總覽 (壽險/醫療)', link: '/pro/protection/current-coverage' },
-      //       { text: '家庭責任與收入中斷', link: '/pro/protection/income-loss' },
-      //       { text: '醫療與長照準備', link: '/pro/protection/healthcare' }
-      //     ]
-      //   },
+        //   // ==========================================
+        //   // 🛡️ 階段三：生活防護網 (純看保額與理賠)
+        //   // ==========================================
+        //   {
+        //     text: '🛡️ 三、安全防護網',
+        //     collapsed: false,
+        //     items: [
+        //       // 🌟 獨立意義：這裡檢視的是保單的「理賠槓桿」，而非現金價值
+        //       { text: '現有保障總覽 (壽險/醫療)', link: '/pro/protection/current-coverage' },
+        //       { text: '家庭責任與收入中斷', link: '/pro/protection/income-loss' },
+        //       { text: '醫療與長照準備', link: '/pro/protection/healthcare' }
+        //     ]
+        //   },
 
-      //   // ==========================================
-      //   // 🎯 階段四：未來的夢想標價
-      //   // ==========================================
-      //   {
-      //     text: '🎯 四、人生夢想藍圖',
-      //     collapsed: false,
-      //     items: [
-      //       { text: '🏖️ 樂活退休準備', link: '/pro/goals/retirement' },
-      //       { text: '🏠 買房計畫', link: '/pro/goals/house' },
-      //       { text: '🚗 買車計畫', link: '/pro/goals/car' },
-      //       { text: '👶 育兒與教育金', link: '/pro/goals/education' },
-      //       { text: '🎁 財富與資產傳承', link: '/pro/goals/legacy' }
-      //     ]
-      //   },
+        //   // ==========================================
+        //   // 🎯 階段四：未來的夢想標價
+        //   // ==========================================
+        //   {
+        //     text: '🎯 四、人生夢想藍圖',
+        //     collapsed: false,
+        //     items: [
+        //       { text: '🏖️ 樂活退休準備', link: '/pro/goals/retirement' },
+        //       { text: '🏠 買房計畫', link: '/pro/goals/house' },
+        //       { text: '🚗 買車計畫', link: '/pro/goals/car' },
+        //       { text: '👶 育兒與教育金', link: '/pro/goals/education' },
+        //       { text: '🎁 財富與資產傳承', link: '/pro/goals/legacy' }
+        //     ]
+        //   },
 
-      //   // ==========================================
-      //   // 📑 最終輸出
-      //   // ==========================================
-      //   {
-      //     text: '📑 我的專屬規劃',
-      //     items: [
-      //       { text: '🚀 產出完整理財規劃書', link: '/pro/generate-report' }
-      //     ]
-      //   }
+        //   // ==========================================
+        //   // 📑 最終輸出
+        //   // ==========================================
+        //   {
+        //     text: '📑 我的專屬規劃',
+        //     items: [
+        //       { text: '🚀 產出完整理財規劃書', link: '/pro/generate-report' }
+        //     ]
+        //   }
       ],
 
       // 當網址進入 /quick/ 開頭時，左側會「完全切換」為輕量工具目錄
@@ -179,7 +179,7 @@ export default defineConfig({
     },
     footer: {
       message: 'Powered by <a href="https://vitepress.dev/" target="_blank">Vitepress</a>',
-      copyright: `Copyright © 2023-${new Date().getFullYear()} EN Chu`
+      copyright: `Copyright © 2023-${new Date().getFullYear()} EN Chu | <a href="/privacy">隱私權政策</a>`
     },
     logo: {
       src: '/logo/logo.webp',
@@ -215,6 +215,9 @@ export default defineConfig({
     //     }
     //   }
     // }
+    socialLinks: [
+      { ariaLabel: 'github', icon: 'github', link: 'https://github.com/Chuiantw1212/ifa.rocks.vitepress' },
+    ],
   },
   // Some chunks are larger than 500 kB
   vite: {

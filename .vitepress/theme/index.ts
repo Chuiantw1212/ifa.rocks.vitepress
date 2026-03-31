@@ -15,7 +15,6 @@ import 'element-plus/dist/index.css'
 import './global.scss'
 
 // 3. 引入您開發的小計算機與系統模組
-import LoginModule from '@/components/LoginModule.vue'
 import ClientProfile from '@/components/ClientProfile.vue'
 import ClientDashboard from '@/components/ClientDashboard.vue'
 import RetirementUnderestimationCard from '@/components/RetirementUnderestimationCard.vue'
@@ -34,12 +33,11 @@ import firebase, { getAnalyticsInstance, getPerformanceInstance } from '@/fireba
 import { useAgentStore } from '@/stores/agent'
 
 // 6. 引入我們統一管理的自訂 Layout
-import Layout from './Layout.vue'
+import Layout from './Layout.vue';
 
 export default {
-    ...DefaultTheme,
+    extends: DefaultTheme,
     Layout,
-
     // 擴充 Vue 實體：全域註冊套件與自定義元件
     enhanceApp({ app }: EnhanceAppContext) {
         // 註冊 Pinia

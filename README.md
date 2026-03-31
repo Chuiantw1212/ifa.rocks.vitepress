@@ -1,4 +1,4 @@
-# 礪石 IFA 工具箱 (ifa.rocks)
+# 鍛石 IFA 工具箱 (ifa.rocks)
 
 **專為獨立理財顧問 (IFA) 打造的隨身決策終端。**
 
@@ -25,6 +25,7 @@
     *   通膨照妖鏡 (實際購買力)
 *   **長壽風險分析**: 視覺化呈現傳統退休規劃年期的低估風險。
 *   **SaaS 整合**: 透過 Firebase Authentication 實現安全的顧問登入與客戶資料隔離。
+*   **資料自主權**: 我們賦予使用者完整的資料自主權，使用者可隨時透過介面永久刪除其帳號及所有相關資料，無需聯繫管理員。
 
 ## 技術棧
 
@@ -34,6 +35,11 @@
 *   **狀態管理**: Pinia
 *   **後端驗證**: Firebase Authentication
 *   **後端 API**: Google Cloud Run
+
+## 相關專案
+
+*   **後端 API 程式碼庫**: [ifa.rocks.spring](https://github.com/Chuiantw1212/ifa.rocks.spring)
+
 
 ## 專案結構
 
