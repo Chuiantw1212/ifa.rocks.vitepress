@@ -615,8 +615,6 @@ onMounted(() => {
 
 </script>
 <style lang="scss" scoped>
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@100..900&display=swap');
-
 .calculator {
     font-family: "Noto Sans TC", serif;
     margin: auto;

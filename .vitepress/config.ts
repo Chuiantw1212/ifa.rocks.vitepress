@@ -6,14 +6,42 @@ export default defineConfig({
   title: "鍛石 IFA 工具箱",
   description: "獨立理財顧問的隨身決策終端。鍛石工具箱整合退休計算機與多項財務模擬組件，深度優化手機操作感官，拒絕冗餘干擾。將複雜的生命規劃轉化為觸手可及的精確數據，讓專業建議在指尖即刻產出。",
   head: [
+    // --- SEO & Performance Optimization ---
+    // 1. Preconnect to Google Fonts domains to speed up font loading.
+    [
+      'link',
+      { rel: 'preconnect', href: 'https://fonts.googleapis.com' }
+    ],
+    [
+      'link',
+      { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' }
+    ],
+    // 2. Asynchronously load Google Fonts to prevent render-blocking.
+    [
+      'link',
+      {
+        rel: 'preload',
+        as: 'style',
+        href: 'https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@100..900&display=swap',
+        onload: "this.onload=null;this.rel='stylesheet'"
+      }
+    ],
+    // 3. Provide a fallback for browsers that do not support preload.
+    ['noscript', {}, `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@100..900&display=swap">`],
+
     ['link', { rel: 'icon', href: '/favicon.ico' }],
     // 從本地 public 資料夾載入 FirebaseUI 的 CSS
     [
       'link',
       {
+        // 將 rel="stylesheet" 改為 rel="preload"，並指定 as="style"
+        // 這樣瀏覽器會優先下載，但不會阻礙頁面渲染
+        rel: 'preload',
+        as: 'style',
         type: 'text/css',
-        rel: 'stylesheet',
-        href: '/firebase/firebase-ui-auth.css'
+        href: '/firebase/firebase-ui-auth.css',
+        // 在樣式表載入完成後，透過 onload 事件將其應用於頁面
+        onload: "this.onload=null;this.rel='stylesheet'"
       }
     ]
   ],
