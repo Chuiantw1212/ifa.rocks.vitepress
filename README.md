@@ -1,4 +1,4 @@
-# 礪石 IFA 工具箱 (ifa.rocks)
+# 鍛石 IFA 工具箱 (ifa.rocks)
 
 **專為獨立理財顧問 (IFA) 打造的隨身決策終端。**
 

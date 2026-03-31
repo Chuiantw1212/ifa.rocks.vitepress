@@ -3,8 +3,8 @@ import * as path from 'path'
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
-  title: "礪石 IFA 工具箱",
-  description: "獨立理財顧問的隨身決策終端。礪石工具箱整合退休計算機與多項財務模擬組件，深度優化手機操作感官，拒絕冗餘干擾。將複雜的生命規劃轉化為觸手可及的精確數據，讓專業建議在指尖即刻產出。",
+  title: "鍛石 IFA 工具箱",
+  description: "獨立理財顧問的隨身決策終端。鍛石工具箱整合退休計算機與多項財務模擬組件，深度優化手機操作感官，拒絕冗餘干擾。將複雜的生命規劃轉化為觸手可及的精確數據，讓專業建議在指尖即刻產出。",
   head: [
     ['link', { rel: 'icon', href: '/favicon.ico' }],
     // 從本地 public 資料夾載入 FirebaseUI 的 CSS
@@ -179,7 +179,7 @@ export default defineConfig({
     },
     footer: {
       message: 'Powered by <a href="https://vitepress.dev/" target="_blank">Vitepress</a>',
-      copyright: `Copyright © 2023-${new Date().getFullYear()} EN Chu`
+      copyright: `Copyright © 2023-${new Date().getFullYear()} EN Chu | <a href="/privacy">隱私權政策</a>`
     },
     logo: {
       src: '/logo/logo.webp',

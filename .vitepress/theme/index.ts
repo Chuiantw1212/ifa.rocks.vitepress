@@ -34,12 +34,11 @@ import firebase, { getAnalyticsInstance, getPerformanceInstance } from '@/fireba
 import { useAgentStore } from '@/stores/agent'
 
 // 6. 引入我們統一管理的自訂 Layout
-import Layout from './Layout.vue'
+import Layout from './Layout.vue';
 
 export default {
-    ...DefaultTheme,
+    extends: DefaultTheme,
     Layout,
-
     // 擴充 Vue 實體：全域註冊套件與自定義元件
     enhanceApp({ app }: EnhanceAppContext) {
         // 註冊 Pinia
