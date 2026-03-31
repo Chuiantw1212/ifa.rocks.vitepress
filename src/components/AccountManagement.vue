@@ -42,19 +42,9 @@ const isDeleting = ref(false);
 
 const handleDeleteAccount = async () => {
   isDeleting.value = true;
-  const agentId = agentStore.agent?.id;
-
-  if (!agentId) {
-    ElMessage.error('無法取得使用者 ID，無法刪除帳號。');
-    isDeleting.value = false;
-    confirmDeleteDialogVisible.value = false;
-    return;
-  }
 
   try {
-    // 根據使用者請求: 呼叫 `delete agent/{id}`
-    // 根據專案結構推斷 API 端點為 `/api/v1/agents/${agentId}`
-    const res = await authFetch(`/api/v1/agents/${agentId}`, {
+    const res = await authFetch(`/api/v1/agents`, {
       method: 'DELETE',
     });
 
