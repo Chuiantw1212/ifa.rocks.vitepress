@@ -6,15 +6,6 @@ export default defineConfig({
   title: "鍛石 IFA 工具箱",
   description: "獨立理財顧問的隨身決策終端。鍛石工具箱整合退休計算機與多項財務模擬組件，深度優化手機操作感官，拒絕冗餘干擾。將複雜的生命規劃轉化為觸手可及的精確數據，讓專業建議在指尖即刻產出。",
   head: [
-    // --- Security: Content Security Policy (CSP) ---
-    // This policy allows resources from Google, Firebase, and LINE to ensure authentication and analytics function correctly.
-    [
-      'meta',
-      {
-        'http-equiv': 'Content-Security-Policy',
-        'content': "default-src 'self'; script-src 'self' 'unsafe-inline' https://apis.google.com https://www.gstatic.com https://static.line-scdn.net https://www.google-analytics.com https://ssl.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' https: data:; connect-src 'self' https://ifa-rocks-899902006292.asia-east1.run.app http://localhost:8080 https://*.googleapis.com https://www.google-analytics.com; frame-src 'self' https://ifa-rocks-899902006292.firebaseapp.com https://accounts.google.com https://apis.google.com; font-src 'self' https://fonts.gstatic.com;"
-      }
-    ],
     // --- SEO & Performance Optimization ---
     // 1. Preconnect to Google Fonts domains to speed up font loading.
     [
