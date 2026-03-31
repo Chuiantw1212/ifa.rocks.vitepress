@@ -15,7 +15,6 @@ import 'element-plus/dist/index.css'
 import './global.scss'
 
 // 3. 引入您開發的小計算機與系統模組
-import LoginModule from '@/components/LoginModule.vue'
 import ClientProfile from '@/components/ClientProfile.vue'
 import ClientDashboard from '@/components/ClientDashboard.vue'
 import RetirementUnderestimationCard from '@/components/RetirementUnderestimationCard.vue'
