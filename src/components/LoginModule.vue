@@ -58,6 +58,7 @@ watch(dialogVisible, (newValue) => {
                 // 取得或建立 FirebaseUI 實例
                 const ui = window.firebaseui.auth.AuthUI.getInstance() || new window.firebaseui.auth.AuthUI(auth);
                 const uiConfig = {
+                    credentialHelper: 'local',
                     callbacks: {
                         // 我們不需要在這裡做任何事，因為 Pinia store 中的 onAuthStateChanged
                         // 監聽器會統一處理使用者狀態。
