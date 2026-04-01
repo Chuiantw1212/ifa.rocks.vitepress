@@ -79,7 +79,13 @@ export default defineConfig({
         {
           text: '文章列表',
           items: [
-            { text: '儲蓄險 vs 贈與稅真相', link: '/articles/savings-insurance-vs-inheritance-tax-truth' }
+            {
+              text: '保險',
+              collapsed: false,
+              items: [
+                { text: '儲蓄險 vs 贈與稅真相', link: '/articles/savings-insurance-vs-inheritance-tax-truth' }
+              ]
+            },
           ]
         }
       ],
