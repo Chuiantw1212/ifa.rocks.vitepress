@@ -96,17 +96,8 @@ watch(dialogVisible, (newValue) => {
         if (window.firebaseui) {
             launchFirebaseUI();
         } else {
-            // --- 動態載入 FirebaseUI 的 JS 和 CSS ---
-            
-            // 1. 載入 CSS
-            if (!document.querySelector('link[href="https://www.gstatic.com/firebasejs/ui/6.1.0/firebase-ui-auth.css"]')) {
-                const cssLink = document.createElement('link');
-                cssLink.rel = 'stylesheet';
-                cssLink.href = 'https://www.gstatic.com/firebasejs/ui/6.1.0/firebase-ui-auth.css';
-                document.head.appendChild(cssLink);
-            }
-            
-            // 2. 載入 JS
+            // --- 動態載入 FirebaseUI 的 JS ---
+            // CSS 已改由 .vitepress/config.ts 統一預載入
             const script = document.createElement('script');
             script.src = 'https://www.gstatic.com/firebasejs/ui/6.1.0/firebase-ui-auth__zh_tw.js';
             script.async = true;
