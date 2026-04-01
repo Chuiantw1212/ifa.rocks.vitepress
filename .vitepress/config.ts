@@ -83,14 +83,14 @@ export default defineConfig({
               text: '現金流',
               collapsed: false,
               items: [
-                { text: '減額繳清與展期定期', link: '/articles/reduced-paid-up-vs-extended-term' }
+                { text: '保費快繳不出來了怎辦？', link: '/articles/reduced-paid-up-vs-extended-term' }
               ]
             },
             {
               text: '投資',
               collapsed: false,
               items: [
-                // { text: '投資型保險的缺點', link: '/articles/savings-insurance-vs-inheritance-tax-truth' }
+                { text: '投資型保險=財富碎紙機', link: '/articles/investment-linked-insurance-trap' }
               ]
             },
             {
