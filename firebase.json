@@ -19,7 +19,7 @@
                 ]
             },
             {
-                "source": "logo/logo.webp",
+                "source": "logo/*",
                 "headers": [
                     {
                         "key": "Cache-Control",
@@ -28,7 +28,7 @@
                 ]
             },
             {
-                "source": "firebase/firebase-ui-auth.css",
+                "source": "firebase/**/*.css",
                 "headers": [
                     {
                         "key": "Cache-Control",
