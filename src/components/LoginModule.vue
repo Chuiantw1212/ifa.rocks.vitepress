@@ -1,6 +1,6 @@
 <template>
     <!-- 等待驗證狀態初始化完成後再渲染，避免閃爍 -->
-    <el-space v-if="agentStore.isInitialized" class="login" :size="20" alignment="center" direction="horizontal">
+    <el-space class="login" :size="20" alignment="center" direction="horizontal">
         <!-- 登入後顯示使用者頭像與下拉選單 -->
         <el-dropdown v-if="isLoggedIn" trigger="click" @command="handleCommand">
             <el-avatar :size="32" :src="agent.avatarUrl" :alt="agent.username" aria-label="使用者選單" />
@@ -22,7 +22,7 @@
     </el-dialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, watch, nextTick, computed } from 'vue';
 import { useRouter } from 'vitepress';
 import { ElMessage } from 'element-plus'
@@ -30,6 +30,13 @@ import { UserFilled } from '@element-plus/icons-vue'
 import { auth } from '@/firebaseConfig'
 import { GoogleAuthProvider, EmailAuthProvider } from 'firebase/auth';
 import { useAgentStore } from '@/stores/agent';
+
+// 宣告全域變數，讓 TypeScript 認得從 CDN 載入的 firebaseui
+declare global {
+    interface Window {
+        firebaseui: any;
+    }
+}
 
 const dialogVisible = ref(false)
 
@@ -45,7 +52,10 @@ const router = useRouter();
 watch(() => agentStore.isLoggedIn, (loggedIn, wasLoggedIn) => {
     if (loggedIn && !wasLoggedIn && dialogVisible.value) {
         dialogVisible.value = false
-        ElMessage.success(`歡迎回來，${agentStore.agent.username}`)
+        // 增加保護，確保 agent 物件存在
+        if (agentStore.agent) {
+            ElMessage.success(`歡迎回來，${agentStore.agent.username}`)
+        }
     }
 })
 
@@ -58,11 +68,12 @@ watch(dialogVisible, (newValue) => {
                 // 取得或建立 FirebaseUI 實例
                 const ui = window.firebaseui.auth.AuthUI.getInstance() || new window.firebaseui.auth.AuthUI(auth);
                 const uiConfig = {
+                    credentialHelper: 'local',
                     callbacks: {
                         // 我們不需要在這裡做任何事，因為 Pinia store 中的 onAuthStateChanged
                         // 監聽器會統一處理使用者狀態。
                         // 返回 false 可以避免登入後頁面重新導向。
-                        signInSuccessWithAuthResult: (authResult, redirectUrl) => false,
+                        signInSuccessWithAuthResult: (authResult: any, redirectUrl?: string) => false,
                     },
                     signInFlow: 'popup',
                     signInOptions: [
@@ -85,13 +96,23 @@ watch(dialogVisible, (newValue) => {
         if (window.firebaseui) {
             launchFirebaseUI();
         } else {
-            // 如果尚未載入，則動態建立 script 標籤來載入它
+            // --- 動態載入 FirebaseUI 的 JS 和 CSS ---
+            
+            // 1. 載入 CSS
+            if (!document.querySelector('link[href="https://www.gstatic.com/firebasejs/ui/6.1.0/firebase-ui-auth.css"]')) {
+                const cssLink = document.createElement('link');
+                cssLink.rel = 'stylesheet';
+                cssLink.href = 'https://www.gstatic.com/firebasejs/ui/6.1.0/firebase-ui-auth.css';
+                document.head.appendChild(cssLink);
+            }
+            
+            // 2. 載入 JS
             const script = document.createElement('script');
-            script.src = '/firebase/firebase-ui-auth__zh_tw.js';
+            script.src = 'https://www.gstatic.com/firebasejs/ui/6.1.0/firebase-ui-auth__zh_tw.js';
             script.async = true;
             script.onload = launchFirebaseUI; // 載入成功後，啟動 UI
             script.onerror = () => {
-                console.error('Failed to load firebase-ui-auth__zh_tw.js');
+                console.error('Failed to load firebase-ui-auth script from CDN.');
                 ElMessage.error('登入模組腳本載入失敗');
             };
             document.head.appendChild(script);
@@ -109,7 +130,7 @@ const handleLogout = async () => {
     }
 };
 
-const handleCommand = (command) => {
+const handleCommand = (command: string) => {
     switch (command) {
         case 'account':
             router.go('/pro/account');

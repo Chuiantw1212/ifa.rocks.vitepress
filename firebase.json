@@ -17,6 +17,33 @@
                         "value": "max-age=31536000"
                     }
                 ]
+            },
+            {
+                "source": "logo/logo.webp",
+                "headers": [
+                    {
+                        "key": "Cache-Control",
+                        "value": "max-age=31536000"
+                    }
+                ]
+            },
+            {
+                "source": "firebase/firebase-ui-auth.css",
+                "headers": [
+                    {
+                        "key": "Cache-Control",
+                        "value": "max-age=31536000"
+                    }
+                ]
+            },
+            {
+                "source": "vp-icons.css",
+                "headers": [
+                    {
+                        "key": "Cache-Control",
+                        "value": "max-age=31536000"
+                    }
+                ]
             }
         ]
     }
