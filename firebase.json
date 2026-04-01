@@ -28,7 +28,7 @@
                 ]
             },
             {
-                "source": "firebase/firebase-ui-auth.css",
+                "source": "firebase/**/*.css",
                 "headers": [
                     {
                         "key": "Cache-Control",
