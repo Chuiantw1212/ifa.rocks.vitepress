@@ -4,7 +4,7 @@ import * as path from 'path'
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
   title: "鍛石 IFA 工具箱",
-  description: "獨立理財顧問的隨身決策終端。鍛石工具箱整合退休計算機與多項財務模擬組件，深度優化手機操作感官，拒絕冗餘干擾。將複雜的生命規劃轉化為觸手可及的精確數據，讓專業建議在指尖即刻產出。",
+  description: "鍛石 IFA 工具箱是專為獨立顧問打造的隨身決策終端。透過開源邏輯降解複雜的金融變數，讓專業建議在指尖即刻產出。我們優化行動端操作，支持多目標試算與專業報表一鍵直送，協助您在諮詢現場以數據建立信任，讓專業回歸尊嚴。",
   head: [
     // --- SEO & Performance Optimization ---
     // 1. Preconnect to Google Fonts domains to speed up font loading.
@@ -56,6 +56,11 @@ export default defineConfig({
     // https://vitepress.dev/reference/default-theme-config
     nav: [
       {
+        text: '文章',
+        link: '/articles/savings-insurance-vs-inheritance-tax-truth',
+        activeMatch: '^/articles/'
+      },
+      {
         text: '快速試算',
         link: '/quick/multi-goals',
         // 使用正規表達式，確保只要在 /quick/ 路徑下，此 Nav 就會保持高亮
@@ -69,8 +74,36 @@ export default defineConfig({
     ],
     // 2. 多側邊欄 (Multi-Sidebar) 配置
     // 注意：這裡必須是 Object，以路徑作為 Key
-    // 注意：這裡必須是 Object，以路徑作為 Key
     sidebar: {
+      '/articles/': [
+        {
+          text: '文章列表',
+          items: [
+            {
+              text: '現金流',
+              collapsed: false,
+              items: [
+                { text: '保費快繳不出來了怎辦？', link: '/articles/reduced-paid-up-vs-extended-term' }
+              ]
+            },
+            {
+              text: '投資',
+              collapsed: false,
+              items: [
+                { text: '投資型保險=財富碎紙機', link: '/articles/investment-linked-insurance-trap' }
+              ]
+            },
+            {
+              text: '保險',
+              collapsed: false,
+              items: [
+                { text: '終身壽險 vs 贈與稅真相', link: '/articles/savings-insurance-vs-inheritance-tax-truth' },
+                { text: '儲蓄保險的通膨陷阱', link: '/articles/why-savings-insurance-is-losing-to-inflation' }
+              ]
+            },
+          ]
+        }
+      ],
 
       // 當網址進入 /pro/ 開頭時，左側會「完全切換」為以下目錄
       '/pro/': [
@@ -210,7 +243,7 @@ export default defineConfig({
       copyright: `Copyright © 2023-${new Date().getFullYear()} EN Chu | <a href="/privacy">隱私權政策</a>`
     },
     logo: {
-      src: '/logo/logo.webp',
+      src: '/logo/white_transparent_24.webp',
       width: '24px',
       height: '24px',
     },
@@ -243,9 +276,9 @@ export default defineConfig({
     //     }
     //   }
     // }
-    socialLinks: [
-      { ariaLabel: 'github', icon: 'github', link: 'https://github.com/Chuiantw1212/ifa.rocks.vitepress' },
-    ],
+    // socialLinks: [
+    //   { ariaLabel: 'github', icon: 'github', link: 'https://github.com/Chuiantw1212/ifa.rocks.vitepress' },
+    // ],
   },
   // Some chunks are larger than 500 kB
   vite: {

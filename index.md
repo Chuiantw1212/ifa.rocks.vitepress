@@ -6,7 +6,7 @@ hero:
   text: "專為獨立顧問打造的<br>隨身決策終端。"
   tagline: 收斂複雜的財務變數，讓專業建議在指尖即刻產出。
   image:
-    src: /logo/logo.webp
+    src: /logo/white_transparent_320.webp
     alt: 磨刀石
   actions:
     - theme: brand
