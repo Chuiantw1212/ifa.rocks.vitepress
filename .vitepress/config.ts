@@ -255,9 +255,9 @@ export default defineConfig({
     //     }
     //   }
     // }
-    socialLinks: [
-      { ariaLabel: 'github', icon: 'github', link: 'https://github.com/Chuiantw1212/ifa.rocks.vitepress' },
-    ],
+    // socialLinks: [
+    //   { ariaLabel: 'github', icon: 'github', link: 'https://github.com/Chuiantw1212/ifa.rocks.vitepress' },
+    // ],
   },
   // Some chunks are larger than 500 kB
   vite: {
