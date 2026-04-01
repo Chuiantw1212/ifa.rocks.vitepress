@@ -11,6 +11,10 @@ const imageBase = '/logo/white_transparent_'
       :srcset="withBase(`${imageBase}320.webp`)"
       media="(min-width: 960px)"
     >
+    <source
+      :srcset="withBase(`${imageBase}256.webp`)"
+      media="(min-width: 640px)"
+    >
     <img
       class="custom-hero-image"
       :src="withBase(`${imageBase}192.webp`)"
