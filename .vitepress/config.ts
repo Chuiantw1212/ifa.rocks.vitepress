@@ -243,7 +243,7 @@ export default defineConfig({
       copyright: `Copyright © 2023-${new Date().getFullYear()} EN Chu | <a href="/privacy">隱私權政策</a>`
     },
     logo: {
-      src: '/logo/white_transparent_24.webp',
+      src: '/logo/white_transparent_36.webp',
       width: '24px',
       height: '24px',
     },
