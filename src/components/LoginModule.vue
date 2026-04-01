@@ -1,6 +1,6 @@
 <template>
     <!-- 等待驗證狀態初始化完成後再渲染，避免閃爍 -->
-    <el-space v-if="agentStore.isInitialized" class="login" :size="20" alignment="center" direction="horizontal">
+    <el-space class="login" :size="20" alignment="center" direction="horizontal">
         <!-- 登入後顯示使用者頭像與下拉選單 -->
         <el-dropdown v-if="isLoggedIn" trigger="click" @command="handleCommand">
             <el-avatar :size="32" :src="agent.avatarUrl" :alt="agent.username" aria-label="使用者選單" />
