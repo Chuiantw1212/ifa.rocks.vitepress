@@ -87,10 +87,18 @@ export default defineConfig({
               ]
             },
             {
+              text: '投資',
+              collapsed: false,
+              items: [
+                // { text: '投資型保險的缺點', link: '/articles/savings-insurance-vs-inheritance-tax-truth' }
+              ]
+            },
+            {
               text: '保險',
               collapsed: false,
               items: [
-                { text: '終身壽險 vs 贈與稅真相', link: '/articles/savings-insurance-vs-inheritance-tax-truth' }
+                { text: '終身壽險 vs 贈與稅真相', link: '/articles/savings-insurance-vs-inheritance-tax-truth' },
+                { text: '儲蓄保險的通膨陷阱', link: '/articles/why-savings-insurance-is-losing-to-inflation' }
               ]
             },
           ]
