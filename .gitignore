@@ -23,3 +23,5 @@ logs
 .vitepress/cache
 
 *.cache
+
+*.mjs

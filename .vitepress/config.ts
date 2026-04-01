@@ -4,7 +4,7 @@ import * as path from 'path'
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
   title: "鍛石 IFA 工具箱",
-  description: "獨立理財顧問的隨身決策終端。鍛石工具箱整合退休計算機與多項財務模擬組件，深度優化手機操作感官，拒絕冗餘干擾。將複雜的生命規劃轉化為觸手可及的精確數據，讓專業建議在指尖即刻產出。",
+  description: "鍛石 IFA 工具箱是專為獨立顧問打造的隨身決策終端。透過開源邏輯降解複雜的金融變數，讓專業建議在指尖即刻產出。我們優化行動端操作，支持多目標試算與專業報表一鍵直送，協助您在諮詢現場以數據建立信任，讓專業回歸尊嚴。",
   head: [
     // --- SEO & Performance Optimization ---
     // 1. Preconnect to Google Fonts domains to speed up font loading.
