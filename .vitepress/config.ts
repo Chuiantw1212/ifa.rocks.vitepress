@@ -83,7 +83,7 @@ export default defineConfig({
               text: '現金流',
               collapsed: false,
               items: [
-                // { text: '儲蓄操作', link: '/articles/savings-insurance-vs-inheritance-tax-truth' }
+                { text: '減額繳清與展期定期', link: '/articles/reduced-paid-up-vs-extended-term' }
               ]
             },
             {
