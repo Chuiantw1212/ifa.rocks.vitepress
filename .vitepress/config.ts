@@ -56,6 +56,11 @@ export default defineConfig({
     // https://vitepress.dev/reference/default-theme-config
     nav: [
       {
+        text: '文章',
+        link: '/articles/savings-insurance-vs-inheritance-tax-truth',
+        activeMatch: '^/articles/'
+      },
+      {
         text: '快速試算',
         link: '/quick/multi-goals',
         // 使用正規表達式，確保只要在 /quick/ 路徑下，此 Nav 就會保持高亮
@@ -69,8 +74,15 @@ export default defineConfig({
     ],
     // 2. 多側邊欄 (Multi-Sidebar) 配置
     // 注意：這裡必須是 Object，以路徑作為 Key
-    // 注意：這裡必須是 Object，以路徑作為 Key
     sidebar: {
+      '/articles/': [
+        {
+          text: '文章列表',
+          items: [
+            { text: '儲蓄險 vs 贈與稅真相', link: '/articles/savings-insurance-vs-inheritance-tax-truth' }
+          ]
+        }
+      ],
 
       // 當網址進入 /pro/ 開頭時，左側會「完全切換」為以下目錄
       '/pro/': [
