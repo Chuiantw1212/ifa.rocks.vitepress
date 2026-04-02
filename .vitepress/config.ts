@@ -56,18 +56,18 @@ export default defineConfig({
     // https://vitepress.dev/reference/default-theme-config
     nav: [
       {
-        text: '文章',
+        text: '財商專欄',
         link: '/articles/savings-insurance-vs-inheritance-tax-truth',
         activeMatch: '^/articles/'
       },
       {
-        text: '快速試算',
-        link: '/quick/multi-goals',
+        text: '互動教學',
+        link: '/quick/inflation-risk',
         // 使用正規表達式，確保只要在 /quick/ 路徑下，此 Nav 就會保持高亮
         activeMatch: '^/quick/'
       },
       {
-        text: '客戶總覽', // 新增：SaaS 系統的真正首頁
+        text: 'IFA規劃書', // 新增：SaaS 系統的真正首頁
         link: '/pro/dashboard/',     // 指向我們剛討論的 ClientDashboard 頁面
         activeMatch: '^/pro/dashboard/'
       },
@@ -77,8 +77,15 @@ export default defineConfig({
     sidebar: {
       '/articles/': [
         {
-          text: '文章列表',
+          text: '財商專欄',
           items: [
+            {
+              text: '退休',
+              collapsed: false,
+              items: [
+                { text: '高息ETF vs 年金險', link: '/articles/retirement-fund-etf-vs-annuity-comparison' }
+              ]
+            },
             {
               text: '現金流',
               collapsed: false,
@@ -195,12 +202,30 @@ export default defineConfig({
       // 當網址進入 /quick/ 開頭時，左側會「完全切換」為輕量工具目錄
       '/quick/': [
         {
-          text: '輕量快算工具 (免註冊)',
+          text: '互動教學',
           items: [
-            { text: '多目標財務規劃', link: '/quick/multi-goals' },
-            { text: '簡易退休規劃', link: '/quick/retirement' },
-            { text: '代價計時器', link: '/quick/cost-of-delay' },
-            { text: '通膨照妖鏡', link: '/quick/inflation-risk' }
+            {
+              text: '收支',
+              collapsed: false,
+              items: [
+                { text: '通膨照妖鏡', link: '/quick/inflation-risk' },
+                { text: '代價計時器', link: '/quick/cost-of-delay' },
+              ]
+            },
+            {
+              text: '退休',
+              collapsed: false,
+              items: [
+                { text: '簡易退休規劃', link: '/quick/retirement' },
+              ]
+            },
+            {
+              text: '綜合',
+              collapsed: false,
+              items: [
+                { text: '多目標財務規劃', link: '/quick/multi-goals' },
+              ]
+            },
           ]
         }
       ],
