@@ -80,6 +80,13 @@ export default defineConfig({
           text: '財商專欄',
           items: [
             {
+              text: '綜合',
+              collapsed: false,
+              items: [
+                { text: '理專、保經、IFA 差在哪？', link: '/articles/financial-advisor-comparison-rm-broker-ifa' }
+              ]
+            },
+            {
               text: '退休',
               collapsed: false,
               items: [
