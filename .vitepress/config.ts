@@ -90,6 +90,7 @@ export default defineConfig({
               text: '退休',
               collapsed: false,
               items: [
+                { text: '勞工退休金一次領還是月領？', link: '/articles/labor-pension-lump-sum-vs-monthly' },
                 { text: '高息ETF vs 年金險', link: '/articles/retirement-fund-etf-vs-annuity-comparison' }
               ]
             },
