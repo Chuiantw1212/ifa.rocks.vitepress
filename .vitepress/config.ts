@@ -57,7 +57,7 @@ export default defineConfig({
     nav: [
       {
         text: '財商專欄',
-        link: '/articles/savings-insurance-vs-inheritance-tax-truth',
+        link: '/articles/financial-advisor-comparison-rm-broker-ifa',
         activeMatch: '^/articles/'
       },
       {
