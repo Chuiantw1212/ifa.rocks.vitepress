@@ -11,7 +11,7 @@ hero:
   actions:
     - theme: brand
       text: 啟動快速試算
-      link: /quick/multi-goals
+      link: /quick/inflation-risk
     - theme: alt
       text: 預覽專業報告
       link: /pro/summary
