@@ -11,11 +11,10 @@ hero:
   actions:
     - theme: brand
       text: 啟動快速試算
-      link: /quick/multi-goals
+      link: /quick/inflation-risk
     - theme: alt
       text: 預覽專業報告
       link: /pro/summary
-
 features:
   - title: 一眼看穿缺口
     details: 捨棄複雜線條，只提供直覺好懂的財富曲線。將抽象的通膨與提領路徑視覺化，讓客戶在諮詢現場瞬間看懂財務風險，決策效率直接翻倍。
