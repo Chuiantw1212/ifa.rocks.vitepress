@@ -101,6 +101,7 @@ export default defineConfig({
               text: '投資',
               collapsed: false,
               items: [
+                { text: 'ETF vs 基金，哪個好？', link: '/articles/etf-vs-fund-total-expense-ratio-buffett-bet' },
                 { text: '投資型保險=財富碎紙機', link: '/articles/investment-linked-insurance-trap' },
                 { text: '終極懶人ETF', link: '/articles/ishares-core-allocation-etf-beginner-guide' },
                 { text: 'GARP投資策略', link: '/articles/investing-with-garp-and-pegy' }
