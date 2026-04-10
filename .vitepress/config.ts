@@ -50,7 +50,10 @@ export default defineConfig({
   lastUpdated: true,
   cleanUrls: true,
   sitemap: {
-    hostname: 'https://ifa.rocks'
+    hostname: 'https://ifa.rocks',
+    transformItems(items) {
+      return items.filter((item) => !item.url.includes('/pro/'))
+    }
   },
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
