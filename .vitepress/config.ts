@@ -109,6 +109,7 @@ export default defineConfig({
               collapsed: false,
               items: [
                 { text: '投資型保險=財富碎紙機', link: '/articles/investment-linked-insurance-trap' },
+                { text: '終極懶人ETF', link: '/articles/ishares-core-allocation-etf-beginner-guide' },
                 { text: 'GARP投資策略', link: '/articles/investing-with-garp-and-pegy' }
               ]
             },
