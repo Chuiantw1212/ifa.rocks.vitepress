@@ -90,17 +90,10 @@ export default defineConfig({
               ]
             },
             {
-              text: '退休',
+              text: '記帳&現金流',
               collapsed: false,
               items: [
-                { text: '勞工退休金一次領還是月領？', link: '/articles/labor-pension-lump-sum-vs-monthly' },
-                { text: '高息ETF vs 年金險', link: '/articles/retirement-fund-etf-vs-annuity-comparison' }
-              ]
-            },
-            {
-              text: '現金流',
-              collapsed: false,
-              items: [
+                { text: '記帳自動化：發票存摺', link: '/articles/minimalist-finance-automation-invoice-passbook' },
                 { text: '保費快繳不出來了怎辦？', link: '/articles/reduced-paid-up-vs-extended-term' }
               ]
             },
@@ -119,6 +112,14 @@ export default defineConfig({
               items: [
                 { text: '終身壽險 vs 贈與稅真相', link: '/articles/savings-insurance-vs-inheritance-tax-truth' },
                 { text: '儲蓄保險的通膨陷阱', link: '/articles/why-savings-insurance-is-losing-to-inflation' }
+              ]
+            },
+            {
+              text: '退休',
+              collapsed: false,
+              items: [
+                { text: '勞工退休金一次領還是月領？', link: '/articles/labor-pension-lump-sum-vs-monthly' },
+                { text: '高息ETF vs 年金險', link: '/articles/retirement-fund-etf-vs-annuity-comparison' }
               ]
             },
           ]
