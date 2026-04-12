@@ -115,6 +115,14 @@ export default defineConfig({
                 { text: '儲蓄保險的通膨陷阱', link: '/articles/why-savings-insurance-is-losing-to-inflation' }
               ]
             },
+             {
+              text: '買房',
+              collapsed: false,
+              items: [
+                { text: '買房還是租房(一)：槓桿篇', link: '/articles/buy-vs-rent-asset-scale-logic' },
+                { text: '買房還是租房(二)：通膨篇', link: '/articles/buy-vs-rent-inflation-subscription-trap' },
+              ]
+            },
             {
               text: '退休',
               collapsed: false,
