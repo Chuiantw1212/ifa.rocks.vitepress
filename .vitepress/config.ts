@@ -52,7 +52,8 @@ export default defineConfig({
   sitemap: {
     hostname: 'https://ifa.rocks',
     transformItems(items) {
-      return items.filter((item) => !item.url.includes('/pro/'))
+      // 僅保留 articles/ 目錄下的檔案與首頁
+      return items.filter((item) => item.url === '' || item.url === 'index.html' || item.url.includes('articles/'))
     }
   },
   themeConfig: {
