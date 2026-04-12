@@ -269,7 +269,7 @@ export default defineConfig({
   // Some chunks are larger than 500 kB
   vite: {
     build: {
-      sourcemap: true,
+      sourcemap: false,
       rollupOptions: {
         output: {
           manualChunks(id) {

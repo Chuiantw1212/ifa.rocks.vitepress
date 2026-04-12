@@ -4,7 +4,7 @@ import { createPinia } from 'pinia'
 
 // 1. 引入 Element Plus 核心與基礎樣式
 import ElementPlus from 'element-plus'
-import { ID_INJECTION_KEY } from 'element-plus'
+import { ID_INJECTION_KEY, ZINDEX_INJECTION_KEY } from 'element-plus'
 import 'element-plus/dist/index.css'
 /* ⚠️ 注意：我們刻意「不」引入下面這行深色樣式！
   這樣才能在 VitePress 的深色背景下，保持 Element Plus 組件為高對比的白底亮色模式。
@@ -52,6 +52,7 @@ export default {
             prefix: Math.floor(Math.random() * 10000),
             current: 0,
         })
+        app.provide(ZINDEX_INJECTION_KEY, { current: 0 })
 
         // 全域註冊您的小計算機元件，讓 Markdown 可以直接使用標籤如 <TvmCalculator />
         app.component('ClientProfile', ClientProfile)
