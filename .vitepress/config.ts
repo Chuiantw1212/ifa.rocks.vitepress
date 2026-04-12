@@ -121,6 +121,7 @@ export default defineConfig({
               items: [
                 { text: '買房還是租房(一)：槓桿篇', link: '/articles/buy-vs-rent-asset-scale-logic' },
                 { text: '買房還是租房(二)：通膨篇', link: '/articles/buy-vs-rent-inflation-subscription-trap' },
+                { text: '買房還是租房(三)：生活篇', link: '/articles/buy-vs-rent-opportunity-cost-tax-logic' },
               ]
             },
             {
