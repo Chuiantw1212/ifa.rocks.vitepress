@@ -106,7 +106,8 @@ export default defineConfig({
                 { text: '投資型保險=財富碎紙機', link: '/articles/investment-linked-insurance-trap' },
                 { text: '終極懶人ETF', link: '/articles/ishares-core-allocation-etf-beginner-guide' },
                 { text: '評價系列(一)：PEGY模型', link: '/articles/investing-with-garp-and-pegy' },
-                { text: '評價系列(二)：PPP模型', link: '/articles/rainsy-sam-ppp-valuation-blume-beta-algorithmic-guide' }
+                { text: '評價系列(二)：PPP模型', link: '/articles/rainsy-sam-ppp-valuation-blume-beta-algorithmic-guide' },
+                { text: '評價系列(三)：HVZ隱藏價值', link: '/articles/hidden-value-zone-hvz-peg-ppp-reconciliation' }
               ]
             },
             {
