@@ -95,7 +95,7 @@ const initializeLiffAndLogin = async () => {
 onMounted(() => {
   currentUrl.value = window.location.href;
   // Check if we are in the LINE client
-  if (navigator.userAgent.match(/Line/i)) {
+  if (navigator.userAgent.match(/Line/i) && window.location.pathname.includes('/pro/')) {
     showOverlay.value = true;
     status.value = 'initializing';
     initializeLiffAndLogin();
