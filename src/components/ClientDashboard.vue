@@ -67,33 +67,12 @@
       </el-card>
     </div>
 
-    <el-dialog v-model="dialogVisible" title="建立新客戶檔案" width="400px" destroy-on-close>
-      <el-form
-        ref="ruleFormRef"
-        :model="newClientForm"
-        :rules="rules"
-        label-position="top"
-      >
-        <el-form-item label="客戶姓名" prop="name">
-          <el-input v-model="newClientForm.name" placeholder="請輸入姓名" autocomplete="name" />
-        </el-form-item>
-        <el-form-item label="Email" prop="email">
-          <el-input v-model="newClientForm.email" placeholder="請輸入Email" autocomplete="email" />
-        </el-form-item>
-        <el-form-item label="聯絡電話" prop="phone">
-          <el-input v-model="newClientForm.phone" placeholder="選填" autocomplete="tel" />
-        </el-form-item>
-        <el-form-item label="Line ID" prop="lineId">
-          <el-input v-model="newClientForm.lineId" placeholder="選填" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="dialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="createNewClient">建立並進入規劃</el-button>
-        </span>
-      </template>
-    </el-dialog>
+    <!-- New Client Dialog Component -->
+    <NewClientDialog
+      v-model="dialogVisible"
+      @submit="handleNewClientSubmit"
+      @cancel="dialogVisible = false"
+    />
 
   </div>
 </template>
@@ -105,7 +84,9 @@ import { storeToRefs } from 'pinia'
 import { Trophy, Plus, Delete, Warning } from '@element-plus/icons-vue'
 import { useClientsStore, type NewClientForm, type Client } from '@/stores/clients'
 import { useAgentStore } from '@/stores/agent'
-import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
+import { ElMessage } from 'element-plus'
+// Import the new component
+import NewClientDialog from './NewClientDialog.vue'
 // --- 類型定義 ---
 // API
 const router = useRouter()
@@ -118,26 +99,7 @@ const { clientList, isLoading, currentClientId } = storeToRefs(clientsStore)
 const agentStore =  useAgentStore()
 
 // 彈窗控制
-const dialogVisible = ref(false)
-const ruleFormRef = ref<FormInstance>()
-const newClientForm = ref<NewClientForm>({ name: '', email: '', phone: '', lineId: '' })
-
-watch(dialogVisible, (isOpening) => {
-  if (isOpening) {
-    // 每次打開彈窗時重置表單數據
-    newClientForm.value = { name: '', email: '', phone: '', lineId: '' }
-  }
-})
-
-const rules = reactive<FormRules<NewClientForm>>({
-  name: [{ required: true, message: '請輸入客戶姓名', trigger: 'blur' }],
-  email: [
-    { required: true, message: '請輸入Email', trigger: 'blur' },
-    { type: 'email', message: '請輸入有效的Email格式', trigger: ['blur', 'change'] }
-  ],
-  phone: [{ pattern: /^[0-9-+#() ]*$/, message: '請輸入有效的電話號碼', trigger: 'blur' }],
-  lineId: [{ pattern: /^[a-zA-Z0-9._-]*$/, message: '請輸入有效的Line ID', trigger: 'blur' }]
-})
+const dialogVisible = ref(false) // This now controls the NewClientDialog component
 
 // 動作邏輯
 const handleClientSwitch = (newId: string | null) => {
@@ -150,29 +112,20 @@ const enterPlan = async (client: Client) => {
   await router.go(`/pro/profile?id=${client.id}`)
 }
 
-const createNewClient = async () => {
-  const formEl = ruleFormRef.value
-  if (!formEl) return
+const handleNewClientSubmit = async (formData: NewClientForm) => {
+  try {
+    await clientsStore.createClient(formData)
+    dialogVisible.value = false
+    ElMessage.success('客戶建立成功')
 
-  await formEl.validate(async (valid) => {
-    if (valid) {
-      try {
-        await clientsStore.createClient(newClientForm.value)
-        dialogVisible.value = false
-        ElMessage.success('客戶建立成功')
-
-        // 如果 store 成功設定了 currentClientId，則跳轉
-        if (clientsStore.currentClientId) {
-          await router.go(`/pro/profile?id=${clientsStore.currentClientId}`)
-        }
-      } catch (error: any) {
-        console.error('Create client error:', error)
-        ElMessage.error(error.message || '建立客戶時發生未預期的錯誤')
-      }
-    } else {
-      ElMessage.error('請修正表單中的錯誤後再試一次')
+    // 如果 store 成功設定了 currentClientId，則跳轉
+    if (clientsStore.currentClientId) {
+      await router.go(`/pro/profile?id=${clientsStore.currentClientId}`)
     }
-  })
+  } catch (error: any) {
+    console.error('Create client error:', error)
+    ElMessage.error(error.message || '建立客戶時發生未預期的錯誤')
+  }
 }
 
 const deleteClient = async (clientToDelete: Client) => {
