@@ -11,3 +11,8 @@
 ## 規劃完整性提醒
 
 <PlanningReminder />
+
+<script setup>
+import RetirementLite from '@/components/RetirementLite.vue'
+import PlanningReminder from '@/components/PlanningReminder.vue'
+</script>
