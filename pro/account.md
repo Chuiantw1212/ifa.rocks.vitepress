@@ -21,5 +21,5 @@ title: 帳號管理
 <AccountManagement />
 
 <script setup>
-import AccountManagement from '@/components/AccountManagement.vue'
+import AccountManagement from '@/components/organisms/AccountManagement.vue'
 </script>
