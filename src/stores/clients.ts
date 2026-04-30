@@ -47,7 +47,7 @@ export const useClientsStore = defineStore('clients', () => {
         }
         isLoading.value = true
         try {
-            const res = await authFetch('/api/v1/client-profiles')
+            const res = await authFetch('/api/v1/client/profiles')
             const data = await res.json()
             // API 回傳一個包含 list 屬性的物件
             if (data && Array.isArray(data.list)) {
@@ -63,7 +63,7 @@ export const useClientsStore = defineStore('clients', () => {
                     setCurrentClientId(clientList.value[0].id)
                 }
             } else {
-                console.warn('API /api/v1/client-profiles 並未回傳一個有效的列表物件', data)
+                console.warn('API /api/v1/client/profiles 並未回傳一個有效的列表物件', data)
                 clientList.value = []
             }
         } catch (error: any) {
@@ -114,6 +114,34 @@ export const useClientsStore = defineStore('clients', () => {
         }
     }
 
+    async function updateClient(clientId: string, formData: NewClientForm) {
+        isLoading.value = true;
+        try {
+            const res = await authFetch(`/api/v1/client/profiles/${clientId}`, {
+                method: 'PATCH',
+                body: formData,
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                throw new Error(errorData.message || `更新客戶失敗 (status: ${res.status})`);
+            }
+
+            const updatedClientData = await res.json();
+
+            // 更新 clientList 中的對應客戶資料
+            const index = clientList.value.findIndex(client => client.id === clientId);
+            if (index !== -1) {
+                clientList.value[index] = { ...clientList.value[index], ...updatedClientData, lastUpdated: new Date().toISOString().split('T')[0] };
+            }
+        } catch (error) {
+            console.error('Update client error:', error);
+            throw error;
+        } finally {
+            isLoading.value = false;
+        }
+    }
+
     function setCurrentClientId(id: string | null) {
         currentClientId.value = id
         console.log(`全域環境已切換至客戶 ID：${id}`)
@@ -133,7 +161,6 @@ export const useClientsStore = defineStore('clients', () => {
     }, { immediate: true })
 
     return {
-        clientList, isLoading, currentClientId,
-        fetchClients, createClient, deleteClient, setCurrentClientId
+        clientList, isLoading, currentClientId, fetchClients, createClient, deleteClient, updateClient, setCurrentClientId
     }
 })

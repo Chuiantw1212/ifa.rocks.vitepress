@@ -4,3 +4,7 @@
 本區建議在IFA或財務規劃顧問協同下進行操作。
 
 <ClientDashboard />
+
+<script setup>
+import ClientDashboard from '@/components/pages/ClientDashboard.vue'
+</script>

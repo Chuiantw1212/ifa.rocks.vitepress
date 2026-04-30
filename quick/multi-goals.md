@@ -11,3 +11,8 @@
 ## 規劃完整性提醒
 
 <PlanningReminder />
+
+<script setup>
+import TvmCalculator from '@/components/organisms/TvmCalculator.vue'
+import PlanningReminder from '@/components/organisms/PlanningReminder.vue'
+</script>

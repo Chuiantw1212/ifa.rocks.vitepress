@@ -100,7 +100,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useTVM } from '../composables/useTVM'
+import { useTVM } from '../../composables/useTVM'
 import type { Ref } from 'vue'
 
 const principal: Ref<number> = ref(1000000)

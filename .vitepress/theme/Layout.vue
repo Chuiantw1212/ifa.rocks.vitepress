@@ -4,8 +4,8 @@ import { onMounted } from 'vue'
 import { useData, withBase } from 'vitepress'
 import { useDynamicSidebar } from '@/composables/useDynamicSidebar'
 import { useAgent } from '@/composables/useAgent'
-import LoginModule from '@/components/LoginModule.vue'
-import LineBrowserGuard from '@/components/LineBrowserGuard.vue'
+import LoginModule from '@/components/organisms/LoginModule.vue'
+import LineBrowserGuard from '@/components/organisms/LineBrowserGuard.vue'
 import HeroImage from './components/HeroImage.vue'
 
 const { Layout } = DefaultTheme

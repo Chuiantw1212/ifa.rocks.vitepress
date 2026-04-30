@@ -14,25 +14,13 @@ import 'element-plus/dist/index.css'
 // 2. 引入您的自定義全域樣式 (包含覆寫 VitePress 原生設定)
 import './global.scss'
 
-// 3. 引入您開發的小計算機與系統模組
-import ClientProfile from '@/components/ClientProfile.vue'
-import ClientDashboard from '@/components/ClientDashboard.vue'
-import RetirementUnderestimationCard from '@/components/RetirementUnderestimationCard.vue'
-
-// 引入所有速算工具與共用元件
-import TvmCalculator from '@/components/TvmCalculator.vue'
-import PlanningReminder from '@/components/PlanningReminder.vue'
-import RetirementLite from '@/components/RetirementLite.vue'
-import CostOfDelay from '@/components/CostOfDelay.vue'
-import InflationRisk from '@/components/InflationRisk.vue'
-
-// 4. 引入我們集中管理的 Firebase 設定檔
+// 3. 引入我們集中管理的 Firebase 設定檔
 import firebase, { getAnalyticsInstance, getPerformanceInstance } from '@/firebaseConfig';
 
-// 5. 引入核心邏輯層的 Pinia Store
+// 4. 引入核心邏輯層的 Pinia Store
 import { useAgentStore } from '@/stores/agent'
 
-// 6. 引入我們統一管理的自訂 Layout
+// 5. 引入我們統一管理的自訂 Layout
 import Layout from './Layout.vue';
 
 export default {
@@ -53,16 +41,6 @@ export default {
             current: 0,
         })
         app.provide(ZINDEX_INJECTION_KEY, { current: 0 })
-
-        // 全域註冊您的小計算機元件，讓 Markdown 可以直接使用標籤如 <TvmCalculator />
-        app.component('ClientProfile', ClientProfile)
-        app.component('ClientDashboard', ClientDashboard)
-        app.component('RetirementUnderestimationCard', RetirementUnderestimationCard)
-        app.component('TvmCalculator', TvmCalculator)
-        app.component('PlanningReminder', PlanningReminder)
-        app.component('RetirementLite', RetirementLite)
-        app.component('CostOfDelay', CostOfDelay)
-        app.component('InflationRisk', InflationRisk)
 
         // @ts-ignore
         if (!import.meta.env.SSR) {

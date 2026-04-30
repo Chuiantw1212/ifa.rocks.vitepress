@@ -105,9 +105,6 @@ export default defineConfig({
                 { text: 'ETF vs 基金，哪個好？', link: '/articles/etf-vs-fund-total-expense-ratio-buffett-bet' },
                 { text: '投資型保險=財富碎紙機', link: '/articles/investment-linked-insurance-trap' },
                 { text: '終極懶人ETF', link: '/articles/ishares-core-allocation-etf-beginner-guide' },
-                { text: '評價系列(一)：PEGY模型', link: '/articles/investing-with-garp-and-pegy' },
-                { text: '評價系列(二)：PPP模型', link: '/articles/rainsy-sam-ppp-valuation-blume-beta-algorithmic-guide' },
-                { text: '評價系列(三)：HVZ隱藏價值', link: '/articles/hidden-value-zone-hvz-peg-ppp-reconciliation' }
               ]
             },
             {
@@ -118,7 +115,14 @@ export default defineConfig({
                 { text: '儲蓄保險的通膨陷阱', link: '/articles/why-savings-insurance-is-losing-to-inflation' }
               ]
             },
-             {
+            {
+              text: '職涯規劃',
+              collapsed: false,
+              items: [
+                { text: '賺多少才夠？', link: '/articles/taiwan-salary-classes-enough-money-strategy' },
+              ]
+            },
+            {
               text: '買房',
               collapsed: false,
               items: [
@@ -150,10 +154,16 @@ export default defineConfig({
         // ==========================================
         {
           text: '👤 關於用戶',
-          collapsed: false,
           items: [
             // 獨立意義：換算出「距離退休還剩幾次發薪日」與「家庭責任基準」
+
             { text: '基本資料與餘命', link: '/pro/profile' }
+          ]
+        },
+        {
+          text: '收支管理',
+          items: [
+            { text: '職業規劃', link: '/pro/career' }
           ]
         },
       ],

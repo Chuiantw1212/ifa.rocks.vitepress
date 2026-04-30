@@ -176,7 +176,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { Setting, DataLine } from '@element-plus/icons-vue'
-import { useTVM } from '../composables/useTVM'
+import { useTVM } from '../../composables/useTVM'
 
 // 參數預設值
 const currentAge = ref(35)

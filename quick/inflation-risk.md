@@ -11,3 +11,8 @@
 ## 規劃完整性提醒
 
 <PlanningReminder />
+
+<script setup>
+import InflationRisk from '@/components/organisms/InflationRisk.vue'
+import PlanningReminder from '@/components/organisms/PlanningReminder.vue'
+</script>

@@ -96,7 +96,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { useTVM } from '../composables/useTVM'
+import { useTVM } from '../../composables/useTVM'
 
 const targetAmount = ref(10000000)
 const totalYears = ref(20)
