@@ -13,6 +13,6 @@
 <PlanningReminder />
 
 <script setup>
-import RetirementLite from '@/components/RetirementLite.vue'
+import RetirementLite from '@/components/organisms/RetirementLite.vue'
 import PlanningReminder from '@/components/organisms/PlanningReminder.vue'
 </script>

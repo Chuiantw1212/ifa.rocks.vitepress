@@ -13,6 +13,6 @@
 <PlanningReminder />
 
 <script setup>
-import TvmCalculator from '@/components/TvmCalculator.vue'
+import TvmCalculator from '@/components/organisms/TvmCalculator.vue'
 import PlanningReminder from '@/components/organisms/PlanningReminder.vue'
 </script>
