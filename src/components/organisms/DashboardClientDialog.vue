@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     :model-value="modelValue"
-    title="建立新客戶檔案"
+    :title="dialogTitle"
     width="400px"
     destroy-on-close
     @update:model-value="handleDialogClose"
@@ -13,10 +13,10 @@
       label-position="top"
     >
       <el-form-item label="客戶姓名" prop="name">
-        <el-input v-model="formData.name" placeholder="請輸入姓名" autocomplete="name" />
+        <el-input v-model="formData.name" placeholder="請輸入姓名" autocomplete="name"  />
       </el-form-item>
       <el-form-item label="Email" prop="email">
-        <el-input v-model="formData.email" placeholder="請輸入Email" autocomplete="email" />
+        <el-input v-model="formData.email" placeholder="請輸入Email" autocomplete="email" :disabled="!!clientToEdit" />
       </el-form-item>
       <el-form-item label="聯絡電話" prop="phone">
         <el-input v-model="formData.phone" placeholder="選填" autocomplete="tel" />
@@ -28,19 +28,20 @@
     <template #footer>
       <span class="dialog-footer">
         <el-button @click="handleCancel">取消</el-button>
-        <el-button type="primary" @click="handleSubmit">建立並進入規劃</el-button>
+        <el-button type="primary" @click="handleSubmit">{{ submitButtonText }}</el-button>
       </span>
     </template>
   </el-dialog>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive, watch, computed } from 'vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
-import type { NewClientForm } from '@/stores/clients'
+import type { NewClientForm, Client } from '@/stores/clients'
 
 const props = defineProps<{
   modelValue: boolean; // For v-model binding of dialog visibility
+  clientToEdit?: Client | null;
 }>();
 
 const emit = defineEmits<{
@@ -49,15 +50,28 @@ const emit = defineEmits<{
   (e: 'cancel'): void;
 }>();
 
+const dialogTitle = computed(() => props.clientToEdit ? '修改客戶資料' : '建立新客戶檔案');
+const submitButtonText = computed(() => props.clientToEdit ? '儲存變更' : '建立並進入規劃');
+
 const ruleFormRef = ref<FormInstance>();
 const formData = reactive<NewClientForm>({ name: '', email: '', phone: '', lineId: '' });
 
 // Watch for modelValue to reset form when dialog opens
 watch(() => props.modelValue, (isOpening) => {
   if (isOpening) {
-    // Reset form data to default empty values
-    Object.assign(formData, { name: '', email: '', phone: '', lineId: '' });
-    ruleFormRef.value?.resetFields(); // Reset validation state
+    ruleFormRef.value?.clearValidate(); // Just clear validation, don't reset data
+    if (props.clientToEdit) {
+      // Editing mode: populate form
+      Object.assign(formData, {
+        name: props.clientToEdit.name,
+        email: props.clientToEdit.email,
+        phone: props.clientToEdit.phone || '',
+        lineId: props.clientToEdit.lineId || ''
+      });
+    } else {
+      // Creating mode: reset form
+      Object.assign(formData, { name: '', email: '', phone: '', lineId: '' });
+    }
   }
 });
 

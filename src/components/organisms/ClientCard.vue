@@ -30,25 +30,28 @@
     </div>
     <el-divider style="margin: 16px 0;" />
     <div style="display: flex; justify-content: space-between; align-items: center;">
-      <el-popconfirm
-        title="確定要刪除這位客戶嗎？"
-        confirm-button-text="確定"
-        cancel-button-text="取消"
-        :icon="Warning"
-        icon-color="#F56C6C"
-        @confirm="emit('delete', client)"
-      >
-        <template #reference>
-          <el-button type="danger" link :icon="Delete">刪除</el-button>
-        </template>
-      </el-popconfirm>
+      <div>
+        <el-button type="primary" link :icon="Edit" @click="emit('edit', client)">修改</el-button>
+        <el-popconfirm
+          title="確定要刪除這位客戶嗎？"
+          confirm-button-text="確定"
+          cancel-button-text="取消"
+          :icon="Warning"
+          icon-color="#F56C6C"
+          @confirm="emit('delete', client)"
+        >
+          <template #reference>
+            <el-button type="danger" link :icon="Delete" style="margin-left: 8px;">刪除</el-button>
+          </template>
+        </el-popconfirm>
+      </div>
       <el-text size="small" type="info">最後更新: {{ client.lastUpdated }}</el-text>
     </div>
   </el-card>
 </template>
 
 <script setup lang="ts">
-import { Delete, Warning } from '@element-plus/icons-vue'
+import { Delete, Warning, Edit } from '@element-plus/icons-vue'
 import type { Client } from '@/stores/clients'
 
 defineProps<{ client: Client }>()
@@ -56,5 +59,6 @@ defineProps<{ client: Client }>()
 const emit = defineEmits<{
   (e: 'enter-plan', client: Client): void
   (e: 'delete', client: Client): void
+  (e: 'edit', client: Client): void
 }>()
 </script>

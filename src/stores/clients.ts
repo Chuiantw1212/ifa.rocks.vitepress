@@ -114,6 +114,34 @@ export const useClientsStore = defineStore('clients', () => {
         }
     }
 
+    async function updateClient(clientId: string, formData: NewClientForm) {
+        isLoading.value = true;
+        try {
+            const res = await authFetch(`/api/v1/clients/${clientId}`, {
+                method: 'PUT',
+                body: formData,
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                throw new Error(errorData.message || `更新客戶失敗 (status: ${res.status})`);
+            }
+
+            const updatedClientData = await res.json();
+
+            // 更新 clientList 中的對應客戶資料
+            const index = clientList.value.findIndex(client => client.id === clientId);
+            if (index !== -1) {
+                clientList.value[index] = { ...clientList.value[index], ...updatedClientData, lastUpdated: new Date().toISOString().split('T')[0] };
+            }
+        } catch (error) {
+            console.error('Update client error:', error);
+            throw error;
+        } finally {
+            isLoading.value = false;
+        }
+    }
+
     function setCurrentClientId(id: string | null) {
         currentClientId.value = id
         console.log(`全域環境已切換至客戶 ID：${id}`)
@@ -133,7 +161,6 @@ export const useClientsStore = defineStore('clients', () => {
     }, { immediate: true })
 
     return {
-        clientList, isLoading, currentClientId,
-        fetchClients, createClient, deleteClient, setCurrentClientId
+        clientList, isLoading, currentClientId, fetchClients, createClient, deleteClient, updateClient, setCurrentClientId
     }
 })
