@@ -93,7 +93,7 @@ const router = useRouter()
 async function fetchProfile(clientId: string) {
     if (!clientPlan.value) return;
     try {
-        const res = await authFetch(`/api/v1/client-profiles/${clientId}`);
+        const res = await authFetch(`/api/v1/client/profiles/${clientId}`);
         const data = await res.json();
         if (res.ok) {
             clientPlan.value.profile = data;
@@ -215,7 +215,7 @@ async function handleUpdate() {
         return
     }
     try {
-        const res = await authFetch(`/api/v1/client-profiles/${currentClientId.value}`, {
+        const res = await authFetch(`/api/v1/client/profiles/${currentClientId.value}`, {
             method: 'PATCH',
             body: clientPlan.value.profile,
         })

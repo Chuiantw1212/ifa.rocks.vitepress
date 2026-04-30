@@ -47,7 +47,7 @@ export const useClientsStore = defineStore('clients', () => {
         }
         isLoading.value = true
         try {
-            const res = await authFetch('/api/v1/client-profiles')
+            const res = await authFetch('/api/v1/client/profiles')
             const data = await res.json()
             // API 回傳一個包含 list 屬性的物件
             if (data && Array.isArray(data.list)) {
@@ -63,7 +63,7 @@ export const useClientsStore = defineStore('clients', () => {
                     setCurrentClientId(clientList.value[0].id)
                 }
             } else {
-                console.warn('API /api/v1/client-profiles 並未回傳一個有效的列表物件', data)
+                console.warn('API /api/v1/client/profiles 並未回傳一個有效的列表物件', data)
                 clientList.value = []
             }
         } catch (error: any) {
@@ -117,7 +117,7 @@ export const useClientsStore = defineStore('clients', () => {
     async function updateClient(clientId: string, formData: NewClientForm) {
         isLoading.value = true;
         try {
-            const res = await authFetch(`/api/v1/client-profiles/${clientId}`, {
+            const res = await authFetch(`/api/v1/client/profiles/${clientId}`, {
                 method: 'PATCH',
                 body: formData,
             });

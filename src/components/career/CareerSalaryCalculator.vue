@@ -1,6 +1,12 @@
 <template>
-    <el-card shadow="never">
-        <el-form label-width="auto" :model="career">
+    <el-card shadow="never" v-loading="isLoading">
+        <template #header>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span>詳細薪資結構試算</span>
+                <el-text v-if="isSaving" type="info">儲存中...</el-text>
+            </div>
+        </template>
+        <el-form v-if="!isGuest" label-width="auto" :model="career">
 
             <el-divider content-position="left">1. 每月常態性薪資</el-divider>
 
@@ -123,7 +129,7 @@
             </el-row>
 
             <el-row>
-                <el-col :span="12"></el-col>
+                <el-col :span="12"></-col>
                 <el-col :span="12">
                     <el-form-item label="= 每月實領">
                         <el-text size="large" tag="b" color="primary">
@@ -157,49 +163,31 @@
                 </el-col>
             </el-row>
         </el-form>
+        <el-empty v-else description="請先選擇一位客戶以使用薪資試算功能" />
     </el-card>
 </template>
 
 <script lang="ts" setup>
-import { computed } from 'vue'
-import type { UserCareer } from './types/user'
-import { useApi } from '@/components/plan/composables/useApi'
-import { useUserPlan } from '@/components/plan/composables/useUserPlan'
-import CareerChart from '../charts/CareerChart.vue'
-
+import { computed, watch } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useCareerStore } from '@/stores/career'
+import { useAgentStore } from '@/stores/agent'
+import type { ClientCareer } from '@/types/client-career'
+import CareerChart from '@/components/charts/CareerChart.vue'
 import { debounce } from '@/composables/debounce'
 // Composables
 import { useLaborPension } from '@/components/plan/composables/useLaborPension'
 import { useLaborInsurance } from '@/components/plan/composables/useLaborInsurance'
 import { useHealthInsurance } from '@/components/plan/composables/useHealthInsurance'
 
-// --- 1. Define Model ---
-const career = defineModel<UserCareer>({
-    required: true,
-    default: () => ({
-        baseSalary: 0,
-        otherAllowance: 0,
-        laborInsurance: 0,
-        healthInsurance: 0,
-        otherDeduction: 0,
-        pensionPersonalRate: 0,
-        pensionPersonalAmount: 0,
-        pensionEmployerAmount: 0,
-        pensionTotalAmount: 0,
-        stockDeduction: 0,
-        stockCompanyMatch: 0,
-        dependents: 0,
-        monthlyNetIncome: 0,
-        annualBonus: 0,
-        annualTotalIncome: 0
-    })
-})
+// --- 1. Store and State Management ---
+const careerStore = useCareerStore()
+const { data: career, isLoading, isSaving } = storeToRefs(careerStore)
 
-const { authFetch } = useApi()
-const { loggedInUser } = useUserPlan()
+const agentStore = useAgentStore()
 
 // 判斷是否為訪客
-const isGuest = computed(() => !loggedInUser.value.uid)
+const isGuest = computed(() => !agentStore.isLoggedIn)
 
 // 初始化 Composables
 const pension = useLaborPension(0, 0)
@@ -235,22 +223,14 @@ function updateTotals() {
 // --- 3. 存檔與事件處理 ---
 
 const performSave = debounce(async () => {
-    // [訪客攔截] 純前端模式不發 API
-    if (isGuest.value) return
-
     try {
-        const res = await authFetch('/api/v1/user/career', {
-            method: 'PUT',
-            // [修正] 移除 JSON.stringify，直接傳遞物件讓 authFetch 處理
-            body: career.value
-        })
-        if (!res || !res.ok) {
-            console.error(`Career update failed: ${res?.status}`)
-        }
-    } catch (e) {
-        console.error('Career save error:', e)
+        // The store action handles guest checks, API calls, and notifications.
+        await careerStore.saveCareerData()
+    } catch (error) {
+        // Error is already handled by the store, but we can catch it here if needed.
+        console.error('Failed to save from component:', error)
     }
-}, 500)
+}, 800)
 
 function handleSaveOnly() {
     updateTotals()
@@ -262,31 +242,35 @@ function handleSaveOnly() {
  */
 function handleCalcAndSave() {
     // 1. 計算全薪
-    const basis = (career.value.baseSalary || 0) + (career.value.otherAllowance || 0) + 3000
+    const basis = (career.value?.baseSalary || 0) + (career.value?.otherAllowance || 0) + 3000
 
-    // 2. 更新 Composable
-    pension.actualWage.value = basis
-    pension.selfRate.value = career.value.pensionPersonalRate || 0
-    labor.actualWage.value = basis
-    health.actualWage.value = basis
-    health.dependents.value = career.value.dependents || 0
+    if (career.value) {
+        // 2. 更新 Composable
+        pension.actualWage.value = basis
+        pension.selfRate.value = career.value.pensionPersonalRate || 0
+        labor.actualWage.value = basis
+        health.actualWage.value = basis
+        health.dependents.value = career.value.dependents || 0
 
-    // 3. 回寫計算結果
-    career.value.pensionPersonalAmount = pension.selfAmount.value
-    career.value.pensionEmployerAmount = pension.employerAmount.value
+        // 3. 回寫計算結果
+        career.value.pensionPersonalAmount = pension.selfAmount.value
+        career.value.pensionEmployerAmount = pension.employerAmount.value
 
-    // 計算總提撥
-    career.value.pensionTotalAmount =
-        pension.selfAmount.value + pension.employerAmount.value
+        // 計算總提撥
+        career.value.pensionTotalAmount =
+            pension.selfAmount.value + pension.employerAmount.value
 
-    // 更新勞健保
-    career.value.laborInsurance = labor.personalPremium.value
-    career.value.healthInsurance = health.personalPremium.value
+        // 更新勞健保
+        career.value.laborInsurance = labor.personalPremium.value
+        career.value.healthInsurance = health.personalPremium.value
+    }
 
-    // 4. 更新總額並存檔
     updateTotals()
     performSave()
 }
+
+// Watch for external data changes (e.g., switching clients) and recalculate.
+watch(career, handleCalcAndSave, { deep: true, immediate: true })
 
 // --- Helpers ---
 const formatNumber = (num: number | undefined) => {

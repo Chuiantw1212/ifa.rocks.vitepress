@@ -16,22 +16,10 @@
 在了解了宏觀的總收入潛力後，我們可以進一步分析您目前的薪資結構。這將幫助您了解每個月的實際現金流、各項社會保險的提撥情況，以及可以優化的空間。
 
 <ClientOnly>
-  <CareerSalaryCalculator v-model="careerData" />
+  <CareerSalaryCalculator />
 </ClientOnly>
 
 <script setup>
-import { ref } from 'vue'
 import CareerIncomeEstimator from '@/components/career/CareerIncomeEstimator.vue'
 import CareerSalaryCalculator from '@/components/career/CareerSalaryCalculator.vue'
-
-const careerData = ref({
-    baseSalary: 50000,
-    otherAllowance: 0,
-    laborInsurance: 0,
-    healthInsurance: 0,
-    otherDeduction: 0,
-    pensionPersonalRate: 0,
-    dependents: 0,
-    annualBonus: 0,
-})
 </script>
