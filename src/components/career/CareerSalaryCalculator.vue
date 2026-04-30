@@ -173,7 +173,7 @@ import { storeToRefs } from 'pinia'
 import { useCareerStore } from '@/stores/career'
 import { useAgentStore } from '@/stores/agent'
 import type { ClientCareer } from '@/types/client-career'
-import CareerChart from '@/components/charts/CareerChart.vue'
+import CareerChart from './CareerChart.vue'
 import { debounce } from '@/composables/debounce'
 // Composables
 import { useLaborPension } from '@/composables/useLaborPension'

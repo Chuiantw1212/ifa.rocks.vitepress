@@ -115,7 +115,14 @@ export default defineConfig({
                 { text: '儲蓄保險的通膨陷阱', link: '/articles/why-savings-insurance-is-losing-to-inflation' }
               ]
             },
-             {
+            {
+              text: '職涯規劃',
+              collapsed: false,
+              items: [
+                { text: '賺多少才夠？', link: '/articles/taiwan-salary-classes-enough-money-strategy' },
+              ]
+            },
+            {
               text: '買房',
               collapsed: false,
               items: [
@@ -150,13 +157,13 @@ export default defineConfig({
           items: [
             // 獨立意義：換算出「距離退休還剩幾次發薪日」與「家庭責任基準」
 
-            { text: '基本資料與餘命', link: '/pro/profile' } 
+            { text: '基本資料與餘命', link: '/pro/profile' }
           ]
         },
         {
           text: '收支管理',
           items: [
-            { text: '職業規劃', link: '/pro/career' } 
+            { text: '職業規劃', link: '/pro/career' }
           ]
         },
       ],

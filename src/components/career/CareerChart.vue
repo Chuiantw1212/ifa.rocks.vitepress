@@ -9,10 +9,10 @@ import { ref, shallowRef, onMounted, watch } from 'vue'
 import Chart from 'chart.js/auto'
 import type { ChartData, ChartOptions, TooltipItem } from 'chart.js'
 import { debounce } from '@/composables/debounce'
-import type { UserCareer } from '@/components/career/types/user'
+import type { ClientCareer } from '@/types/client-career'
 
 const props = defineProps<{
-    data: UserCareer
+    data: ClientCareer
 }>()
 
 const canvasRef = ref<HTMLCanvasElement | null>(null)
