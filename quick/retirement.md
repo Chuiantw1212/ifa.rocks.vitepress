@@ -14,5 +14,5 @@
 
 <script setup>
 import RetirementLite from '@/components/RetirementLite.vue'
-import PlanningReminder from '@/components/PlanningReminder.vue'
+import PlanningReminder from '@/components/organisms/PlanningReminder.vue'
 </script>

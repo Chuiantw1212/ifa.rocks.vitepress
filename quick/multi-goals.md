@@ -14,5 +14,5 @@
 
 <script setup>
 import TvmCalculator from '@/components/TvmCalculator.vue'
-import PlanningReminder from '@/components/PlanningReminder.vue'
+import PlanningReminder from '@/components/organisms/PlanningReminder.vue'
 </script>

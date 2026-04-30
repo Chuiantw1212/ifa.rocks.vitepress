@@ -14,5 +14,5 @@
 
 <script setup>
 import InflationRisk from '@/components/organisms/InflationRisk.vue'
-import PlanningReminder from '@/components/PlanningReminder.vue'
+import PlanningReminder from '@/components/organisms/PlanningReminder.vue'
 </script>
