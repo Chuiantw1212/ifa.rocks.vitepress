@@ -117,8 +117,8 @@ export const useClientsStore = defineStore('clients', () => {
     async function updateClient(clientId: string, formData: NewClientForm) {
         isLoading.value = true;
         try {
-            const res = await authFetch(`/api/v1/clients/${clientId}`, {
-                method: 'PUT',
+            const res = await authFetch(`/api/v1/client-profiles/${clientId}`, {
+                method: 'PATCH',
                 body: formData,
             });
 
