@@ -147,10 +147,16 @@ export default defineConfig({
         // ==========================================
         {
           text: '👤 關於用戶',
-          collapsed: false,
           items: [
             // 獨立意義：換算出「距離退休還剩幾次發薪日」與「家庭責任基準」
-            { text: '基本資料與餘命', link: '/pro/profile' }
+
+            { text: '基本資料與餘命', link: '/pro/profile' } 
+          ]
+        },
+        {
+          text: '收支管理',
+          items: [
+            { text: '職業規劃', link: '/pro/career' } 
           ]
         },
       ],
