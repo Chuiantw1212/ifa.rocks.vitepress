@@ -13,6 +13,6 @@
 <PlanningReminder />
 
 <script setup>
-import CostOfDelay from '@/components/CostOfDelay.vue'
+import CostOfDelay from '@/components/organisms/CostOfDelay.vue'
 import PlanningReminder from '@/components/PlanningReminder.vue'
 </script>

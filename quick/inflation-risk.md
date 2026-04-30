@@ -13,6 +13,6 @@
 <PlanningReminder />
 
 <script setup>
-import InflationRisk from '@/components/InflationRisk.vue'
+import InflationRisk from '@/components/organisms/InflationRisk.vue'
 import PlanningReminder from '@/components/PlanningReminder.vue'
 </script>
