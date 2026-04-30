@@ -129,7 +129,7 @@
             </el-row>
 
             <el-row>
-                <el-col :span="12"></-col>
+                <el-col :span="12"></el-col>
                 <el-col :span="12">
                     <el-form-item label="= 每月實領">
                         <el-text size="large" tag="b" color="primary">
@@ -176,9 +176,9 @@ import type { ClientCareer } from '@/types/client-career'
 import CareerChart from '@/components/charts/CareerChart.vue'
 import { debounce } from '@/composables/debounce'
 // Composables
-import { useLaborPension } from '@/components/plan/composables/useLaborPension'
-import { useLaborInsurance } from '@/components/plan/composables/useLaborInsurance'
-import { useHealthInsurance } from '@/components/plan/composables/useHealthInsurance'
+import { useLaborPension } from '@/composables/useLaborPension'
+import { useLaborInsurance } from '@/composables/useLaborInsurance'
+import { useHealthInsurance } from '@/composables/useHealthInsurance'
 
 // --- 1. Store and State Management ---
 const careerStore = useCareerStore()

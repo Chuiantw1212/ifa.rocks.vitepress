@@ -161,7 +161,7 @@
 </template>
 
 <script lang="ts" setup>
-import { debounce } from 'lodash-es'
+import { debounce } from '@/composables/debounce'
 import { computed } from 'vue'
 import type { UserCareer } from './types/user'
 import { useApi } from '@/components/plan/composables/useApi'
