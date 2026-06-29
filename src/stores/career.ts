@@ -49,7 +49,7 @@ export const useCareerStore = defineStore('career', () => {
         isLoading.value = true;
         try {
             // API 端點已改為獲取指定客戶的職業資料
-            const res = await authFetch(`/api/v1/client/careers/${currentClientId.value}`);
+            const res = await authFetch(`/api/v1/clients/${currentClientId.value}/career`);
             if (res.ok) {
                 const careerInfo = await res.json();
                 data.value = { ...defaultCareerData, ...careerInfo };
@@ -79,7 +79,7 @@ export const useCareerStore = defineStore('career', () => {
 
         isSaving.value = true;
         try {
-            const res = await authFetch(`/api/v1/client/careers/${currentClientId.value}`, {
+            const res = await authFetch(`/api/v1/clients/${currentClientId.value}/career`, {
                 method: 'PUT',
                 body: data.value,
             });
