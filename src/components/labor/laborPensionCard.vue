@@ -19,6 +19,18 @@
 
             <el-divider>現有資產明細 (PV)</el-divider>
             <el-row :gutter="20">
+                <el-col :span="24">
+                    <el-form-item
+                        :label="`已累積年資 (${laborPensionData.currentWorkSeniority}月 ≈ ${(laborPensionData.currentWorkSeniority / 12).toFixed(1)}年)`"
+                        required>
+                        <el-input-number v-model="laborPensionData.currentWorkSeniority" :min="0" :max="720"
+                            placeholder="輸入總月數" style="width: 100%">
+                            <template #suffix>月</template>
+                        </el-input-number>
+                    </el-form-item>
+                </el-col>
+            </el-row>
+            <el-row :gutter="20">
                 <el-col :span="12" :xs="24">
                     <el-form-item label="雇主提繳-累計金額">
                         <el-input-number v-model="laborPensionData.employerContribution" :min="0" :step="10000"
@@ -41,20 +53,6 @@
                     <el-form-item label="個人自提-累計收益">
                         <el-input-number v-model="laborPensionData.personalEarnings" :min="0" :step="5000"
                             style="width: 100%" />
-                    </el-form-item>
-                </el-col>
-            </el-row>
-
-            <el-divider>年資與未來規劃 (PMT)</el-divider>
-            <el-row :gutter="20">
-                <el-col :span="24">
-                    <el-form-item
-                        :label="`已累積年資 (${laborPensionData.currentWorkSeniority}月 ≈ ${(laborPensionData.currentWorkSeniority / 12).toFixed(1)}年)`"
-                        required>
-                        <el-input-number v-model="laborPensionData.currentWorkSeniority" :min="0" :max="720"
-                            placeholder="輸入總月數" style="width: 100%">
-                            <template #suffix>月</template>
-                        </el-input-number>
                     </el-form-item>
                 </el-col>
             </el-row>

@@ -36,7 +36,7 @@ const chartInstance = shallowRef<Chart<'bar'> | null>(null);
 
 const currentClientProfile = computed(() => {
     if (!currentClientId.value || !clientList.value) return null;
-    return clientList.value.find(c => c.clientId === currentClientId.value) || null;
+    return clientList.value.find(c => c.id === currentClientId.value) || null;
 });
 
 // --- Calculations ---
