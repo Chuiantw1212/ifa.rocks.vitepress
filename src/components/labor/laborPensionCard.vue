@@ -81,7 +81,7 @@ import { debounce } from '@/composables/debounce'
 import type { ClientCareer } from '@/types/client-career';
 import type { ClientLaborPension } from '@/types/client-labor-pension';
 import type { ClientProfile } from '@/types/client-profile';
-import { useLaborPensionStore } from '@/stores/labor';
+import { useLaborPensionStore } from '@/stores/laborPension';
 import { useLumpSumTaxCalculator } from '@/composables/useLaborPension';
 import { useClientsStore } from '@/stores/clients';
 import { useCareerStore } from '@/stores/career';

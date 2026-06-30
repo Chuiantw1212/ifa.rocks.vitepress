@@ -16,7 +16,7 @@ import { ref, shallowRef, onMounted, watch, computed } from 'vue';
 import Chart from 'chart.js/auto';
 import type { ChartData, ChartOptions, TooltipItem } from 'chart.js';
 import { storeToRefs } from 'pinia';
-import { useLaborPensionStore } from '@/stores/labor';
+import { useLaborPensionStore } from '@/stores/laborPension';
 import { useCareerStore } from '@/stores/career';
 import { useClientsStore } from '@/stores/clients';
 

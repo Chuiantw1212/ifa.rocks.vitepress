@@ -19,9 +19,14 @@
 
 ## 勞工保險
 
+<ClientOnly>
+  <LaborInsuranceCard />
+</ClientOnly>
+
 
 <script setup>
 import LaborDependencyCard from '@/components/labor/LaborDependencyCard.vue'
 import LaborPensionCard from '@/components/labor/LaborPensionCard.vue'
 import LaborPensionChart from '@/components/labor/LaborPensionChart.vue'
+import LaborInsuranceCard from '@/components/labor/LaborInsuranceCard.vue'
 </script>
