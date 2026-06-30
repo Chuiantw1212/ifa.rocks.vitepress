@@ -3,7 +3,7 @@
  * 用於支出管理與現金流追蹤
  */
 export interface ClientCreditCard {
-    id?: string;
+    clientId?: string;
 
     /** Firebase UID */
     firebaseUid?: string;

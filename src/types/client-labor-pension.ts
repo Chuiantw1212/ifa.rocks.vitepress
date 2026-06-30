@@ -3,7 +3,7 @@
  * 新制退休金個人專戶
  */
 export interface ClientLaborPension {
-    id?: string;
+    clientId?: string;
 
     /** 預計退休年齡 */
     expectedRetirementAge: number;

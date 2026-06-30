@@ -4,7 +4,7 @@
  * 例如：太陽能板投資、加盟店、網拍
  */
 export interface ClientBusiness {
-    id?: string;
+    clientId?: string;
 
     /** 專案名稱 */
     name: string;

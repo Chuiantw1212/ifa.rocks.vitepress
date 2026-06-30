@@ -42,7 +42,7 @@ export const useLaborPensionStore = defineStore('laborPension', () => {
         isLoading.value = true;
         try {
             // API 端點獲取指定客戶的勞工退休金資料
-            const res = await authFetch(`/api/v1/client/labor-pensions/${currentClientId.value}`);
+            const res = await authFetch(`/api/v1/clients/${currentClientId.value}labor-pension`);
             if (res.ok) {
                 const laborPensionInfo = await res.json();
                 data.value = { ...defaultLaborPension, ...laborPensionInfo };
@@ -72,7 +72,7 @@ export const useLaborPensionStore = defineStore('laborPension', () => {
 
         isSaving.value = true;
         try {
-            const res = await authFetch(`/api/v1/client/labor-pensions/${currentClientId.value}`, {
+            const res = await authFetch(`/api/v1/clients/${currentClientId.value}/labor-pension`, {
                 method: 'PUT',
                 body: data.value,
             });
