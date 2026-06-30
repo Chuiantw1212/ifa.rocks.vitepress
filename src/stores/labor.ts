@@ -9,7 +9,7 @@ import { useClientsStore } from './clients'
 const defaultLaborPension: ClientLaborPension = {
     expectedRetirementAge: 65,
     remainingLifeAtRetirement: 20,
-    retirementRoi: 0.03,
+    retirementRoi: 3.0,
     employerContribution: 0,
     employerEarnings: 0,
     personalContribution: 0,
@@ -42,11 +42,20 @@ export const useLaborPensionStore = defineStore('laborPension', () => {
         isLoading.value = true;
         try {
             // API 端點獲取指定客戶的勞工退休金資料
-            const res = await authFetch(`/api/v1/clients/${currentClientId.value}labor-pension`);
+            const res = await authFetch(`/api/v1/clients/${currentClientId.value}/labor-pension`);
             if (res.ok) {
-                const laborPensionInfo = await res.json();
-                data.value = { ...defaultLaborPension, ...laborPensionInfo };
-            } else if (res.status !== 404) { // 404 表示尚無資料，是正常情況
+                const responseText = await res.text();
+                // 如果回應是 200 OK 但內容為空，也視為尚無資料，套用預設值
+                if (responseText) {
+                    const laborPensionInfo = JSON.parse(responseText);
+                    data.value = { ...defaultLaborPension, ...laborPensionInfo };
+                } else {
+                    data.value = { ...defaultLaborPension, clientId: currentClientId.value };
+                }
+            } else if (res.status === 404) {
+                // 404 表示尚無資料，是正常情況，重置為預設值
+                data.value = { ...defaultLaborPension, clientId: currentClientId.value };
+            } else {
                 throw new Error(`取得客戶勞退資料失敗 (status: ${res.status})`);
             }
         } catch (error: any) {
