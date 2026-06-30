@@ -10,6 +10,8 @@
   <LaborPensionCard />
 </ClientOnly>
 
+## 勞工退休金圖表
+
 <ClientOnly>
   <LaborPensionChart />
 </ClientOnly>

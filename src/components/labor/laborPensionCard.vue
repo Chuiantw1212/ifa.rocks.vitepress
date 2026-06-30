@@ -85,14 +85,8 @@ import type { ClientLaborPension } from '@/types/client-labor-pension';
 import type { ClientProfile } from '@/types/client-profile';
 import { useLaborPensionStore } from '@/stores/labor';
 import { useLumpSumTaxCalculator } from '@/composables/useLaborPension';
+import { useClientsStore } from '@/stores/clients';
 import { useCareerStore } from '@/stores/career';
-
-interface Props {
-    profile?: ClientProfile;
-    career?: ClientCareer;
-}
-
-const props = defineProps<Props>();
 
 const { calculateLumpSumTax } = useLumpSumTaxCalculator();
 const laborPensionStore = useLaborPensionStore();
@@ -101,10 +95,18 @@ const { data: laborPensionData, isLoading } = storeToRefs(laborPensionStore);
 const careerStore = useCareerStore();
 const { data: careerData } = storeToRefs(careerStore);
 
+const clientsStore = useClientsStore();
+const { clientList, currentClientId } = storeToRefs(clientsStore);
+
+const currentClientProfile = computed(() => {
+    if (!currentClientId.value || !clientList.value) return null;
+    return clientList.value.find(c => c.id === currentClientId.value) || null;
+});
+
 // --- 2. 基礎參數計算 ---
 const currentYear = new Date().getFullYear();
 const userBirthYear = computed(() => {
-    const dateStr = props.profile?.birthDate;
+    const dateStr = currentClientProfile.value?.birthDate;
     if (!dateStr) return 1990;
     return new Date(dateStr).getFullYear();
 });
