@@ -25,14 +25,14 @@
                 <el-col :span="12" :xs="24">
                     <el-form-item label="預計開始請領年齡">
                         <el-input-number v-model="laborInsuranceData.expectedClaimAge" :min="minValidClaimAge"
-                            :max="80" style="width: 100%" />
+                            :max="80" style="width: 100%" @change="handleClaimAgeChange" />
                     </el-form-item>
                 </el-col>
 
                 <el-col :span="12" :xs="24">
                     <el-form-item label="請領時預估餘命 (可手動調整)">
                         <el-input-number v-model="laborInsuranceData.predictedRemainingLife" :min="0" :max="100"
-                            :step="1" :precision="0" style="width: 100%">
+                            :step="0.1" :precision="1" style="width: 100%">
                             <template #suffix>
                                 <span>年</span>
                             </template>
@@ -70,7 +70,7 @@
                 </el-col>
 
                 <el-col :span="12" :xs="24">
-                    <el-form-item label="終身總現值 (折現3%)">
+                    <el-form-item label="終身總現值 (折現3%)" v-loading="isLifeExpectancyLoading">
                         <el-input :value="formatMoney(stableLifetimePV)" disabled style="width: 100%">
                             <template #suffix>
                                 <span>元</span>
@@ -99,13 +99,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, watch } from 'vue';
+import { computed, watch, ref } from 'vue';
 import { storeToRefs } from 'pinia';
 import { ElMessage } from 'element-plus';
 import { debounce } from '@/composables/debounce';
 import { useLaborInsuranceStore } from '@/stores/laborInsurance';
 import { useClientsStore } from '@/stores/clients';
 import { useLaborInsuranceAnnuity } from '@/composables/useLaborInsuranceAnnuity';
+import { useApi } from '@/composables/useApi';
 import { useTVM } from '@/composables/useTVM';
 
 // --- Stores ---
@@ -117,6 +118,11 @@ const { clientList, currentClientId } = storeToRefs(clientsStore);
 
 // --- Composables ---
 const { calcPV } = useTVM();
+const { authFetch } = useApi();
+
+// --- Local State ---
+const isLifeExpectancyLoading = ref(false);
+const stableLifetimePV = ref(0);
 
 // --- Client Profile Data ---
 const currentClientProfile = computed(() => {
@@ -174,18 +180,66 @@ const { result } = useLaborInsuranceAnnuity(
     statutoryAge
 );
 
-const stableLifetimePV = computed(() => {
-    if (!laborInsuranceData.value || result.value.bestAmount <= 0) return 0;
-    return Math.round(calcPV(
-        0.03 / 12, // monthly rate
-        (laborInsuranceData.value.predictedRemainingLife || 0) * 12, // total months
+function calculateStableLifetimePV() {
+    if (!laborInsuranceData.value || result.value.bestAmount <= 0 || !laborInsuranceData.value.predictedRemainingLife) {
+        stableLifetimePV.value = 0;
+        return;
+    }
+
+    // 1. 計算年金在「開始請領時」的現值 (PV at retirement)
+    const pvAtRetirement = calcPV(
+        0.03 / 12, // 月折現率
+        laborInsuranceData.value.predictedRemainingLife * 12, // 總領取期數 (月)
         result.value.bestAmount // monthly payment
-    ));
-});
+    );
+
+    if (pvAtRetirement <= 0) {
+        stableLifetimePV.value = 0;
+        return;
+    }
+
+    // 2. 將「開始請領時」的現值，再折現回「今天」的價值
+    const yearsToDiscount = futureWorkYears.value;
+    if (yearsToDiscount <= 0) {
+        // 如果已經或超過請領年齡，則不需再折現
+        stableLifetimePV.value = Math.round(pvAtRetirement);
+        return;
+    }
+
+    const annualDiscountRate = 0.03;
+    const pvToday = pvAtRetirement / Math.pow(1 + annualDiscountRate, yearsToDiscount);
+
+    stableLifetimePV.value = Math.round(pvToday);
+}
+
+// Watch for changes in dependencies to recalculate the Present Value.
+// This replaces the previous `computed` property for `stableLifetimePV`.
+watch(
+    () => [result.value.bestAmount, laborInsuranceData.value?.predictedRemainingLife],
+    () => {
+        // If a life expectancy fetch is in progress, skip calculation.
+        // The calculation will be explicitly triggered in the `finally` block of the API call
+        // to prevent calculating with stale data and causing the UI value to "jump".
+        if (isLifeExpectancyLoading.value) {
+            return;
+        }
+        calculateStableLifetimePV();
+    },
+    { deep: true }
+);
 
 function handleSalaryCheck(value: number | undefined) {
     if (value && value < 45800) {
         ElMessage.warning('提醒：勞保老年給付的平均月投保薪資，是採計加保期間最高60個月之月投保薪資予以平均計算。若此處輸入金額低於最高級距，可能會低估您的給付金額。');
+    }
+}
+
+function handleClaimAgeChange(newAge: number | undefined, oldAge: number | undefined) {
+    // 當使用者變更請領年齡時，觸發此函式
+    if (newAge && newAge !== oldAge) {
+        // 立即設定讀取狀態，以防止在非同步取得餘命完成前，總現值的 watch 被觸發而使用舊資料計算，造成數值跳動。
+        isLifeExpectancyLoading.value = true;
+        updatePredictedRemainingLife();
     }
 }
 
@@ -199,6 +253,42 @@ watch(() => result.value.bestAmount, (newVal) => {
         laborInsuranceData.value.predictedMonthlyAnnuity = newVal;
     }
 }, { immediate: true });
+
+async function updatePredictedRemainingLife() {
+    if (!laborInsuranceData.value || !currentClientProfile.value) return;
+
+    const claimAge = laborInsuranceData.value.expectedClaimAge;
+    if (!claimAge) return;
+
+    const gender = currentClientProfile.value.gender;
+    if (!gender) {
+        console.warn('Gender not available for life expectancy calculation.');
+        return;
+    }
+
+    const currentYear = new Date().getFullYear();
+    const yearsUntilClaim = claimAge - currentAge.value;
+    const claimYear = currentYear + (yearsUntilClaim > 0 ? yearsUntilClaim : 0);
+
+    try {
+        const res = await authFetch(`/api/v1/metadata/life-expectancy?year=${claimYear}&gender=${gender}&age=${claimAge}`);
+        if (res.ok) {
+            const data = await res.json();
+            if (laborInsuranceData.value && data && typeof data.expectedLifespan === 'number') {
+                laborInsuranceData.value.predictedRemainingLife = data.expectedLifespan;
+            }
+        } else {
+            console.error(`Failed to fetch life expectancy. Status: ${res.status}`);
+        }
+    } catch (error) {
+        console.error('Error fetching life expectancy:', error);
+    } finally {
+        isLifeExpectancyLoading.value = false;
+        // Explicitly trigger calculation after API call finishes to ensure the correct value is computed
+        // with the latest life expectancy and annuity amount, preventing UI jumps.
+        calculateStableLifetimePV();
+    }
+}
 
 const performSave = async () => {
     try {

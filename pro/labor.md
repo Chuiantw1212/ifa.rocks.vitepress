@@ -1,3 +1,6 @@
+---
+outline: deep
+---
 # 勞保與勞退
 
 ## 資料依賴
@@ -6,11 +9,14 @@
 </ClientOnly>
 
 ## 勞工退休金
+
+### 表單
+
 <ClientOnly>
   <LaborPensionCard />
 </ClientOnly>
 
-## 勞工退休金圖表
+### 圖表
 
 <ClientOnly>
   <LaborPensionChart />
