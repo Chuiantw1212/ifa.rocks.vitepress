@@ -3,7 +3,7 @@
  */
 export interface ClientProfile {
     /** 資料庫唯一識別碼 */
-    id?: string;
+    clientId?: string;
 
     /** 客戶姓名 */
     name?: string;

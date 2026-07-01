@@ -4,7 +4,7 @@
  * 包含股票、ETF、基金、外幣等
  */
 export interface ClientPortfolio {
-    id?: string;
+    clientId?: string;
 
     /** 投資市場代碼 (e.g., 'US', 'TW', 'JP') */
     countryCode: string;

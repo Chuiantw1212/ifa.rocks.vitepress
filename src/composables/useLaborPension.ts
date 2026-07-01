@@ -127,3 +127,106 @@ export function useLaborPension(initialWage: number = 0, initialSelfRate: number
         employerAmount   // 輸出：公提金額 (公司出)
     };
 }
+
+/**
+ * 勞退一次領的稅務計算結果
+ */
+export interface LumpSumTaxResult {
+    /** 應稅所得額 */
+    taxableIncome: number;
+    /** 預估稅額 (以獨立稅率計算) */
+    taxAmount: number;
+    /** 稅後淨領金額 */
+    netReceive: number;
+    /** 免稅額度 */
+    taxFreeAmount: number;
+    /** 需半數計稅之金額 */
+    halfTaxableAmount: number;
+    /** 需全額計稅之金額 */
+    fullTaxableAmount: number;
+}
+
+/**
+ * 勞退一次領稅務計算機 Composable
+ * 提供計算勞工退休金一次請領時的應稅所得額與預估稅額。
+ */
+export function useLumpSumTaxCalculator() {
+    // 財政部公告之 112 年度退職所得定額免稅金額 (適用於 2024 年申報)
+    // 這些數值未來可能會隨通膨調整
+    const THRESHOLD_1_PER_YEAR = 188000;
+    const THRESHOLD_2_PER_YEAR = 377000;
+
+    /**
+     * 台灣綜合所得稅累進稅率 (112年度 / 2024年申報)
+     */
+    const TAX_BRACKETS = [
+        { limit: 590000, rate: 0.05 },
+        { limit: 1330000, rate: 0.12 },
+        { limit: 2660000, rate: 0.20 },
+        { limit: 4980000, rate: 0.30 },
+        { limit: Infinity, rate: 0.40 },
+    ];
+
+    /**
+     * 根據所得淨額計算預估稅額
+     * @param income - 應稅所得額
+     * @returns 預估稅金
+     */
+    const calculateProgressiveTax = (income: number): number => {
+        if (income <= 0) return 0;
+        let tax = 0;
+        let remainingIncome = income;
+        let lastLimit = 0;
+
+        for (const bracket of TAX_BRACKETS) {
+            if (remainingIncome > 0) {
+                const taxableInBracket = Math.min(remainingIncome, bracket.limit - lastLimit);
+                tax += taxableInBracket * bracket.rate;
+                remainingIncome -= taxableInBracket;
+                lastLimit = bracket.limit;
+            } else {
+                break;
+            }
+        }
+        return Math.round(tax);
+    };
+
+    /**
+     * 計算勞退一次領的應稅資訊
+     * @param totalLumpSum - 預計一次領取的總金額
+     * @param yearsOfService - 總服務年資
+     * @returns 稅務計算結果
+     */
+    const calculateLumpSumTax = (
+        totalLumpSum: number,
+        yearsOfService: number
+    ): LumpSumTaxResult => {
+        if (totalLumpSum <= 0 || yearsOfService <= 0) {
+            return { taxableIncome: 0, taxAmount: 0, netReceive: totalLumpSum, taxFreeAmount: totalLumpSum, halfTaxableAmount: 0, fullTaxableAmount: 0 };
+        }
+
+        const threshold1 = THRESHOLD_1_PER_YEAR * yearsOfService;
+        const threshold2 = THRESHOLD_2_PER_YEAR * yearsOfService;
+
+        let taxableIncome = 0;
+        const halfTaxableAmount = Math.max(0, Math.min(totalLumpSum, threshold2) - threshold1);
+        const fullTaxableAmount = Math.max(0, totalLumpSum - threshold2);
+
+        taxableIncome = (halfTaxableAmount * 0.5) + fullTaxableAmount;
+
+        const finalTaxableIncome = Math.round(taxableIncome);
+        const taxAmount = calculateProgressiveTax(finalTaxableIncome);
+        const netReceive = totalLumpSum - taxAmount;
+
+        return {
+            taxableIncome: finalTaxableIncome,
+            taxAmount,
+            netReceive,
+            taxFreeAmount: Math.min(totalLumpSum, threshold1),
+            halfTaxableAmount,
+            fullTaxableAmount,
+        };
+    };
+
+    return { calculateLumpSumTax };
+}

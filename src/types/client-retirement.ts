@@ -3,7 +3,7 @@
  * 涵蓋 Go-Go, Slow-Go, No-Go 三階段
  */
 export interface ClientRetirement {
-    id?: string;
+    clientId?: string;
     userId?: string;
     updatedAt?: string;
 

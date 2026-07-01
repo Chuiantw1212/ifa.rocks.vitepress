@@ -162,9 +162,10 @@ export default defineConfig({
           ]
         },
         {
-          text: '收支管理',
+          text: '規劃模組',
           items: [
-            { text: '職業規劃', link: '/pro/career' }
+            { text: '職業總收入', link: '/pro/career' },
+            { text: '勞保勞退', link: '/pro/labor' }
           ]
         },
       ],

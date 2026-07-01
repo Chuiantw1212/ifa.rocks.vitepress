@@ -2,7 +2,7 @@
  * 職業與收入資料 (Career & Income)
  */
 export interface ClientCareer {
-    id?: string;
+    clientId?: string;
 
     /** 本薪 (Base Salary) */
     baseSalary: number;

@@ -3,7 +3,7 @@
  * 老年年金給付
  */
 export interface ClientLaborInsurance {
-    id?: string;
+    clientId?: string;
 
     /** 預計請領年齡 */
     expectedClaimAge: number;

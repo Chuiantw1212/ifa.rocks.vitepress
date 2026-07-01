@@ -3,7 +3,7 @@
  * 不動產資產 (Real Estate)
  */
 export interface ClientRealEstate {
-    id?: string;
+    clientId?: string;
 
     /** 物件名稱 (e.g. 板橋自用宅) */
     name: string;
