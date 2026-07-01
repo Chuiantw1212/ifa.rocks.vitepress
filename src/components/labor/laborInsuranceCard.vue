@@ -212,21 +212,8 @@ function calculateStableLifetimePV() {
     stableLifetimePV.value = Math.round(pvToday);
 }
 
-// Watch for changes in dependencies to recalculate the Present Value.
-// This replaces the previous `computed` property for `stableLifetimePV`.
-watch(
-    () => [result.value.bestAmount, laborInsuranceData.value?.predictedRemainingLife],
-    () => {
-        // If a life expectancy fetch is in progress, skip calculation.
-        // The calculation will be explicitly triggered in the `finally` block of the API call
-        // to prevent calculating with stale data and causing the UI value to "jump".
-        if (isLifeExpectancyLoading.value) {
-            return;
-        }
-        calculateStableLifetimePV();
-    },
-    { deep: true }
-);
+// 當用於計算現值的基礎數據（如每月年金、預估餘命）變動時，重新計算終身總現值。
+watch(() => [result.value.bestAmount, laborInsuranceData.value?.predictedRemainingLife], calculateStableLifetimePV, { deep: true });
 
 function handleSalaryCheck(value: number | undefined) {
     if (value && value < 45800) {
@@ -234,12 +221,20 @@ function handleSalaryCheck(value: number | undefined) {
     }
 }
 
-function handleClaimAgeChange(newAge: number | undefined, oldAge: number | undefined) {
+async function handleClaimAgeChange(newAge: number | undefined, oldAge: number | undefined) {
     // 當使用者變更請領年齡時，觸發此函式
     if (newAge && newAge !== oldAge) {
-        // 立即設定讀取狀態，以防止在非同步取得餘命完成前，總現值的 watch 被觸發而使用舊資料計算，造成數值跳動。
         isLifeExpectancyLoading.value = true;
-        updatePredictedRemainingLife();
+
+        // 統一由 `fetchLifeExpectancyRange` 取得資料，確保圖表與表單資料來源一致
+        await fetchLifeExpectancyRange();
+
+        // 從 store 中更新表單的預估餘命
+        updateFormLifeExpectancyFromStore();
+
+        // `predictedRemainingLife` 更新後，相關的 watch 會自動觸發 `calculateStableLifetimePV`
+        // 最後關閉讀取狀態
+        isLifeExpectancyLoading.value = false;
     }
 }
 
@@ -248,45 +243,18 @@ function formatMoney(val: number | undefined) {
     return Math.round(val).toLocaleString();
 }
 
-watch(() => result.value.bestAmount, (newVal) => {
-    if (laborInsuranceData.value) {
-        laborInsuranceData.value.predictedMonthlyAnnuity = newVal;
-    }
-}, { immediate: true });
-
-async function updatePredictedRemainingLife() {
-    if (!laborInsuranceData.value || !currentClientProfile.value) return;
-
+/**
+ * 從 store 中已取得的餘命範圍資料更新表單的「請領時預估餘命」欄位。
+ * 這是為了解決表單與圖表因資料來源不同而數字不一致的問題。
+ */
+function updateFormLifeExpectancyFromStore() {
+    if (!laborInsuranceData.value) return;
     const claimAge = laborInsuranceData.value.expectedClaimAge;
     if (!claimAge) return;
 
-    const gender = currentClientProfile.value.gender;
-    if (!gender) {
-        console.warn('Gender not available for life expectancy calculation.');
-        return;
-    }
-
-    const currentYear = new Date().getFullYear();
-    const yearsUntilClaim = claimAge - currentAge.value;
-    const claimYear = currentYear + (yearsUntilClaim > 0 ? yearsUntilClaim : 0);
-
-    try {
-        const res = await authFetch(`/api/v1/metadata/life-expectancy?year=${claimYear}&gender=${gender}&age=${claimAge}`);
-        if (res.ok) {
-            const data = await res.json();
-            if (laborInsuranceData.value && data && typeof data.expectedLifespan === 'number') {
-                laborInsuranceData.value.predictedRemainingLife = data.expectedLifespan;
-            }
-        } else {
-            console.error(`Failed to fetch life expectancy. Status: ${res.status}`);
-        }
-    } catch (error) {
-        console.error('Error fetching life expectancy:', error);
-    } finally {
-        isLifeExpectancyLoading.value = false;
-        // Explicitly trigger calculation after API call finishes to ensure the correct value is computed
-        // with the latest life expectancy and annuity amount, preventing UI jumps.
-        calculateStableLifetimePV();
+    const lifeExpectancyData = laborInsuranceStore.lifeExpectancyRange.find(item => item.age === claimAge);
+    if (lifeExpectancyData) {
+        laborInsuranceData.value.predictedRemainingLife = lifeExpectancyData.expectedLifespan;
     }
 }
 
@@ -300,10 +268,13 @@ async function fetchLifeExpectancyRange() {
     }
 
     const baseAge = statutoryAge.value;
+    const yearsUntilBaseAge = baseAge - currentAge.value;
+    const baseYear = new Date().getFullYear() + (yearsUntilBaseAge > 0 ? yearsUntilBaseAge : 0);
 
     laborInsuranceStore.isRangeLoading = true; // Assumes isRangeLoading is in the store
     try {
-        const res = await authFetch(`/api/v1/metadata/life-expectancy-range?gender=${gender}&baseAge=${baseAge}`);
+        // 加上退休西元年，餘命估算才會正確
+        const res = await authFetch(`/api/v1/metadata/life-expectancy-range?gender=${gender}&baseAge=${baseAge}&year=${baseYear}`);
         if (res.ok) {
             const rangeData = await res.json();
             laborInsuranceStore.setLifeExpectancyRange(rangeData); // Assumes this action exists
@@ -331,8 +302,10 @@ watch(laborInsuranceData, (newVal) => {
     if (newVal) debouncedSave();
 }, { deep: true });
 
-watch(statutoryAge, (newAge) => {
-    if (newAge) {
+watch(currentClientProfile, (newProfile) => {
+    // 當客戶的個人資料載入完成後 (例如頁面重整或切換客戶)，
+    // 才觸發圖表所需的全距預估餘命資料請求。
+    if (newProfile) {
         fetchLifeExpectancyRange();
     }
 }, { immediate: true });

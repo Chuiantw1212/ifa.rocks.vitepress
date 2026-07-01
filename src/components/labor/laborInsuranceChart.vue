@@ -20,9 +20,17 @@ import { useLaborInsuranceStore } from '@/stores/laborInsurance';
 import { useTVM } from '@/composables/useTVM';
 import { useClientsStore } from '@/stores/clients';
 
+interface DataPoint {
+    age: number;
+    value: number;
+    seniority: number;
+    lifeExpectancy: number | undefined;
+}
+
 declare module 'chart.js' {
     interface ChartDatasetProperties<TType extends ChartType = ChartType, TData = DefaultDataPoint<TType>> {
         pvAtStatutoryAge?: number;
+        fullDataPoints?: DataPoint[];
     }
 }
 
@@ -106,7 +114,7 @@ const chartData = computed<ChartData<'bar'>>(() => {
     const currentSeniorityMonths = laborInsuranceData.value.insuranceSeniority || 0;
 
     // 1. 計算每個年齡對應的數據點
-    const dataPoints = [];
+    const dataPoints: DataPoint[] = [];
     for (let age = startAge; age <= endAge; age++) {
         const futureWorkYearsForChart = age - currentAge.value > 0 ? age - currentAge.value : 0;
         const totalSeniorityMonths = currentSeniorityMonths + (futureWorkYearsForChart * 12);
@@ -119,7 +127,12 @@ const chartData = computed<ChartData<'bar'>>(() => {
 
         // 如果找不到對應的餘命資料 (例如 API 正在載入或失敗)，則不計算此數據點的值
         if (lifeExpectancyForAge === undefined) {
-            dataPoints.push({ age, value: 0 });
+            dataPoints.push({
+                age,
+                value: 0,
+                seniority: seniorityForChart,
+                lifeExpectancy: undefined
+            });
             continue;
         }
 
@@ -135,7 +148,12 @@ const chartData = computed<ChartData<'bar'>>(() => {
         if (futureWorkYearsForChart > 0 && pvAtRetirement > 0) {
             pvToday = pvAtRetirement / Math.pow(1 + 0.03, futureWorkYearsForChart);
         }
-        dataPoints.push({ age, value: Math.round(pvToday) });
+        dataPoints.push({
+            age,
+            value: Math.round(pvToday),
+            seniority: seniorityForChart,
+            lifeExpectancy: lifeExpectancyForAge
+        });
     }
 
     // 2. 找到法定年齡的總現值作為比較基準
@@ -156,7 +174,8 @@ const chartData = computed<ChartData<'bar'>>(() => {
             label: '終身總現值 (折現3%)',
             data,
             backgroundColor: backgroundColors,
-            pvAtStatutoryAge: pvAtStatutoryAge // 自定義屬性，用於 tooltip 比較
+            pvAtStatutoryAge: pvAtStatutoryAge, // 自定義屬性，用於 tooltip 比較
+            fullDataPoints: dataPoints
         }]
     };
 });
@@ -172,24 +191,34 @@ const renderChart = () => {
                     label: (c: TooltipItem<'bar'>) => ` ${c.dataset.label}: ${Math.round(c.parsed.y || 0).toLocaleString()} 元`,
                     afterLabel: (context) => {
                         const dataset = context.chart.data.datasets[context.datasetIndex];
-                        const pvAtStatutoryAge = dataset.pvAtStatutoryAge;
+                        const dataPoint = dataset.fullDataPoints?.[context.dataIndex];
 
-                        if (pvAtStatutoryAge === undefined) return;
+                        if (!dataPoint) return;
+
+                        const newLines: string[] = [];
+
+                        // 新增：顯示預估年資和餘命
+                        newLines.push(`  預估年資: ${dataPoint.seniority.toFixed(1)} 年`);
+                        if (dataPoint.lifeExpectancy !== undefined) {
+                            newLines.push(`  預估餘命: ${dataPoint.lifeExpectancy.toFixed(1)} 年`);
+                        }
 
                         if (context.label === `${statutoryAge.value} 歲`) {
-                            return '  (法定年齡基準)';
+                            newLines.push('  (法定年齡基準)');
+                        } else {
+                            const pvAtStatutoryAge = dataset.pvAtStatutoryAge;
+                            if (pvAtStatutoryAge !== undefined && dataPoint.value > 0) {
+                                const diff = (context.parsed.y || 0) - pvAtStatutoryAge;
+                                let comparisonString = `與法定年齡相比: ${diff >= 0 ? '+' : '-'} ${Math.abs(Math.round(diff)).toLocaleString()} 元`;
+
+                                if (pvAtStatutoryAge > 0) {
+                                    const percentageDiff = ((context.parsed.y || 0) / pvAtStatutoryAge - 1) * 100;
+                                    comparisonString += ` (${percentageDiff >= 0 ? '+' : ''}${percentageDiff.toFixed(1)}%)`;
+                                }
+                                newLines.push(comparisonString);
+                            }
                         }
-
-                        if (pvAtStatutoryAge <= 0) {
-                            // 如果基準值為 0 或負數，則顯示絕對差異避免計算錯誤
-                            const diff = (context.parsed.y || 0) - pvAtStatutoryAge;
-                            return `與法定年齡相比: ${diff >= 0 ? '+' : '-'} ${Math.abs(Math.round(diff)).toLocaleString()} 元`;
-                        }
-
-                        const percentageDiff = ((context.parsed.y || 0) / pvAtStatutoryAge - 1) * 100;
-
-                        // 格式化為帶有正負號的百分比，例如: +10.5% 或 -5.2%
-                        return `與法定年齡相比: ${percentageDiff >= 0 ? '+' : ''}${percentageDiff.toFixed(1)}%`;
+                        return newLines;
                     }
                 }
             }
