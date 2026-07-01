@@ -25,14 +25,22 @@ outline: deep
 
 ## 勞工保險
 
+### 表單
+
 <ClientOnly>
   <LaborInsuranceCard />
 </ClientOnly>
 
+### 圖表
+
+<ClientOnly>
+  <LaborInsuranceChart />
+</ClientOnly>
 
 <script setup>
 import LaborDependencyCard from '@/components/labor/LaborDependencyCard.vue'
 import LaborPensionCard from '@/components/labor/LaborPensionCard.vue'
 import LaborPensionChart from '@/components/labor/LaborPensionChart.vue'
 import LaborInsuranceCard from '@/components/labor/LaborInsuranceCard.vue'
+import LaborInsuranceChart from '@/components/labor/LaborInsuranceChart.vue'
 </script>

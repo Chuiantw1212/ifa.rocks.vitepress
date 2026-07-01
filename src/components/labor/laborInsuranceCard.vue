@@ -58,7 +58,7 @@
 
             </el-row>
 
-            <el-divider>試算結果 (PV分析)</el-divider>
+            <el-divider>試算結果</el-divider>
 
             <el-row :gutter="20">
                 <el-col :span="12" :xs="24">
@@ -290,6 +290,35 @@ async function updatePredictedRemainingLife() {
     }
 }
 
+// This function fetches the life expectancy range and updates the central store.
+async function fetchLifeExpectancyRange() {
+    if (!currentClientProfile.value) return;
+    const gender = currentClientProfile.value.gender;
+    if (!gender) {
+        console.warn('Gender not available for life expectancy range calculation.');
+        return;
+    }
+
+    const baseAge = statutoryAge.value;
+
+    laborInsuranceStore.isRangeLoading = true; // Assumes isRangeLoading is in the store
+    try {
+        const res = await authFetch(`/api/v1/metadata/life-expectancy-range?gender=${gender}&baseAge=${baseAge}`);
+        if (res.ok) {
+            const rangeData = await res.json();
+            laborInsuranceStore.setLifeExpectancyRange(rangeData); // Assumes this action exists
+        } else {
+            console.error(`Failed to fetch life expectancy range. Status: ${res.status}`);
+            laborInsuranceStore.setLifeExpectancyRange([]);
+        }
+    } catch (error) {
+        console.error('Error fetching life expectancy range:', error);
+        laborInsuranceStore.setLifeExpectancyRange([]);
+    } finally {
+        laborInsuranceStore.isRangeLoading = false;
+    }
+}
+
 const performSave = async () => {
     try {
         await laborInsuranceStore.saveLaborInsuranceData();
@@ -301,4 +330,10 @@ const debouncedSave = debounce(performSave, 800);
 watch(laborInsuranceData, (newVal) => {
     if (newVal) debouncedSave();
 }, { deep: true });
+
+watch(statutoryAge, (newAge) => {
+    if (newAge) {
+        fetchLifeExpectancyRange();
+    }
+}, { immediate: true });
 </script>

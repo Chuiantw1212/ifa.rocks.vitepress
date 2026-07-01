@@ -24,6 +24,9 @@ export const useLaborInsuranceStore = defineStore('laborInsurance', () => {
     const data = ref<ClientLaborInsurance>({ ...defaultLaborInsurance });
     const isLoading = ref(false);
     const isSaving = ref(false);
+    // State for the chart component
+    const lifeExpectancyRange = ref<Array<{ age: number; expectedLifespan: number }>>([]);
+    const isRangeLoading = ref(false);
 
     /**
      * 從後端獲取當前選擇客戶的勞工保險資料。
@@ -103,11 +106,22 @@ export const useLaborInsuranceStore = defineStore('laborInsurance', () => {
         }
     }, { immediate: true });
 
+    /**
+     * 更新用於圖表的全距預估餘命資料。
+     * @param rangeData - 從 API 取得的餘命陣列
+     */
+    function setLifeExpectancyRange(rangeData: Array<{ age: number; expectedLifespan: number }>) {
+        lifeExpectancyRange.value = rangeData;
+    }
+
     return {
         data,
         isLoading,
         isSaving,
+        lifeExpectancyRange,
+        isRangeLoading,
         fetchLaborInsuranceData,
         saveLaborInsuranceData,
+        setLifeExpectancyRange,
     };
 });
