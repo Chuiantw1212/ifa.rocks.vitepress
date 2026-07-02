@@ -83,7 +83,9 @@ const initializeLiffAndLogin = async () => {
         // 如果使用者尚未登入 LINE，引導他們登入。
         // 登入後，LINE 會自動重新導向回此頁面，屆時 liff.isLoggedIn() 會是 true。
         loadingText.value = '偵測到 LINE 環境，正在引導您登入...';
-        liff.login({ redirectUri: window.location.href });
+        // The redirect URI must not contain query parameters to match the one in the LINE Developers Console.
+        const cleanRedirectUri = `${window.location.origin}${window.location.pathname}`;
+        liff.login({ redirectUri: cleanRedirectUri });
       } else {
         // 使用者已登入 LINE，嘗試登入我們的系統
         loadingText.value = 'LINE 登入成功，正在驗證您的顧問身份...';
@@ -91,6 +93,21 @@ const initializeLiffAndLogin = async () => {
         const idToken = await liff.getIDToken();
         if (!idToken) {
           throw new Error('無法取得 LINE ID Token，請確認 LIFF 已開啟 OpenID Connect 權限。');
+        }
+
+        // --- 主動檢查並處理過期 Token (手動刷新) ---
+        // 您提到即使系統時間正確，拿到的 Token 也是過期的。這很可能是 LIFF SDK 的快取機制導致。
+        // 以下程式碼會在拿到 Token 後立刻檢查其有效期限。
+        const decodedForExpiryCheck = jwtDecode(idToken);
+        const isExpired = (decodedForExpiryCheck.exp * 1000) < Date.now();
+
+        if (isExpired) {
+          console.warn('LIFF ID Token is expired upon receipt. Forcing re-login to get a fresh token.');
+          loadingText.value = '登入憑證已過期，正在為您重新登入...';
+          // We must use a clean redirect URI without query parameters.
+          const cleanRedirectUri = `${window.location.origin}${window.location.pathname}`;
+          liff.login({ redirectUri: cleanRedirectUri });
+          return; // 終止此函數執行，因為頁面即將重新導向。
         }
 
         // --- 開發模式下的除錯輔助 ---
