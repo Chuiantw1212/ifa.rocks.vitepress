@@ -44,6 +44,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useAgentStore } from '@/stores/agent'
+import { jwtDecode } from 'jwt-decode';
 
 // --- LIFF 設定 ---
 // 請到 LINE Developers Console > LIFF 頁面取得您的 LIFF ID
@@ -86,9 +87,25 @@ const initializeLiffAndLogin = async () => {
       } else {
         // 使用者已登入 LINE，嘗試登入我們的系統
         loadingText.value = 'LINE 登入成功，正在驗證您的顧問身份...';
-        const idToken = liff.getIDToken();
+        // 【關鍵修正】liff.getIDToken() 是非同步操作，必須使用 await
+        const idToken = await liff.getIDToken();
         if (!idToken) {
           throw new Error('無法取得 LINE ID Token，請確認 LIFF 已開啟 OpenID Connect 權限。');
+        }
+
+        // --- 開發模式下的除錯輔助 ---
+        // 在將 Token 送到後端前，先在前端解碼並印出其內容，幫助後端除錯。
+        // 這段程式碼只在開發環境 (isDev) 執行。
+        if (isDev) {
+          try {
+            const decodedToken = jwtDecode(idToken);
+            console.groupCollapsed('--- LIFF ID Token (Decoded for Debugging) ---');
+            console.log('Audience (aud - 應為您的 Channel ID):', decodedToken.aud);
+            console.log('Issuer (iss - 應為 https://access.line.me):', decodedToken.iss);
+            console.log('Expires at (exp):', new Date(decodedToken.exp * 1000));
+            console.log('Full Decoded Payload:', decodedToken);
+            console.groupEnd();
+          } catch (e) { console.error('無法解碼 LIFF ID Token，這可能是一個無效的 Token。', e); }
         }
 
         // 呼叫 Pinia store 的 action 來處理後續登入流程

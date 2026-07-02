@@ -29,7 +29,9 @@ export function useApi() {
             throw new Error('使用者未登入，無法發送請求 (User not authenticated)')
         }
 
-        let token = await getIdToken()
+        // 【核心修改】根據您的要求，強制刷新以獲取最新的 Token
+        // 這可以最大程度避免 Token 過期，但會增加每次請求的延遲
+        const token = await getIdToken(true)
 
         // 1. 先將 params 從 options 分離出來，避免傳給原生 fetch 導致錯誤
         const { params, ...fetchOptions } = options
@@ -73,26 +75,15 @@ export function useApi() {
         const perf = firebase.performance()
         const trace = perf.trace(endpoint)
         trace.start()
-        let res = await fetch(serviceUrl, {
+        const res = await fetch(serviceUrl, {
             ...fetchOptions, // 這裡傳入的是已經扣除 params 的 options
             headers,
             body: body as BodyInit
         })
         trace.stop()
 
-        // 處理 Token 過期 (401)
-        if (res.status === 401) {
-            console.log('Token expired, retrying...')
-            token = await getIdToken(true) // 強制刷新
-            if (token) {
-                headers.set('Authorization', `Bearer ${token}`)
-                res = await fetch(serviceUrl, {
-                    ...options,
-                    headers,
-                    body: body as BodyInit // 強制轉型給 fetch 看
-                })
-            }
-        }
+        // 因為我們已經主動刷新 Token，原有的 401 重試邏輯可以移除以簡化程式碼。
+        // 現在我們直接處理所有非成功的響應。
         if (!res.ok) {
             // 統一錯誤處理
             const errorText = await res.text()
