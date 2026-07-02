@@ -70,17 +70,24 @@ export const useAgentStore = defineStore('agent', () => {
             // 3. 根據 Token 中的 LINE User ID，在您的資料庫中尋找或建立對應的顧問帳號。
             // 4. 使用 Firebase Admin SDK 為該帳號產生一個 Custom Token。
             // 5. 將 Firebase Custom Token 回傳給前端。
-            const response = await fetch(`${API_BASE_URL}auth/liff`, {
+            const response = await fetch(`${API_BASE_URL}api/v1/auth/liff`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ token: liffIdToken }),
+                body: JSON.stringify({ idToken: liffIdToken }),
             });
 
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ message: 'LIFF 登入驗證失敗' }));
-                throw new Error(errorData.message || '後端驗證失敗');
+                // 增強錯誤處理，以便在開發者工具中看到更詳細的後端訊息
+                let backendError;
+                try {
+                    backendError = await response.json();
+                } catch {
+                    // 如果後端回傳的不是 JSON，或解析失敗，則取得原始文字
+                    backendError = { message: await response.text() };
+                }
+                throw new Error(`後端驗證失敗: ${backendError.message || '未提供詳細錯誤訊息。'}`);
             }
 
             const { firebaseToken } = await response.json();

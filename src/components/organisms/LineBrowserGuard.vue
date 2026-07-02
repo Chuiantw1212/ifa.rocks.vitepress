@@ -2,47 +2,63 @@
   <div v-if="showOverlay" class="line-guard-overlay">
     <el-card class="line-guard-card" shadow="always" v-loading="status === 'initializing'" :element-loading-text="loadingText">
       <el-result
-        v-if="status !== 'initializing'"
+        v-if="status === 'success'"
+        icon="success"
+        title="登入成功"
+        sub-title="正在為您載入應用程式..."
+      />
+      <el-result
+        v-if="status === 'error'"
         icon="warning"
-        title="請使用預設瀏覽器開啟"
+        :title="isDev ? 'LIFF 登入失敗' : '請使用預設瀏覽器開啟'"
       >
         <template #sub-title>
-          <p>{{ status === 'error' ? errorMessage : '您似乎正在使用 LINE 的內建瀏覽器，這可能會導致部分功能無法正常運作。' }}</p>
+          <p>{{ errorMessage }}</p>
         </template>
         <template #extra>
           <el-alert
+            v-if="!isDev"
             title="為了獲得最佳體驗，請點擊右上角的「...」選單，然後選擇「使用預設瀏覽器開啟」。"
             type="info"
             :closable="false"
             center
             style="margin-bottom: 20px;"
           />
-          <el-button tag="a" :href="currentUrl" target="_blank" type="primary" link>
+          <el-button v-if="!isDev" tag="a" :href="currentUrl" target="_blank" type="primary" link>
             或點此嘗試直接開啟
           </el-button>
+          <el-alert
+            v-if="isDev"
+            title="請檢查瀏覽器開發者工具 (Console) 的錯誤訊息以進行除錯。"
+            type="error"
+            :closable="false"
+          />
         </template>
       </el-result>
       <!-- This div is for the loading spinner to have a size -->
-      <div v-if="status === 'initializing'" style="height: 280px;"></div>
+      <div v-if="status === 'initializing'" style="height: 280px;" />
     </el-card>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted } from 'vue';
 import { useAgentStore } from '@/stores/agent'
 
 // --- LIFF 設定 ---
 // 請到 LINE Developers Console > LIFF 頁面取得您的 LIFF ID
 const LIFF_ID = '2009612107-QeSJSRV2';
 
-const status = ref('idle'); // idle, initializing, error
+const status = ref('idle'); // idle, initializing, success, error
 const errorMessage = ref('');
 const showOverlay = ref(false);
 const currentUrl = ref('')
 const loadingText = ref('正在初始化服務...')
 
 const agentStore = useAgentStore();
+
+// Vite 環境變數，用於判斷是否為開發模式
+const isDev = import.meta.env.DEV;
 
 const initializeLiffAndLogin = async () => {
   try {
@@ -59,7 +75,9 @@ const initializeLiffAndLogin = async () => {
     // Initialize LIFF
     await liff.init({ liffId: LIFF_ID });
 
-    if (liff.isInClient()) {
+    // 當在 LINE App 內，或是在開發模式下的電腦瀏覽器時，執行 LIFF 登入流程。
+    // liff.isLoggedIn() 等函式在外部瀏覽器也能正常運作。
+    if (liff.isInClient() || isDev) {
       if (!liff.isLoggedIn()) {
         // 如果使用者尚未登入 LINE，引導他們登入。
         // 登入後，LINE 會自動重新導向回此頁面，屆時 liff.isLoggedIn() 會是 true。
@@ -76,13 +94,18 @@ const initializeLiffAndLogin = async () => {
         // 呼叫 Pinia store 的 action 來處理後續登入流程
         await agentStore.loginWithLiff(idToken);
 
-        // 如果 loginWithLiff 成功，isLoggedIn 狀態會改變，
-        // 相關的 watcher 會處理後續 UI。我們就可以隱藏這個覆蓋層。
-        showOverlay.value = false;
+        // 登入成功，顯示成功訊息
+        status.value = 'success';
+
+        // 1.5 秒後自動隱藏覆蓋層，讓使用者進入主畫面
+        setTimeout(() => {
+          showOverlay.value = false;
+        }, 1500);
       }
     } else {
-      // If not in a LINE client, we shouldn't be here. Hide the overlay.
-      showOverlay.value = false;
+      // 在正式環境 (非 dev) 且不在 LINE App 中，我們就判定為錯誤的進入點。
+      errorMessage.value = '此頁面僅支援在 LINE App 中開啟。';
+      status.value = 'error';
     }
   } catch (err) {
     console.error('LIFF Error:', err);
@@ -94,8 +117,12 @@ const initializeLiffAndLogin = async () => {
 
 onMounted(() => {
   currentUrl.value = window.location.href;
-  // Check if we are in the LINE client
-  if (navigator.userAgent.match(/Line/i) && window.location.pathname.includes('/pro/')) {
+  // 判斷是否需要啟動 LIFF 登入流程
+  // 1. 在 LINE App 內瀏覽 /pro/ 相關頁面時
+  // 2. 在開發模式下 (isDev)，於電腦瀏覽器瀏覽 /pro/ 相關頁面時
+  const shouldTriggerLiff = window.location.pathname.includes('/pro/') && (navigator.userAgent.match(/Line/i) || isDev);
+
+  if (shouldTriggerLiff) {
     showOverlay.value = true;
     status.value = 'initializing';
     initializeLiffAndLogin();
