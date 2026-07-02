@@ -102,9 +102,15 @@ const initializeLiffAndLogin = async () => {
         const isExpired = (decodedForExpiryCheck.exp * 1000) < Date.now();
 
         if (isExpired) {
-          console.warn('LIFF ID Token is expired upon receipt. Forcing re-login to get a fresh token.');
+          console.warn('LIFF ID Token is expired upon receipt. Forcing a full re-authentication.');
           loadingText.value = '登入憑證已過期，正在為您重新登入...';
-          // We must use a clean redirect URI without query parameters.
+
+          // 根據您的要求：
+          // 1. 停止後續請求 (透過 return 達成)
+          // 2. 呼叫 liff.logout() 清除殘留的認證狀態
+          liff.logout();
+
+          // 3. 呼叫 liff.login() 重新獲取授權，並使用乾淨的 redirectUri
           const cleanRedirectUri = `${window.location.origin}${window.location.pathname}`;
           liff.login({ redirectUri: cleanRedirectUri });
           return; // 終止此函數執行，因為頁面即將重新導向。

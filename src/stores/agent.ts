@@ -90,8 +90,19 @@ export const useAgentStore = defineStore('agent', () => {
                 throw new Error(`後端驗證失敗: ${backendError.message || '未提供詳細錯誤訊息。'}`);
             }
 
-            const { firebaseToken } = await response.json();
-            await signInWithCustomToken(auth, firebaseToken);
+            const { customToken } = await response.json();
+
+            // --- 除錯輔助 ---
+            // 在呼叫 signInWithCustomToken 之前，將從後端收到的 Custom Token 印出來。
+            // 這有助於確認後端是否回傳了正確的、非空的 Token 字串。
+            // 您可以將這個 Token 貼到 jwt.io 網站上來解碼，檢查其內容是否符合 Firebase 的要求。
+            console.log('Received Firebase Custom Token from backend:', customToken);
+            if (!customToken) {
+              throw new Error('從後端收到的 Firebase Custom Token 是空的，請檢查後端 API 的回傳值。');
+            }
+            // --- 除錯結束 ---
+
+            await signInWithCustomToken(auth, customToken);
             // 登入成功後，onAuthStateChanged 會自動觸發，更新 agent 狀態。
         } catch (error) {
             console.error('LIFF Login failed:', error);
