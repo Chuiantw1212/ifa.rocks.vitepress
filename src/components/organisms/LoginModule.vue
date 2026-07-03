@@ -13,10 +13,10 @@
         </el-dropdown>
 
         <!-- 未登入時顯示可點擊的登入頭像 -->
-        <el-avatar v-else :size="32" :icon="UserFilled" @click="dialogVisible = true" aria-label="登入或註冊" />
+        <el-avatar v-else :size="32" :icon="UserFilled" @click="agentStore.openLoginDialog()" aria-label="登入或註冊" />
     </el-space>
 
-    <el-dialog v-model="dialogVisible" title="理財規劃系統登入" width="400px" align-center :append-to-body="true" :destroy-on-close="true">
+    <el-dialog v-model="loginDialogVisible" title="理財規劃系統登入" width="400px" align-center :append-to-body="true" :destroy-on-close="true">
         <!-- FirebaseUI 將會在這個容器中渲染 -->
         <div id="firebaseui-auth-container"></div>
     </el-dialog>
@@ -25,6 +25,7 @@
 <script setup lang="ts">
 import { ref, watch, nextTick, computed } from 'vue';
 import { useRouter } from 'vitepress';
+import { storeToRefs } from 'pinia';
 import { ElMessage } from 'element-plus'
 import { UserFilled } from '@element-plus/icons-vue'
 import { auth } from '@/firebaseConfig'
@@ -38,9 +39,8 @@ declare global {
     }
 }
 
-const dialogVisible = ref(false)
-
 const agentStore = useAgentStore()
+const { loginDialogVisible } = storeToRefs(agentStore);
 
 // 使用 computed 屬性來響應 store 的變化
 const isLoggedIn = computed(() => agentStore.isLoggedIn)
@@ -50,8 +50,8 @@ const router = useRouter();
 
 // 監聽來自 store 的登入成功狀態，以關閉對話框
 watch(() => agentStore.isLoggedIn, (loggedIn, wasLoggedIn) => {
-    if (loggedIn && !wasLoggedIn && dialogVisible.value) {
-        dialogVisible.value = false
+    if (loggedIn && !wasLoggedIn && loginDialogVisible.value) {
+        agentStore.closeLoginDialog();
         // 增加保護，確保 agent 物件存在
         if (agentStore.agent) {
             ElMessage.success(`歡迎回來，${agentStore.agent.username}`)
@@ -59,8 +59,8 @@ watch(() => agentStore.isLoggedIn, (loggedIn, wasLoggedIn) => {
     }
 })
 
-// 監看 dialogVisible 的變化，當它被打開時，啟動 FirebaseUI
-watch(dialogVisible, (newValue) => {
+// 監看 loginDialogVisible 的變化，當它被打開時，啟動 FirebaseUI
+watch(loginDialogVisible, (newValue) => {
     if (newValue) { // 當對話框打開時
         const launchFirebaseUI = () => {
             // 使用 nextTick 確保 #firebaseui-auth-container 已被渲染到 DOM 中

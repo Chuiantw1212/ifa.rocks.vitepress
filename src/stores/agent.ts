@@ -2,6 +2,7 @@ import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { auth, API_BASE_URL } from '../firebaseConfig'
 import { onAuthStateChanged, signOut, signInWithCustomToken, type User as FirebaseUser, OAuthProvider, linkWithCredential } from 'firebase/auth'
+import { useApi } from '@/composables/useApi'
 
 // 用於解碼 LINE ID Token
 import { jwtDecode } from 'jwt-decode';
@@ -13,13 +14,20 @@ export interface Agent {
     username: string;
     email: string | null;
     avatarUrl: string;
+    // 以下是可能從後端 /api/v1/agents/{id} 取得的額外欄位範例
+    role?: string;
+    createdAt?: string;
 }
 
 export const useAgentStore = defineStore('agent', () => {
+    const { authFetch } = useApi();
+
     // --- State ---
     const agent = ref<Agent | null>(null)
     // 這個旗標用來追蹤 Firebase 的初始驗證狀態是否已確認
     const isInitialized = ref(false)
+    const isProfileLoading = ref(false);
+    const loginDialogVisible = ref(false);
 
     // --- Getters ---
     const isLoggedIn = computed(() => !!agent.value)
@@ -34,15 +42,19 @@ export const useAgentStore = defineStore('agent', () => {
     function init() {
         if (unsubscribe) return; // 防止重複初始化
 
-        unsubscribe = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
+        unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
             if (firebaseUser) {
-                // 顧問已登入
+                // 顧問已登入 - 先用 Firebase 資料快速填充
                 agent.value = {
                     uid: firebaseUser.uid,
                     username: firebaseUser.displayName || firebaseUser.email || '顧問',
                     email: firebaseUser.email,
                     avatarUrl: firebaseUser.photoURL || `https://api.dicebear.com/8.x/adventurer/svg?seed=${firebaseUser.uid}`
-                }
+                };
+
+                // 接著，從後端取得更詳細的 Agent Profile 並合併
+                await fetchAgentProfile();
+
             } else {
                 // 顧問已登出
                 agent.value = null
@@ -55,6 +67,32 @@ export const useAgentStore = defineStore('agent', () => {
 
             console.log('Firebase 驗證狀態已更新')
         });
+    }
+
+    /**
+     * 從後端 /api/v1/agents/me 獲取當前登入顧問的詳細資料。
+     */
+    async function fetchAgentProfile() {
+        isProfileLoading.value = true;
+        try {
+            // 根據最新規範，呼叫 /me 端點，後端會透過 token 自動識別使用者
+            const res = await authFetch(`/api/v1/agents/me`);
+            if (!res.ok) {
+                // 404 可能表示後端尚未建立此顧問的 Profile，這在初次登入時是正常情況。
+                // 其他錯誤碼則顯示警告。
+                if (res.status !== 404) {
+                    console.warn(`取得 Agent Profile 失敗 (status: ${res.status})。將使用 Firebase 的基本資料。`);
+                }
+                return;
+            }
+            const agentProfileData = await res.json();
+            if (agent.value) {
+                // 將後端資料合併到 agent 物件中，後端資料優先。
+                agent.value = { ...agent.value, ...agentProfileData };
+            }
+        } finally {
+            isProfileLoading.value = false;
+        }
     }
 
     async function logout() {
@@ -108,11 +146,15 @@ export const useAgentStore = defineStore('agent', () => {
             } else {
                 // 處理後端回傳的業務邏輯錯誤，例如帳號已存在但未連結
                 const errorMessages: { [key: string]: string } = {
-                    'ACCOUNT_EXISTS_EMAIL_MISMATCH': '此 LINE 帳號的 Email 已被註冊，但尚未連結。請先用 Email 登入，並在「帳號設定」中連結您的 LINE。',
+                    'ACCOUNT_EXISTS_EMAIL_MISMATCH': '此 LINE 帳號的 Email 已被註冊，但尚未連結。請先用 Email 登入，並在「帳號設定」中連結您的 LINE。', // 保留舊的狀態以供相容
+                    'REDIRECT_TO_FIREBASE_LOGIN': responseData.message || '此帳號需要您先使用 Email 或 Google 登入一次。請點擊下方按鈕，在您的手機預設瀏覽器中完成登入後，再返回 LINE 即可。'
                 };
 
                 // 拋出一個帶有具體訊息的錯誤，讓 LineBrowserGuard 可以捕捉並顯示給使用者
-                throw new Error(errorMessages[status] || `登入失敗，原因: ${status}`);
+                const error = new Error(errorMessages[status] || `登入失敗，原因: ${status}`);
+                // 將 status 附加到 error 物件上，以便 UI 層可以根據不同的錯誤類型執行特定操作（例如跳轉）
+                (error as any).code = status;
+                throw error;
             }
         } catch (error) {
             console.error('LIFF Login failed:', error);
@@ -178,5 +220,13 @@ export const useAgentStore = defineStore('agent', () => {
         }
     }
 
-    return { agent, isInitialized, isLoggedIn, init, logout, loginWithLiff, linkLineAccount }
+    function openLoginDialog() {
+        loginDialogVisible.value = true;
+    }
+
+    function closeLoginDialog() {
+        loginDialogVisible.value = false;
+    }
+
+    return { agent, isInitialized, isLoggedIn, isProfileLoading, init, logout, loginWithLiff, linkLineAccount, fetchAgentProfile, loginDialogVisible, openLoginDialog, closeLoginDialog }
 })
