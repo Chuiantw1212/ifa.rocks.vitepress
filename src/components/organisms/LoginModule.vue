@@ -28,7 +28,7 @@ import { useRouter } from 'vitepress';
 import { ElMessage } from 'element-plus'
 import { UserFilled } from '@element-plus/icons-vue'
 import { auth } from '@/firebaseConfig'
-import { GoogleAuthProvider, EmailAuthProvider } from 'firebase/auth';
+import { GoogleAuthProvider, EmailAuthProvider, signInWithCustomToken } from 'firebase/auth';
 import { useAgentStore } from '@/stores/agent';
 
 // 宣告全域變數，讓 TypeScript 認得從 CDN 載入的 firebaseui
@@ -70,19 +70,61 @@ watch(dialogVisible, (newValue) => {
                 const uiConfig = {
                     credentialHelper: 'local',
                     callbacks: {
-                        // 我們不需要在這裡做任何事，因為 Pinia store 中的 onAuthStateChanged
-                        // 監聽器會統一處理使用者狀態。
-                        // 返回 false 可以避免登入後頁面重新導向。
-                        signInSuccessWithAuthResult: (authResult: any, redirectUrl?: string) => false,
+                        signInSuccessWithAuthResult: async (authResult: any, redirectUrl?: string) => {
+                            // 此回呼是整合的核心。
+                            // 當使用者透過提供商（Google、電子郵件等）成功登入後觸發。
+                            try {
+                                // 1. 從成功的身份驗證中取得 ID Token。
+                                const idToken = await authResult.user.getIdToken();
+
+                                // 2. 將此 ID Token 發送到我們的後端。
+                                // 後端將驗證它，在我們的資料庫中尋找或建立使用者，
+                                // 並為我們的 Firebase 專案返回一個自訂 token。
+                                const response = await fetch('/api/v1/auth/firebase', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ token: idToken }),
+                                });
+
+                                if (!response.ok) {
+                                    const errorData = await response.json();
+                                    // 在拋出錯誤前，從臨時會話中登出
+                                    await auth.signOut();
+                                    throw new Error(errorData.message || '與後端系統同步時發生錯誤');
+                                }
+
+                                const { customToken } = await response.json();
+
+                                // 3. 使用我們後端提供的自訂 token 登入 Firebase。
+                                // 這完成了身份驗證循環。agent store 中的 onAuthStateChanged 監聽器
+                                // 現在將會捕捉到正確的、經過後端驗證的使用者狀態。
+                                await signInWithCustomToken(auth, customToken);
+
+                                // 我們返回 false 來告訴 FirebaseUI 我們已經自己處理了登入流程，
+                                // 並防止任何重新導向。
+                                return false;
+
+                            } catch (error) {
+                                console.error('Custom authentication flow failed:', error);
+                                ElMessage.error((error as Error).message || '登入過程中發生未知錯誤');
+                                // 如果任何步驟失敗，確保使用者已登出
+                                await auth.signOut();
+                                return false;
+                            }
+                        },
+                        signInFailure: (error: any) => {
+                            console.error('FirebaseUI sign-in error:', error);
+                            if (error.code !== 'firebaseui/anonymous-upgrade-merge-conflict') {
+                                ElMessage.error('登入失敗，請檢查您的憑證或稍後再試。');
+                            }
+                        },
                     },
                     signInFlow: 'popup',
                     signInOptions: [
                         GoogleAuthProvider.PROVIDER_ID,
                         {
                             provider: EmailAuthProvider.PROVIDER_ID,
-                            // 明確指定我們就是要走傳統的密碼登入路線
-                            signInMethod: 'password', 
-                            // 如果你的註冊流程不需要強迫使用者填寫暱稱，可以設為 false 減少摩擦
+                            signInMethod: 'password',
                             requireDisplayName: false 
                         },
                     ],

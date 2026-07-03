@@ -83,9 +83,11 @@ const initializeLiffAndLogin = async () => {
         // 如果使用者尚未登入 LINE，引導他們登入。
         // 登入後，LINE 會自動重新導向回此頁面，屆時 liff.isLoggedIn() 會是 true。
         loadingText.value = '偵測到 LINE 環境，正在引導您登入...';
-        // The redirect URI must not contain query parameters to match the one in the LINE Developers Console.
-        const cleanRedirectUri = `${window.location.origin}${window.location.pathname}`;
-        liff.login({ redirectUri: cleanRedirectUri });
+        // 【關鍵修正】重新啟用 redirectUri。
+        // 這樣可以明確告知 LINE 登入後要跳轉回當前的開發或正式網址，而不是永遠跳轉到後台設定的 Endpoint URL。
+        // 這也解決了在 localhost 開發時，登入後被導向到正式環境的問題。
+        const redirectUri = `${window.location.origin}${window.location.pathname}`;
+        liff.login({ redirectUri: redirectUri });
       } else {
         // 使用者已登入 LINE，嘗試登入我們的系統
         loadingText.value = 'LINE 登入成功，正在驗證您的顧問身份...';
@@ -110,9 +112,9 @@ const initializeLiffAndLogin = async () => {
           // 2. 呼叫 liff.logout() 清除殘留的認證狀態
           liff.logout();
 
-          // 3. 呼叫 liff.login() 重新獲取授權，並使用乾淨的 redirectUri
-          const cleanRedirectUri = `${window.location.origin}${window.location.pathname}`;
-          liff.login({ redirectUri: cleanRedirectUri });
+          // 3. 呼叫 liff.login() 重新獲取授權，並再次指定當前的 redirectUri。
+          const redirectUri = `${window.location.origin}${window.location.pathname}`;
+          liff.login({ redirectUri: redirectUri });
           return; // 終止此函數執行，因為頁面即將重新導向。
         }
 
@@ -131,11 +133,12 @@ const initializeLiffAndLogin = async () => {
           } catch (e) { console.error('無法解碼 LIFF ID Token，這可能是一個無效的 Token。', e); }
         }
 
-        // 呼叫 Pinia store 的 action 來處理後續登入流程
+        // 將未經解碼的原始 ID Token 傳遞給後端進行驗證。
+        // Pinia store (agentStore.loginWithLiff) 將負責處理 API 呼叫。
         await agentStore.loginWithLiff(idToken);
 
         // 登入成功，顯示成功訊息
-        status.value = 'success';
+        status.value = 'success'; // store action 成功後，更新 UI 狀態
 
         // 1.5 秒後自動隱藏覆蓋層，讓使用者進入主畫面
         setTimeout(() => {
