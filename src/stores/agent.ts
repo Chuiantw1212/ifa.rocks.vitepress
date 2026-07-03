@@ -79,7 +79,7 @@ export const useAgentStore = defineStore('agent', () => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ token: liffIdToken }),
+                body: JSON.stringify({ idToken: liffIdToken }),
             });
 
             // 即使 response.ok 為 false，也嘗試解析 JSON 以獲取後端提供的錯誤訊息
