@@ -79,35 +79,41 @@ export const useAgentStore = defineStore('agent', () => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ idToken: liffIdToken }),
+                body: JSON.stringify({ token: liffIdToken }),
+            });
+
+            // 即使 response.ok 為 false，也嘗試解析 JSON 以獲取後端提供的錯誤訊息
+            const responseData = await response.json().catch(async () => {
+                // 如果後端回傳的不是 JSON (例如 500 錯誤頁面)，則取得原始文字
+                return { message: await response.text() || response.statusText };
             });
 
             if (!response.ok) {
-                // 增強錯誤處理，以便在開發者工具中看到更詳細的後端訊息
-                let backendError;
-                try {
-                    backendError = await response.json();
-                } catch {
-                    // 如果後端回傳的不是 JSON，或解析失敗，則取得原始文字
-                    backendError = { message: await response.text() };
+                throw new Error(`後端驗證失敗: ${responseData.message || '未提供詳細錯誤訊息。'}`);
+            }
+
+            const { status, token } = responseData;
+
+            // 根據後端回傳的狀態進行處理
+            if (status === 'SUCCESS') {
+                // --- 除錯輔助 ---
+                console.log('Received Firebase Custom Token from backend:', token);
+                if (!token) {
+                    throw new Error('後端回傳成功，但 Firebase Custom Token 是空的，請檢查後端 API 的回傳值。');
                 }
-                throw new Error(`後端驗證失敗: ${backendError.message || '未提供詳細錯誤訊息。'}`);
+                // --- 除錯結束 ---
+
+                await signInWithCustomToken(auth, token);
+                // 登入成功後，onAuthStateChanged 會自動觸發，更新 agent 狀態。
+            } else {
+                // 處理後端回傳的業務邏輯錯誤，例如帳號已存在但未連結
+                const errorMessages: { [key: string]: string } = {
+                    'ACCOUNT_EXISTS_EMAIL_MISMATCH': '此 LINE 帳號的 Email 已被註冊，但尚未連結。請先用 Email 登入，並在「帳號設定」中連結您的 LINE。',
+                };
+
+                // 拋出一個帶有具體訊息的錯誤，讓 LineBrowserGuard 可以捕捉並顯示給使用者
+                throw new Error(errorMessages[status] || `登入失敗，原因: ${status}`);
             }
-
-            const { customToken } = await response.json();
-
-            // --- 除錯輔助 ---
-            // 在呼叫 signInWithCustomToken 之前，將從後端收到的 Custom Token 印出來。
-            // 這有助於確認後端是否回傳了正確的、非空的 Token 字串。
-            // 您可以將這個 Token 貼到 jwt.io 網站上來解碼，檢查其內容是否符合 Firebase 的要求。
-            console.log('Received Firebase Custom Token from backend:', customToken);
-            if (!customToken) {
-              throw new Error('從後端收到的 Firebase Custom Token 是空的，請檢查後端 API 的回傳值。');
-            }
-            // --- 除錯結束 ---
-
-            await signInWithCustomToken(auth, customToken);
-            // 登入成功後，onAuthStateChanged 會自動觸發，更新 agent 狀態。
         } catch (error) {
             console.error('LIFF Login failed:', error);
             throw error; // 將錯誤向上拋出，讓 LineBrowserGuard 可以捕捉到並顯示備用畫面。
