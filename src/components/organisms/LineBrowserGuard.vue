@@ -2,12 +2,6 @@
   <div v-if="showOverlay" class="line-guard-overlay">
     <el-card class="line-guard-card" shadow="always" v-loading="status === 'initializing'" :element-loading-text="loadingText">
       <el-result
-        v-if="status === 'success'"
-        icon="success"
-        title="登入成功"
-        sub-title="正在為您載入應用程式..."
-      />
-      <el-result
         v-if="status === 'error'"
         icon="warning"
         :title="isDev ? 'LIFF 登入失敗' : '請使用預設瀏覽器開啟'"
@@ -41,10 +35,11 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { useAgentStore } from '@/stores/agent'
-import { jwtDecode } from 'jwt-decode';
+
+// 讓 TypeScript 認得從 CDN 載入的 liff 全域變數
+declare const liff: any;
 
 // --- LIFF 設定 ---
 // 請到 LINE Developers Console > LIFF 頁面取得您的 LIFF ID
@@ -56,10 +51,24 @@ const showOverlay = ref(false);
 const currentUrl = ref('')
 const loadingText = ref('正在初始化服務...')
 
-const agentStore = useAgentStore();
-
 // Vite 環境變數，用於判斷是否為開發模式
 const isDev = import.meta.env.DEV;
+
+const redirectToFirebaseLogin = () => {
+  // 導向到 Firebase 登入頁面。在我們的應用中，這通常是主頁面 (`/pro/`)，
+  // 因為登入模組 (LoginModule) 是在導航欄中。
+  // 重要：我們刻意不將 `?liff-test=true` 參數帶到新的 URL，
+  // 這樣在開發模式下重新導向後，頁面不會再次觸發 LIFF 流程，從而避免無限循環。
+  const firebaseLoginUrl = `${window.location.origin}/pro/`;
+
+  if (liff.isInClient()) {
+    // 在 LIFF 環境中，使用 openWindow 在外部瀏覽器打開，體驗最佳
+    liff.openWindow({ url: firebaseLoginUrl, external: true });
+  } else {
+    // 在普通網頁中，直接重新導向
+    window.location.href = firebaseLoginUrl;
+  }
+};
 
 const initializeLiffAndLogin = async () => {
   try {
@@ -68,88 +77,25 @@ const initializeLiffAndLogin = async () => {
     script.src = 'https://static.line-scdn.net/liff/edge/2/sdk.js';
     document.head.appendChild(script);
 
-    await new Promise((resolve, reject) => {
-      script.onload = resolve;
+    await new Promise<void>((resolve, reject) => {
+      script.onload = () => resolve();
       script.onerror = () => reject(new Error('LIFF SDK 載入失敗。'));
     });
 
     // Initialize LIFF
     await liff.init({ liffId: LIFF_ID });
 
-    // 當在 LINE App 內，或是在開發模式下的電腦瀏覽器時，執行 LIFF 登入流程。
-    // liff.isLoggedIn() 等函式在外部瀏覽器也能正常運作。
-    if (liff.isInClient() || isDev) {
-      if (!liff.isLoggedIn()) {
-        // 如果使用者尚未登入 LINE，引導他們登入。
-        // 登入後，LINE 會自動重新導向回此頁面，屆時 liff.isLoggedIn() 會是 true。
-        loadingText.value = '偵測到 LINE 環境，正在引導您登入...';
-        // The redirect URI must not contain query parameters to match the one in the LINE Developers Console.
-        const cleanRedirectUri = `${window.location.origin}${window.location.pathname}`;
-        liff.login({ redirectUri: cleanRedirectUri });
-      } else {
-        // 使用者已登入 LINE，嘗試登入我們的系統
-        loadingText.value = 'LINE 登入成功，正在驗證您的顧問身份...';
-        // 【關鍵修正】liff.getIDToken() 是非同步操作，必須使用 await
-        const idToken = await liff.getIDToken();
-        if (!idToken) {
-          throw new Error('無法取得 LINE ID Token，請確認 LIFF 已開啟 OpenID Connect 權限。');
-        }
-
-        // --- 主動檢查並處理過期 Token (手動刷新) ---
-        // 您提到即使系統時間正確，拿到的 Token 也是過期的。這很可能是 LIFF SDK 的快取機制導致。
-        // 以下程式碼會在拿到 Token 後立刻檢查其有效期限。
-        const decodedForExpiryCheck = jwtDecode(idToken);
-        const isExpired = (decodedForExpiryCheck.exp * 1000) < Date.now();
-
-        if (isExpired) {
-          console.warn('LIFF ID Token is expired upon receipt. Forcing a full re-authentication.');
-          loadingText.value = '登入憑證已過期，正在為您重新登入...';
-
-          // 根據您的要求：
-          // 1. 停止後續請求 (透過 return 達成)
-          // 2. 呼叫 liff.logout() 清除殘留的認證狀態
-          liff.logout();
-
-          // 3. 呼叫 liff.login() 重新獲取授權，並使用乾淨的 redirectUri
-          const cleanRedirectUri = `${window.location.origin}${window.location.pathname}`;
-          liff.login({ redirectUri: cleanRedirectUri });
-          return; // 終止此函數執行，因為頁面即將重新導向。
-        }
-
-        // --- 開發模式下的除錯輔助 ---
-        // 在將 Token 送到後端前，先在前端解碼並印出其內容，幫助後端除錯。
-        // 這段程式碼只在開發環境 (isDev) 執行。
-        if (isDev) {
-          try {
-            const decodedToken = jwtDecode(idToken);
-            console.groupCollapsed('--- LIFF ID Token (Decoded for Debugging) ---');
-            console.log('Audience (aud - 應為您的 Channel ID):', decodedToken.aud);
-            console.log('Issuer (iss - 應為 https://access.line.me):', decodedToken.iss);
-            console.log('Expires at (exp):', new Date(decodedToken.exp * 1000));
-            console.log('Full Decoded Payload:', decodedToken);
-            console.groupEnd();
-          } catch (e) { console.error('無法解碼 LIFF ID Token，這可能是一個無效的 Token。', e); }
-        }
-
-        // 呼叫 Pinia store 的 action 來處理後續登入流程
-        await agentStore.loginWithLiff(idToken);
-
-        // 登入成功，顯示成功訊息
-        status.value = 'success';
-
-        // 1.5 秒後自動隱藏覆蓋層，讓使用者進入主畫面
-        setTimeout(() => {
-          showOverlay.value = false;
-        }, 1500);
-      }
-    } else {
-      // 在正式環境 (非 dev) 且不在 LINE App 中，我們就判定為錯誤的進入點。
-      errorMessage.value = '此頁面僅支援在 LINE App 中開啟。';
-      status.value = 'error';
+    // 【新流程】只要在 LINE App 內，就直接導向到外部瀏覽器進行 Firebase 網頁登入。
+    // 同時，為了方便電腦開發，我們加入一個 URL 參數來手動模擬此行為，避免無限刷新。
+    const isLiffTestMode = new URLSearchParams(window.location.search).has('liff-test');
+    if (liff.isInClient() || (isDev && isLiffTestMode)) {
+      loadingText.value = '偵測到 LINE 環境，正在將您導向至網頁登入...';
+      redirectToFirebaseLogin();
+      // 頁面即將跳轉，保持載入畫面直到跳轉完成。
     }
-  } catch (err) {
+  } catch (err: any) {
     console.error('LIFF Error:', err);
-    errorMessage.value = err.message || 'LIFF 登入失敗，建議使用外部瀏覽器開啟。';
+    errorMessage.value = err.message || 'LIFF 初始化失敗，請確認網路連線或稍後再試。';
     status.value = 'error';
     // Keep the overlay visible to show the error and fallback message.
   }
@@ -158,9 +104,11 @@ const initializeLiffAndLogin = async () => {
 onMounted(() => {
   currentUrl.value = window.location.href;
   // 判斷是否需要啟動 LIFF 登入流程
-  // 1. 在 LINE App 內瀏覽 /pro/ 相關頁面時
-  // 2. 在開發模式下 (isDev)，於電腦瀏覽器瀏覽 /pro/ 相關頁面時
-  const shouldTriggerLiff = window.location.pathname.includes('/pro/') && (navigator.userAgent.match(/Line/i) || isDev);
+  // 1. 在 LINE App 內瀏覽 /pro/ 相關頁面
+  // 2. 在開發模式下 (isDev)，且 URL 包含 ?liff-test=true 參數時
+  const isLiffTestMode = new URLSearchParams(window.location.search).has('liff-test');
+  const isLineBrowser = navigator.userAgent.match(/Line/i);
+  const shouldTriggerLiff = window.location.pathname.includes('/pro/') && (isLineBrowser || (isDev && isLiffTestMode));
 
   if (shouldTriggerLiff) {
     showOverlay.value = true;
