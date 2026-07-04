@@ -13,12 +13,12 @@ interface AuthFetchOptions extends Omit<RequestInit, 'body'> {
 }
 export function useApi() {
 
-    // 取得當前 Token (包含強制刷新邏輯)
-    const getIdToken = async (forceRefresh = false) => {
+    // 取得當前 Token
+    const getIdToken = async () => {
         const auth = getAuth()
         const user = auth.currentUser
         if (!user) return null
-        return await user.getIdToken(forceRefresh)
+        return await user.getIdToken()
     }
 
     // 封裝後的 Fetch
@@ -29,9 +29,8 @@ export function useApi() {
             throw new Error('使用者未登入，無法發送請求 (User not authenticated)')
         }
 
-        // 【核心修改】根據您的要求，強制刷新以獲取最新的 Token
-        // 這可以最大程度避免 Token 過期，但會增加每次請求的延遲
-        const token = await getIdToken(true)
+        // SDK 發現過期會自動帶著 Refresh Token 去 Firebase 伺服器換一個新 ID Token
+        const token = await getIdToken()
 
         // 1. 先將 params 從 options 分離出來，避免傳給原生 fetch 導致錯誤
         const { params, ...fetchOptions } = options
