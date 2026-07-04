@@ -62,6 +62,14 @@ watch(() => agentStore.isLoggedIn, (loggedIn, wasLoggedIn) => {
 
 // 監看 loginDialogVisible 的變化，當它被打開時，啟動 FirebaseUI
 watch(loginDialogVisible, (newValue) => {
+    // 新增的保護機制：如果使用者已經登入，但登入視窗卻被打開，則立即將其關閉。
+    // 這可以處理自動登入成功後，因某些原因誤開登入視窗的情況。
+    if (newValue && isLoggedIn.value) {
+        console.log('[LoginModule] User is already logged in. Closing login dialog automatically.');
+        agentStore.closeLoginDialog();
+        return; // 中斷後續的 FirebaseUI 渲染
+    }
+
     if (newValue) { // 當對話框打開時
         const launchFirebaseUI = () => {
             // 使用 nextTick 確保 #firebaseui-auth-container 已被渲染到 DOM 中
