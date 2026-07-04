@@ -170,6 +170,9 @@ const handleLogout = async () => {
         }
 
         ElMessage.info('您已成功登出')
+
+        // 登出後自動跳轉至儀表板
+        await router.go('/pro/dashboard');
     } catch (error) {
         console.error('Logout Error:', error)
         ElMessage.error('登出時發生錯誤')

@@ -39,11 +39,11 @@
         <template #sub-title>
           <div style="text-align: left; max-width: 320px; margin: 0 auto;">
             <p>為了將您的 LINE 帳號與 IFA 會員帳號連結，我們需要取得您的電子郵件地址。這將用於：</p>
-            <ul style="padding-left: 20px; margin-top: 10px; margin-bottom: 10px;">
-              <li>驗證您的身分</li>
-              <li>建立或連結您的 IFA 會員帳號</li>
-              <li>接收重要的會員通知</li>
-            </ul>
+            <el-steps direction="vertical" :space="50" style="height: 160px; margin: 20px 0; max-width: 100%;">
+              <el-step title="驗證您的身分" />
+              <el-step title="建立或連結您的 IFA 會員帳號" />
+              <el-step title="接收重要的會員通知" />
+            </el-steps>
             <p>我們承諾保護您的個人資訊安全。點擊「同意並以 LINE 登入」即表示您同意我們基於上述目的使用您的電子郵件。</p>
           </div>
         </template>
@@ -97,7 +97,11 @@ const handleConsentAndLogin = async () => {
   loadingText.value = '正在處理 LINE 登入...';
   try {
     // 1. 確保使用者已登入 LINE 並取得權限 (如果尚未登入，會觸發登入畫面)
-    await liff.login({ scope: 'profile openid email' });
+    await liff.login({
+      scope: 'profile openid email',
+      // 明確指定重新導向的 URL 為當前頁面，避免跳轉到正式環境
+      redirectUri: window.location.href
+    });
 
     // 2. 取得 LINE ID Token 和使用者 Email
     const lineIdToken = liff.getIDToken();
@@ -107,8 +111,14 @@ const handleConsentAndLogin = async () => {
     // 3. 如果無法從 LINE 取得 Email，則導向至外部瀏覽器使用 FirebaseUI 登入
     if (!email || !lineIdToken) {
       loadingText.value = '無法取得 LINE Email，將導向至網頁登入...';
-      redirectToExternalBrowserForLogin();
-      return; // 停止後續執行
+      if (isDev) {
+        console.warn('[LineGuard] DEV MODE: Aborting redirect. Reason: Could not get email from LIFF. Would redirect to FirebaseUI login.');
+        errorMessage.value = '開發模式：無法從 LINE 取得 Email。為保留 log 已中止重新導向。';
+        status.value = 'error';
+      } else {
+        redirectToExternalBrowserForLogin();
+      }
+      return;
     }
     
     // 4. 將 LINE ID Token 送到後端
@@ -140,7 +150,13 @@ const handleConsentAndLogin = async () => {
     // --- 情況 B: 使用者不存在 ---
     if (authData?.status === 'USER_NOT_FOUND') {
       loadingText.value = '您的 LINE Email 尚未註冊，將導向至登入頁面...';
-      redirectToExternalBrowserForLogin();
+      if (isDev) {
+        console.warn('[LineGuard] DEV MODE: Aborting redirect. Reason: USER_NOT_FOUND. Would redirect to FirebaseUI login.');
+        errorMessage.value = '開發模式：使用者不存在。為保留 log 已中止重新導向。';
+        status.value = 'error';
+      } else {
+        redirectToExternalBrowserForLogin();
+      }
       return;
     }
 
@@ -197,8 +213,6 @@ const initializeLiffAndLogin = async () => {
 onMounted(() => {
   currentUrl.value = window.location.href;
   // 判斷是否需要啟動 LIFF 登入流程
-  // 1. 在 LINE App 內瀏覽 /pro/ 相關頁面
-  // 2. 在開發模式下 (isDev)，且 URL 包含 ?liff-test=true 參數時
   const isLiffTestMode = new URLSearchParams(window.location.search).has('liff-test');
   const isLineBrowser = navigator.userAgent.match(/Line/i);
   const shouldTriggerLiff = window.location.pathname.includes('/pro/') && (isLineBrowser || (isDev && isLiffTestMode));
@@ -206,7 +220,19 @@ onMounted(() => {
   if (shouldTriggerLiff) {
     showOverlay.value = true;
     status.value = 'initializing';
-    initializeLiffAndLogin();
+
+    // 透過 onAuthStateChanged 等待 Firebase 完成其初始狀態檢查。
+    // 這可以防止在 Firebase 於背景恢復有效會話時，我們又嘗試進行 LIFF 登入，從而導致競態條件。
+    const unsubscribe = auth.onAuthStateChanged(user => {
+      unsubscribe(); // 我們只需要在載入時檢查一次。
+      if (user) {
+        // 如果 Firebase 會話已存在，此防護元件的任務即告完成。
+        showOverlay.value = false;
+      } else {
+        // 如果沒有 Firebase 會話，才繼續執行 LIFF 登入流程。
+        initializeLiffAndLogin();
+      }
+    });
   }
 })
 </script>

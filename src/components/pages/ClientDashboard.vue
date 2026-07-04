@@ -67,18 +67,6 @@ const { isLoggedIn, isInitialized } = storeToRefs(agentStore)
 const dialogVisible = ref(false) // This now controls the DashboardClientDialog component
 const clientToEdit = ref<Client | null>(null)
 
-// 當驗證狀態初始化完成後，檢查是否需要跳出登入視窗
-watch(isInitialized, (initialized) => {
-  // 當 Firebase 驗證狀態初始化完成後
-  if (initialized) {
-    // 且使用者仍未登入
-    if (!isLoggedIn.value) {
-      // 打開登入彈窗
-      agentStore.openLoginDialog();
-    }
-  }
-}, { immediate: true });
-
 const handleClientSwitch = (newId: string | null) => {
   clientsStore.setCurrentClientId(newId)
   // 實務上這裡會呼叫 Pinia action: store.setCurrentClient(newId)

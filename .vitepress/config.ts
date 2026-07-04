@@ -147,7 +147,7 @@ export default defineConfig({
       // 當網址進入 /pro/ 開頭時，左側會「完全切換」為以下目錄
       '/pro/': [
         {
-          text: '🔙 返回客戶總覽',
+          text: '🔙 規劃儀錶板',
           link: '/pro/dashboard/'
         },
         // ==========================================
