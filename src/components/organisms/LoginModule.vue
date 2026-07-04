@@ -29,7 +29,7 @@ import { storeToRefs } from 'pinia';
 import { ElMessage } from 'element-plus'
 import { UserFilled } from '@element-plus/icons-vue'
 import { auth } from '@/firebaseConfig'
-import { GoogleAuthProvider, EmailAuthProvider, signInWithCustomToken } from 'firebase/auth';
+import { GoogleAuthProvider, EmailAuthProvider, signInWithCustomToken, signOut } from 'firebase/auth';
 import { useAgentStore } from '@/stores/agent';
 
 // 宣告全域變數，讓 TypeScript 認得從 CDN 載入的 firebaseui
@@ -169,7 +169,10 @@ watch(loginDialogVisible, (newValue) => {
 
 const handleLogout = async () => {
     try {
-        await agentStore.logout();
+        // 直接呼叫 Firebase 的 signOut 方法，這是最可靠的登出方式。
+        // 它會清除使用者的登入狀態，包括任何持久化的 session。
+        // agentStore 應該會透過 onAuthStateChanged 監聽器自動更新其狀態。
+        await signOut(auth);
 
         // 同步登出 LINE LIFF，以便下次能重新觸發授權流程
         // 檢查 liff 物件是否存在且使用者已登入
@@ -182,7 +185,7 @@ const handleLogout = async () => {
         // 登出後自動跳轉至儀表板
         await router.go('/pro/dashboard');
     } catch (error) {
-        console.error('Logout Error:', error)
+        console.error('[LoginModule] Logout Error:', error)
         ElMessage.error('登出時發生錯誤')
     }
 };
