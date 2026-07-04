@@ -48,7 +48,10 @@
           </div>
         </template>
         <template #extra>
-          <el-button type="primary" @click="handleConsentAndLogin">同意並以 LINE 登入</el-button>
+          <div class="consent-buttons">
+            <el-button type="primary" @click="handleConsentAndLogin">同意並以 LINE 登入</el-button>
+            <el-button @click="showExternalBrowserInstructions">使用其他方式登入</el-button>
+          </div>
         </template>
       </el-result>
       <!-- This div is for the loading spinner to have a size -->
@@ -80,16 +83,24 @@ const agentStore = useAgentStore();
 
 const redirectToExternalBrowserForLogin = () => {
   // 導向到應用程式的主登入頁面 (`/pro/`)，FirebaseUI 會在那裡處理登入。
-  const loginUrl = `${window.location.origin}/pro/`;
-
+  const loginUrl = `${window.location.origin}/pro/dashboard`;
   if (liff.isInClient()) {
-    // 在 LINE App 內，使用 openWindow 在外部瀏覽器開啟以獲得最佳體驗。
+    // 嘗試在外部瀏覽器中開啟登入頁面。
+    // 這是一個「即發即忘」的操作，我們無法得知它是否成功。
     liff.openWindow({ url: loginUrl, external: true });
-    // 頁面即將跳轉，保持載入畫面直到跳轉完成。
+    // 因此，我們立即更新 UI，提供手動操作的備用說明。
+    // 這樣即使用戶切換回 LINE，或 openWindow 失敗，他們也能看到清晰的指引。
+    status.value = 'error';
+    errorMessage.value = '為了使用 Google 或其他方式登入，我們已嘗試為您開啟手機的預設瀏覽器。';
   } else {
     // 在普通瀏覽器（例如開發模式），直接重新導向。
     window.location.href = loginUrl;
   }
+};
+
+const showExternalBrowserInstructions = () => {
+  // 根據使用者要求，此按鈕現在會嘗試自動開啟外部瀏覽器
+  redirectToExternalBrowserForLogin();
 };
 
 const proceedWithBackendLogin = async () => {
@@ -155,13 +166,9 @@ const proceedWithBackendLogin = async () => {
 
     if (authData?.status === 'USER_NOT_FOUND') {
       loadingText.value = '您的 LINE Email 尚未註冊，將導向至登入頁面...';
-      if (isDev) {
-        console.warn('[LineGuard] DEV MODE: Aborting redirect. Reason: USER_NOT_FOUND.');
-        errorMessage.value = '開發模式：使用者不存在。為保留 log 已中止重新導向。';
-        status.value = 'error';
-      } else {
-        redirectToExternalBrowserForLogin();
-      }
+      // 不要自動重新導向，因為 liff.openWindow 不可靠。
+      // 直接顯示錯誤畫面，引導使用者手動操作。
+      showExternalBrowserInstructions();
       return;
     }
 
@@ -322,5 +329,18 @@ onMounted(() => {
 
 .line-guard-card :deep(.el-result__extra) {
   margin-top: 24px;
+}
+
+.consent-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 280px; /* 避免按鈕在寬螢幕上過寬 */
+  margin: 0 auto;
+}
+
+.consent-buttons .el-button + .el-button {
+  margin-left: 0; /* 覆寫 Element Plus 在按鈕之間添加的左邊距 */
 }
 </style>
