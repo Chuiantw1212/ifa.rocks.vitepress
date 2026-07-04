@@ -77,7 +77,10 @@ watch(loginDialogVisible, (newValue) => {
                 // 取得或建立 FirebaseUI 實例
                 const ui = window.firebaseui.auth.AuthUI.getInstance() || new window.firebaseui.auth.AuthUI(auth);
                 const uiConfig = {
-                    credentialHelper: 'local',
+                    // credentialHelper: 'local' 在某些瀏覽器（特別是 Safari 或啟用嚴格追蹤保護的 Chrome/Firefox）
+                    // 中會因為 iframe 跨域通訊問題導致 popup 登入流程失敗（轉圈後無反應）。
+                    // 設置為 NONE 可以停用此機制，改用更直接的方式傳遞結果，解決這個問題。
+                    credentialHelper: window.firebaseui.auth.CredentialHelper.NONE,
                     callbacks: {
                         signInSuccessWithAuthResult: async (authResult: any, redirectUrl?: string) => {
                             // 此回呼是整合的核心。
@@ -133,7 +136,7 @@ watch(loginDialogVisible, (newValue) => {
                             }
                         },
                     },
-                    signInFlow: 'popup',
+                    signInFlow: 'popup', // 永遠不要變更為 'redirect'，因為我們希望在單頁應用中保持狀態。
                     signInOptions: [
                         GoogleAuthProvider.PROVIDER_ID,
                         {
