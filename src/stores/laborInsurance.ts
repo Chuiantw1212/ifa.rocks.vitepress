@@ -48,11 +48,11 @@ export const useLaborInsuranceStore = defineStore('laborInsurance', () => {
                     const laborInsuranceInfo = JSON.parse(responseText);
                     data.value = { ...defaultLaborInsurance, ...laborInsuranceInfo };
                 } else {
-                    data.value = { ...defaultLaborInsurance, clientId: currentClientId.value };
+                    data.value = { ...defaultLaborInsurance };
                 }
             } else if (res.status === 404) {
                 // 404 表示尚無資料，是正常情況，重置為預設值
-                data.value = { ...defaultLaborInsurance, clientId: currentClientId.value };
+                data.value = { ...defaultLaborInsurance };
             } else {
                 throw new Error(`取得客戶勞保資料失敗 (status: ${res.status})`);
             }

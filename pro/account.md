@@ -8,8 +8,8 @@ title: 帳號管理
 
 ## 個人資料
 
-<!-- 可以在這裡加入修改使用者名稱與頭像的元件 -->
-<p>此功能開發中。</p>
+<!-- <AgentProfile></AgentProfile> -->
+
 
 ## 登入方式
 
@@ -22,4 +22,5 @@ title: 帳號管理
 
 <script setup>
 import AccountManagement from '@/components/organisms/AccountManagement.vue'
+import AgentProfile from '@/components/agent/AgentProfile.vue'
 </script>

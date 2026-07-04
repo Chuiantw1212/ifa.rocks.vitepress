@@ -3,8 +3,8 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "cross-env VITE_API_BASE_URL=\"http://localhost:8080/\" vitepress dev",
-    "build": "cross-env VITE_API_BASE_URL=\"https://ifa-rocks-spring-899902006292.asia-east1.run.app/\" vitepress build",
+    "dev": "cross-env VITE_API_BASE_URL=\"http://localhost:8080\" vitepress dev",
+    "build": "cross-env VITE_API_BASE_URL=\"https://ifa-rocks-spring-899902006292.asia-east1.run.app\" vitepress build",
     "predeploy": "pnpm run build",
     "deploy": "firebase use enchu && firebase deploy"
   },
@@ -23,6 +23,7 @@
     "firebase": "^12.10.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
+    "jwt-decode": "^4.0.0",
     "pinia": "^3.0.4"
   }
 }

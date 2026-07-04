@@ -53,7 +53,9 @@ export const useCareerStore = defineStore('career', () => {
             if (res.ok) {
                 const careerInfo = await res.json();
                 data.value = { ...defaultCareerData, ...careerInfo };
-            } else if (res.status !== 404) { // 404 表示尚無資料，是正常情況
+            } else if (res.status === 404) { // 404 表示尚無資料，是正常情況
+                data.value = { ...defaultCareerData };
+            } else {
                 throw new Error(`取得客戶職業資料失敗 (status: ${res.status})`);
             }
         } catch (error: any) {
