@@ -1,10 +1,19 @@
 
-# 客戶基本資料
+# IFA規劃儀表板
 
-本區建議在IFA或財務規劃顧問協同下進行操作。
-
-<ClientDashboard />
+<div v-if="isInitialized">
+  <ClientDashboard v-if="isLoggedIn" />
+  <AgentManual v-else />
+</div>
+<div v-else v-loading="true" style="min-height: 300px; width: 100%"></div>
 
 <script setup>
+import { computed } from 'vue'
+import { useAgentStore } from '@/stores/agent'
+import AgentManual from '@/components/agent/AgentManual.vue'
 import ClientDashboard from '@/components/pages/ClientDashboard.vue'
+
+const agentStore = useAgentStore()
+const isLoggedIn = computed(() => agentStore.isLoggedIn)
+const isInitialized = computed(() => agentStore.isInitialized)
 </script>

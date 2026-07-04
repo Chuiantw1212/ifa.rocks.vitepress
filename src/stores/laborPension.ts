@@ -50,11 +50,11 @@ export const useLaborPensionStore = defineStore('laborPension', () => {
                     const laborPensionInfo = JSON.parse(responseText);
                     data.value = { ...defaultLaborPension, ...laborPensionInfo };
                 } else {
-                    data.value = { ...defaultLaborPension, clientId: currentClientId.value };
+                    data.value = { ...defaultLaborPension };
                 }
             } else if (res.status === 404) {
                 // 404 表示尚無資料，是正常情況，重置為預設值
-                data.value = { ...defaultLaborPension, clientId: currentClientId.value };
+                data.value = { ...defaultLaborPension };
             } else {
                 throw new Error(`取得客戶勞退資料失敗 (status: ${res.status})`);
             }

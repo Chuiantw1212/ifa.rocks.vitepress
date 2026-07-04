@@ -29,13 +29,14 @@ import { storeToRefs } from 'pinia';
 import { ElMessage } from 'element-plus'
 import { UserFilled } from '@element-plus/icons-vue'
 import { auth } from '@/firebaseConfig'
-import { GoogleAuthProvider, EmailAuthProvider, signInWithCustomToken } from 'firebase/auth';
+import { GoogleAuthProvider, EmailAuthProvider, signInWithCustomToken, signOut } from 'firebase/auth';
 import { useAgentStore } from '@/stores/agent';
 
 // 宣告全域變數，讓 TypeScript 認得從 CDN 載入的 firebaseui
 declare global {
     interface Window {
         firebaseui: any;
+        liff: any;
     }
 }
 
@@ -61,6 +62,14 @@ watch(() => agentStore.isLoggedIn, (loggedIn, wasLoggedIn) => {
 
 // 監看 loginDialogVisible 的變化，當它被打開時，啟動 FirebaseUI
 watch(loginDialogVisible, (newValue) => {
+    // 新增的保護機制：如果使用者已經登入，但登入視窗卻被打開，則立即將其關閉。
+    // 這可以處理自動登入成功後，因某些原因誤開登入視窗的情況。
+    if (newValue && isLoggedIn.value) {
+        console.log('[LoginModule] User is already logged in. Closing login dialog automatically.');
+        agentStore.closeLoginDialog();
+        return; // 中斷後續的 FirebaseUI 渲染
+    }
+
     if (newValue) { // 當對話框打開時
         const launchFirebaseUI = () => {
             // 使用 nextTick 確保 #firebaseui-auth-container 已被渲染到 DOM 中
@@ -68,7 +77,10 @@ watch(loginDialogVisible, (newValue) => {
                 // 取得或建立 FirebaseUI 實例
                 const ui = window.firebaseui.auth.AuthUI.getInstance() || new window.firebaseui.auth.AuthUI(auth);
                 const uiConfig = {
-                    credentialHelper: 'local',
+                    // credentialHelper: 'local' 在某些瀏覽器（特別是 Safari 或啟用嚴格追蹤保護的 Chrome/Firefox）
+                    // 中會因為 iframe 跨域通訊問題導致 popup 登入流程失敗（轉圈後無反應）。
+                    // 設置為 NONE 可以停用此機制，改用更直接的方式傳遞結果，解決這個問題。
+                    credentialHelper: window.firebaseui.auth.CredentialHelper.NONE,
                     callbacks: {
                         signInSuccessWithAuthResult: async (authResult: any, redirectUrl?: string) => {
                             // 此回呼是整合的核心。
@@ -80,22 +92,27 @@ watch(loginDialogVisible, (newValue) => {
                                 // 2. 將此 ID Token 發送到我們的後端。
                                 // 後端將驗證它，在我們的資料庫中尋找或建立使用者，
                                 // 並為我們的 Firebase 專案返回一個自訂 token。
-                                const response = await fetch('/api/v1/auth/firebase', {
+                                const apiUrl = `${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/auth/firebase`;
+                                const response = await fetch(apiUrl, {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ token: idToken }),
+                                    body: JSON.stringify({ idToken: idToken }),
                                 });
 
+                                // 將 response body 只讀取一次，並處理非 JSON 的錯誤回應
+                                const responseData = await response.json().catch(() => null);
+
                                 if (!response.ok) {
-                                    const errorData = await response.json();
                                     // 在拋出錯誤前，從臨時會話中登出
                                     await auth.signOut();
-                                    throw new Error(errorData.message || '與後端系統同步時發生錯誤');
+                                    throw new Error(responseData?.message || '與後端系統同步時發生錯誤');
                                 }
 
-                                const { customToken } = await response.json();
+                                // 根據後端 API 的回傳格式，從 'customToken' 欄位取得 custom token
+                                const customToken = responseData?.customToken;
 
                                 // 3. 使用我們後端提供的自訂 token 登入 Firebase。
+                                // 如果 customToken 為空，signInWithCustomToken 會拋出 'auth/missing-custom-token' 錯誤
                                 // 這完成了身份驗證循環。agent store 中的 onAuthStateChanged 監聽器
                                 // 現在將會捕捉到正確的、經過後端驗證的使用者狀態。
                                 await signInWithCustomToken(auth, customToken);
@@ -119,7 +136,7 @@ watch(loginDialogVisible, (newValue) => {
                             }
                         },
                     },
-                    signInFlow: 'popup',
+                    signInFlow: 'popup', // 永遠不要變更為 'redirect'，因為我們希望在單頁應用中保持狀態。
                     signInOptions: [
                         GoogleAuthProvider.PROVIDER_ID,
                         {
@@ -155,10 +172,23 @@ watch(loginDialogVisible, (newValue) => {
 
 const handleLogout = async () => {
     try {
-        await agentStore.logout()
+        // 直接呼叫 Firebase 的 signOut 方法，這是最可靠的登出方式。
+        // 它會清除使用者的登入狀態，包括任何持久化的 session。
+        // agentStore 應該會透過 onAuthStateChanged 監聽器自動更新其狀態。
+        await signOut(auth);
+
+        // 同步登出 LINE LIFF，以便下次能重新觸發授權流程
+        // 檢查 liff 物件是否存在且使用者已登入
+        if (window.liff && window.liff.isLoggedIn()) {
+            window.liff.logout();
+        }
+
         ElMessage.info('您已成功登出')
+
+        // 登出後自動跳轉至儀表板
+        await router.go('/pro/dashboard');
     } catch (error) {
-        console.error('Logout Error:', error)
+        console.error('[LoginModule] Logout Error:', error)
         ElMessage.error('登出時發生錯誤')
     }
 };
