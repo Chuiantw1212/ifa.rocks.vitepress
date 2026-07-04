@@ -36,6 +36,7 @@ import { useAgentStore } from '@/stores/agent';
 declare global {
     interface Window {
         firebaseui: any;
+        liff: any;
     }
 }
 
@@ -80,22 +81,27 @@ watch(loginDialogVisible, (newValue) => {
                                 // 2. 將此 ID Token 發送到我們的後端。
                                 // 後端將驗證它，在我們的資料庫中尋找或建立使用者，
                                 // 並為我們的 Firebase 專案返回一個自訂 token。
-                                const response = await fetch('/api/v1/auth/firebase', {
+                                const apiUrl = `${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/auth/firebase`;
+                                const response = await fetch(apiUrl, {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ token: idToken }),
+                                    body: JSON.stringify({ idToken: idToken }),
                                 });
 
+                                // 將 response body 只讀取一次，並處理非 JSON 的錯誤回應
+                                const responseData = await response.json().catch(() => null);
+
                                 if (!response.ok) {
-                                    const errorData = await response.json();
                                     // 在拋出錯誤前，從臨時會話中登出
                                     await auth.signOut();
-                                    throw new Error(errorData.message || '與後端系統同步時發生錯誤');
+                                    throw new Error(responseData?.message || '與後端系統同步時發生錯誤');
                                 }
 
-                                const { customToken } = await response.json();
+                                // 根據後端 API 的回傳格式，從 'token' 欄位取得 custom token
+                                const customToken = responseData?.token;
 
                                 // 3. 使用我們後端提供的自訂 token 登入 Firebase。
+                                // 如果 customToken 為空，signInWithCustomToken 會拋出 'auth/missing-custom-token' 錯誤
                                 // 這完成了身份驗證循環。agent store 中的 onAuthStateChanged 監聽器
                                 // 現在將會捕捉到正確的、經過後端驗證的使用者狀態。
                                 await signInWithCustomToken(auth, customToken);
@@ -155,7 +161,14 @@ watch(loginDialogVisible, (newValue) => {
 
 const handleLogout = async () => {
     try {
-        await agentStore.logout()
+        await agentStore.logout();
+
+        // 同步登出 LINE LIFF，以便下次能重新觸發授權流程
+        // 檢查 liff 物件是否存在且使用者已登入
+        if (window.liff && window.liff.isLoggedIn()) {
+            window.liff.logout();
+        }
+
         ElMessage.info('您已成功登出')
     } catch (error) {
         console.error('Logout Error:', error)

@@ -112,7 +112,7 @@ export const useAgentStore = defineStore('agent', () => {
             // 3. 根據 Token 中的 LINE User ID，在您的資料庫中尋找或建立對應的顧問帳號。
             // 4. 使用 Firebase Admin SDK 為該帳號產生一個 Firebase Custom Token。
             // 5. 將 Custom Token 回傳給前端。
-            const response = await fetch(`${API_BASE_URL}api/v1/auth/line`, {
+            const response = await fetch(`${API_BASE_URL}/api/v1/auth/line`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -189,7 +189,7 @@ export const useAgentStore = defineStore('agent', () => {
             // 解碼 LINE ID Token 以取得 payload，並傳送給後端。
             const linePayload = jwtDecode(lineIdToken);
 
-            const response = await fetch(`${API_BASE_URL}api/v1/agents/me/bind-line`, {
+            const response = await fetch(`${API_BASE_URL}/api/v1/agents/me/bind-line`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
