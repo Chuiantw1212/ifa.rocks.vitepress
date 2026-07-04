@@ -97,8 +97,8 @@ watch(loginDialogVisible, (newValue) => {
                                     throw new Error(responseData?.message || '與後端系統同步時發生錯誤');
                                 }
 
-                                // 根據後端 API 的回傳格式，從 'token' 欄位取得 custom token
-                                const customToken = responseData?.token;
+                                // 根據後端 API 的回傳格式，從 'customToken' 欄位取得 custom token
+                                const customToken = responseData?.customToken;
 
                                 // 3. 使用我們後端提供的自訂 token 登入 Firebase。
                                 // 如果 customToken 為空，signInWithCustomToken 會拋出 'auth/missing-custom-token' 錯誤

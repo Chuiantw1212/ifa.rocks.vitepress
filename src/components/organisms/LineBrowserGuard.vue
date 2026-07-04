@@ -129,7 +129,7 @@ const handleConsentAndLogin = async () => {
 
     // --- 情況 A: 成功登入 ---
     if (authData?.status === 'SUCCESS') {
-      const customToken = authData.token;
+      const customToken = authData.customToken;
       // 使用 customToken 呼叫 Firebase 的 signInWithCustomToken
       loadingText.value = '正在登入系統...';
       await signInWithCustomToken(auth, customToken);
