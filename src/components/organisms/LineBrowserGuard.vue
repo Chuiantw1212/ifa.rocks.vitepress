@@ -61,7 +61,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { auth } from '@/firebaseConfig';
 import { signInWithCustomToken } from 'firebase/auth';
 import { useAgentStore } from '@/stores/agent';
@@ -260,30 +260,41 @@ const initializeLiffAndLogin = async () => {
   }
 };
 
-onMounted(() => {
-  currentUrl.value = window.location.href;
-  // 判斷是否需要啟動 LIFF 登入流程
-  const isLiffTestMode = new URLSearchParams(window.location.search).has('liff-test');
-  const isLineBrowser = navigator.userAgent.match(/Line/i);
-  const shouldTriggerLiff = window.location.pathname.includes('/pro/') && (isLineBrowser || (isDev && isLiffTestMode));
-
-  if (shouldTriggerLiff) {
+const startLineLoginFlow = () => {
+    currentUrl.value = window.location.href;
     showOverlay.value = true;
     status.value = 'initializing';
 
     // 透過 onAuthStateChanged 等待 Firebase 完成其初始狀態檢查。
     // 這可以防止在 Firebase 於背景恢復有效會話時，我們又嘗試進行 LIFF 登入，從而導致競態條件。
     const unsubscribe = auth.onAuthStateChanged(user => {
-      unsubscribe(); // 我們只需要在載入時檢查一次。
-      if (user) {
-        // 如果 Firebase 會話已存在，此防護元件的任務即告完成。
-        showOverlay.value = false;
-      } else {
-        // 如果沒有 Firebase 會話，才繼續執行 LIFF 登入流程。
-        initializeLiffAndLogin();
-      }
+        unsubscribe(); // 我們只需要在載入時檢查一次。
+        if (user) {
+            // 如果 Firebase 會話已存在，此防護元件的任務即告完成。
+            showOverlay.value = false;
+        } else {
+            // 如果沒有 Firebase 會話，才繼續執行 LIFF 登入流程。
+            initializeLiffAndLogin();
+        }
     });
+};
+
+onMounted(() => {
+  // For mobile devices, the flow is triggered by a click on the login avatar.
+  window.addEventListener('start-line-login', startLineLoginFlow);
+
+  // For desktop testing, allow forcing the LIFF flow with a query parameter.
+  const isLiffTestMode = new URLSearchParams(window.location.search).has('liff-test');
+  const isProPage = window.location.pathname.includes('/pro/');
+
+  if (isDev && isProPage && isLiffTestMode) {
+    console.log('[LineGuard] LIFF test mode activated on page load.');
+    startLineLoginFlow();
   }
+});
+
+onUnmounted(() => {
+  window.removeEventListener('start-line-login', startLineLoginFlow);
 })
 </script>
 

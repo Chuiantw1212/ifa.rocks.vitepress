@@ -13,7 +13,7 @@
         </el-dropdown>
 
         <!-- 未登入時顯示可點擊的登入頭像 -->
-        <el-avatar v-else :size="32" :icon="UserFilled" @click="agentStore.openLoginDialog()" aria-label="登入或註冊" />
+        <el-avatar v-else :size="32" :icon="UserFilled" @click="handleLoginClick()" aria-label="登入或註冊" />
     </el-space>
 
     <el-dialog v-model="loginDialogVisible" title="理財規劃系統登入" width="400px" align-center :append-to-body="true" :destroy-on-close="true">
@@ -23,7 +23,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, nextTick, computed } from 'vue';
+import { watch, nextTick, computed } from 'vue';
 import { useRouter } from 'vitepress';
 import { storeToRefs } from 'pinia';
 import { ElMessage } from 'element-plus'
@@ -31,6 +31,9 @@ import { UserFilled } from '@element-plus/icons-vue'
 import { auth } from '@/firebaseConfig'
 import { GoogleAuthProvider, EmailAuthProvider, signInWithCustomToken, signOut } from 'firebase/auth';
 import { useAgentStore } from '@/stores/agent';
+
+// Vite 環境變數，用於判斷是否為開發模式
+const isDev = import.meta.env.DEV;
 
 // 宣告全域變數，讓 TypeScript 認得從 CDN 載入的 firebaseui
 declare global {
@@ -46,6 +49,21 @@ const { loginDialogVisible } = storeToRefs(agentStore);
 // 使用 computed 屬性來響應 store 的變化
 const isLoggedIn = computed(() => agentStore.isLoggedIn)
 const agent = computed(() => agentStore.agent || { username: '', avatarUrl: '' })
+
+const handleLoginClick = () => {
+    const isLiffTestMode = new URLSearchParams(window.location.search).has('liff-test');
+    // 簡單的桌面環境檢測。更可靠的方法可能需要考慮螢幕寬度等。
+    const isDesktop = !/Mobi|Android/i.test(navigator.userAgent);
+
+    if (isDesktop && !(isDev && isLiffTestMode)) {
+        // 在桌面環境，直接打開 FirebaseUI 登入對話框
+        agentStore.openLoginDialog();
+    } else {
+        // 在行動裝置，或是在 liff-test 模式下，觸發 LINE 登入流程
+        if (isDev && isLiffTestMode) console.log('[LoginModule] Triggering LIFF flow in test mode via click.');
+        window.dispatchEvent(new CustomEvent('start-line-login'));
+    }
+};
 
 const router = useRouter();
 
