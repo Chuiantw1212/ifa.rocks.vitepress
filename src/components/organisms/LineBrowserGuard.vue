@@ -98,8 +98,24 @@ const proceedWithBackendLogin = async () => {
     status.value = 'logging-in';
     loadingText.value = '正在驗證您的帳號...';
 
-    const lineIdToken = liff.getIDToken();
     const decodedIDToken = liff.getDecodedIDToken();
+
+    // 檢查 ID Token 是否已過期。exp 是以秒為單位的 Unix 時間戳。
+    // 為避免後端驗證失敗 (IdToken expired)，在前端預先檢查。
+    if (decodedIDToken && decodedIDToken.exp * 1000 < Date.now()) {
+      console.warn('[LineGuard] LINE ID Token has expired. Re-initiating login flow.');
+      loadingText.value = 'LINE 登入資訊已過期，將為您重新登入...';
+
+      // 登出 LIFF 以清除過期的 session，這樣下次 liff.login() 才能重新觸發授權
+      await liff.logout();
+
+      // 顯示我們自訂的同意畫面，引導使用者重新點擊登入
+      // 這會呼叫 handleConsentAndLogin -> liff.login()，以取得新的 ID Token
+      status.value = 'consent-required';
+      return;
+    }
+
+    const lineIdToken = liff.getIDToken();
     const email = decodedIDToken?.email;
 
     if (!email || !lineIdToken) {
@@ -131,6 +147,9 @@ const proceedWithBackendLogin = async () => {
       const customToken = authData.customToken;
       loadingText.value = '正在登入系統...';
       await signInWithCustomToken(auth, customToken);
+      // 登入成功，將狀態設為 success 並隱藏遮罩
+      status.value = 'success';
+      showOverlay.value = false;
       return;
     }
 
