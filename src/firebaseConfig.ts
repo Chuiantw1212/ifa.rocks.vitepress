@@ -44,17 +44,26 @@ export const auth = getAuth(app);
 
 // Analytics 和 Performance 強烈依賴瀏覽器環境，我們將其初始化延遲，
 // 僅在客戶端確定需要時才調用。
-let analyticsInstance: Analytics;
-export const getAnalyticsInstance = () => {
-    if (!analyticsInstance) {
-        // isSupported() 是 Firebase 官方推薦的檢查方式，比 typeof window 更穩健
-        isAnalyticsSupported().then((supported) => {
+let analyticsInstance: Analytics | undefined;
+let analyticsPromise: Promise<Analytics | undefined> | undefined;
+
+/**
+ * 以非同步方式延遲初始化並取得 Firebase Analytics 實例。
+ * 此函式確保 Analytics 僅在瀏覽器支援時初始化一次。
+ * @returns {Promise<Analytics | undefined>} 一個解析為 Analytics 實例或 undefined 的 Promise。
+ */
+export const getAnalyticsInstance = async (): Promise<Analytics | undefined> => {
+    if (analyticsInstance) return Promise.resolve(analyticsInstance);
+    if (!analyticsPromise) {
+        analyticsPromise = isAnalyticsSupported().then(supported => {
             if (supported) {
                 analyticsInstance = getAnalytics(app);
+                return analyticsInstance;
             }
-        })
+            return undefined;
+        });
     }
-    return analyticsInstance;
+    return analyticsPromise;
 }
 
 let performanceInstance: FirebasePerformance | undefined;

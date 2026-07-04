@@ -248,9 +248,9 @@ export default defineConfig({
       provider: 'local',
       options: {
         _render(src, env, md) {
-          // 只針對 articles 目錄下的檔案進行搜尋索引
-          if (env.relativePath && !env.relativePath.startsWith('articles/')) return ''
-          return md.render(src, env)
+          // Only index files under the articles/ directory
+          if (env.relativePath && !env.relativePath.startsWith('articles/')) return '';
+          return md.render(src, env);
         },
         translations: {
           button: {
@@ -277,32 +277,25 @@ export default defineConfig({
         }
       }
     }
-    // socialLinks: [
-    //   { ariaLabel: 'github', icon: 'github', link: 'https://github.com/Chuiantw1212/ifa.rocks.vitepress' },
-    // ],
   },
-  // Some chunks are larger than 500 kB
   vite: {
-    build: {
-      sourcemap: false,
+    server: {
+      headers: {
+        // Fix Firebase popup login being blocked by COOP policy in dev environment
+        'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+        'Cross-Origin-Embedder-Policy': 'require-corp',
+      }
+    },
+    build: { // Some chunks are larger than 500 kB
+      sourcemap: false, // Disable sourcemaps for production build
       rollupOptions: {
         output: {
           manualChunks(id) {
-            // 將大型的 node_modules 依賴包拆分成獨立的 chunk
             if (id.includes('node_modules')) {
-              if (id.includes('firebase')) {
-                return 'firebase';
-              }
-              if (id.includes('chart.js')) {
-                return 'chart.js';
-              }
-              if (id.includes('jspdf')) {
-                return 'jspdf';
-              }
-              if (id.includes('html2canvas')) {
-                return 'html2canvas';
-              }
-              // 其他所有來自 node_modules 的依賴包，可以打包成一個 vendor chunk
+              if (id.includes('firebase')) return 'firebase';
+              if (id.includes('chart.js')) return 'chart.js';
+              if (id.includes('jspdf')) return 'jspdf';
+              if (id.includes('html2canvas')) return 'html2canvas';
               return 'vendor';
             }
           }
@@ -311,9 +304,9 @@ export default defineConfig({
     },
     resolve: {
       alias: {
-        // 設定別名，指向你建立的 src 目錄
+        // Set alias to your src directory
         '@': path.resolve(__dirname, '../src'),
       }
     },
-  }
+  },
 })
