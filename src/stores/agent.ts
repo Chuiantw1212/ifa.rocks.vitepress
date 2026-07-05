@@ -1,7 +1,7 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { auth, API_BASE_URL } from '../firebaseConfig'
-import { onAuthStateChanged, signOut, signInWithCustomToken, type User as FirebaseUser, OAuthProvider, linkWithCredential } from 'firebase/auth'
+import { onAuthStateChanged, signOut, signInWithCustomToken, type User as FirebaseUser, OAuthProvider, linkWithCredential, setPersistence, browserSessionPersistence } from 'firebase/auth'
 import { useApi } from '@/composables/useApi'
 
 // 用於解碼 LINE ID Token
@@ -41,6 +41,14 @@ export const useAgentStore = defineStore('agent', () => {
      */
     function init() {
         if (unsubscribe) return; // 防止重複初始化
+
+        // 針對 WebView 環境，Firebase 的預設儲存方式 (indexedDB) 可能會被阻擋，導致登入狀態遺失。
+        // 我們在此明確地將其設定為 browserSessionPersistence (sessionStorage)，這種方式的相容性更高。
+        // 這個設定必須在任何驗證操作（包含 onAuthStateChanged）之前被呼叫，以確保所有驗證事件都使用正確的儲存機制。
+        setPersistence(auth, browserSessionPersistence)
+            .catch((error) => {
+                console.error('[AgentStore] Failed to set auth persistence:', error);
+            });
 
         unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
             if (firebaseUser) {
