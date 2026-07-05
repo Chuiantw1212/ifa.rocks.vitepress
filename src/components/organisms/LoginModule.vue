@@ -52,8 +52,8 @@ const agent = computed(() => agentStore.agent || { username: '', avatarUrl: '' }
 
 const handleLoginClick = () => {
     const isLiffTestMode = new URLSearchParams(window.location.search).has('liff-test');
-    // 簡單的桌面環境檢測。更可靠的方法可能需要考慮螢幕寬度等。
-    const isDesktop = !/Mobi|Android/i.test(navigator.userAgent);
+    // 透過 User Agent 判斷是否為桌面環境
+    const isDesktop = !/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
     if (isDesktop && !(isDev && isLiffTestMode)) {
         // 在桌面環境，直接打開 FirebaseUI 登入對話框
@@ -194,11 +194,15 @@ const handleLogout = async () => {
         // 它會清除使用者的登入狀態，包括任何持久化的 session。
         // agentStore 應該會透過 onAuthStateChanged 監聽器自動更新其狀態。
         await signOut(auth);
-
-        // 同步登出 LINE LIFF，以便下次能重新觸發授權流程
-        // liff.isLoggedIn() 只有在 liff.init() 後才能呼叫，此處假設 Guard 已完成初始化
-        if (liff.isLoggedIn()) {
-            liff.logout();
+ 
+        // 僅在非桌面環境下嘗試登出 LIFF。
+        // 在純桌面環境中，liff.init() 從未被呼叫，直接檢查 liff.isLoggedIn() 會導致錯誤。
+        // 這個判斷可以避免在電腦版登出時出現不必要的錯誤 log。
+        const isDesktop = !/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        if (!isDesktop) {
+            if (liff.isLoggedIn()) {
+                liff.logout();
+            }
         }
 
         ElMessage.info('您已成功登出')

@@ -100,7 +100,7 @@ const proceedWithBackendLogin = async () => {
     console.log('[LineGuard] Starting backend login process...');
     // 此函式在確認使用者已登入 LIFF 且已授予 email 權限後呼叫。
     status.value = 'logging-in';
-    loadingText.value = '正在驗證您的帳號...';
+    loadingText.value = '正在驗證您的 LINE 帳號...';
 
     const decodedIDToken = liff.getDecodedIDToken();
     console.log('[LineGuard] Decoded LINE ID Token:', decodedIDToken);
@@ -137,6 +137,7 @@ const proceedWithBackendLogin = async () => {
     }
     
     console.log(`[LineGuard] Sending LINE ID Token to backend for email: ${email}`);
+    loadingText.value = '已取得 LINE 帳號資訊，正在與伺服器同步...';
     const apiUrl = `${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/auth/line`;
     const response = await fetch(apiUrl, {
         method: 'POST',
@@ -154,7 +155,7 @@ const proceedWithBackendLogin = async () => {
     if (authData?.status === 'SUCCESS') {
       const customToken = authData.customToken;
       console.log('[LineGuard] Received custom token from backend. Signing in with Firebase...');
-      loadingText.value = '正在登入系統...';
+      loadingText.value = '帳號同步完成，正在登入會員系統...';
       await signInWithCustomToken(auth, customToken);
       // 登入成功，將狀態設為 success 並隱藏遮罩
       console.log('[LineGuard] Firebase sign-in with custom token successful. Hiding overlay.');
@@ -183,7 +184,7 @@ const proceedWithBackendLogin = async () => {
 const handleConsentAndLogin = async () => {
   console.log('[LineGuard] User consented. Initiating liff.login().');
   status.value = 'logging-in';
-  loadingText.value = '正在處理 LINE 登入...';
+  loadingText.value = '即將跳轉至 LINE 進行授權...';
   try {
     // 1. 建立一個「乾淨」的 redirectUri，移除所有可能殘留的參數
     const url = new URL(window.location.href);
@@ -224,6 +225,7 @@ const initializeLiffAndLogin = async () => {
     console.log(`[LineGuard] Calling liff.init() with LIFF ID: ${LIFF_ID}`);
     await liff.init({ liffId: LIFF_ID });
     console.log('[LineGuard] liff.init() successful.');
+    loadingText.value = '正在檢查您的 LINE 登入狀態...';
 
     // 在 init 之後，立即檢查 URL 是否包含 LIFF 的重新導向參數。
     // 如果有，表示我們剛從 LINE 的登入頁面跳轉回來。
