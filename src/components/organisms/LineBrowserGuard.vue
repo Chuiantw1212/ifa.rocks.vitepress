@@ -71,6 +71,7 @@ const agentStore = useAgentStore();
 const redirectToExternalBrowserForLogin = () => {
   // 導向到應用程式的主登入頁面 (`/pro/`)，FirebaseUI 會在那裡處理登入。
   const loginUrl = `${window.location.origin}/pro/dashboard`;
+  console.log(`[LineGuard] Redirecting to external browser for login. URL: ${loginUrl}`);
   if (liff.isInClient()) {
     // 嘗試在外部瀏覽器中開啟登入頁面。
     // 這是一個「即發即忘」的操作，我們無法得知它是否成功。
@@ -88,6 +89,7 @@ const redirectToExternalBrowserForLogin = () => {
 const openLinkExternally = () => {
   // 當使用者點擊「或點此嘗試直接開啟」時，我們應該優先使用 liff.openWindow
   // 因為這是在 LINE 內建瀏覽器中開啟外部瀏覽器的最可靠方法。
+  console.log(`[LineGuard] Attempting to open URL externally via liff.openWindow: ${currentUrl.value}`);
   if (liff.isInClient()) {
     liff.openWindow({ url: currentUrl.value, external: true });
   } else {
@@ -98,11 +100,13 @@ const openLinkExternally = () => {
 
 const proceedWithBackendLogin = async () => {
   try {
+    console.log('[LineGuard] Starting backend login process...');
     // 此函式在確認使用者已登入 LIFF 且已授予 email 權限後呼叫。
     status.value = 'logging-in';
     loadingText.value = '正在驗證您的帳號...';
 
     const decodedIDToken = liff.getDecodedIDToken();
+    console.log('[LineGuard] Decoded LINE ID Token:', decodedIDToken);
 
     // 檢查 ID Token 是否已過期。exp 是以秒為單位的 Unix 時間戳。
     // 為避免後端驗證失敗 (IdToken expired)，在前端預先檢查。
@@ -123,6 +127,7 @@ const proceedWithBackendLogin = async () => {
     const email = decodedIDToken?.email;
 
     if (!email || !lineIdToken) {
+      console.error('[LineGuard] Failed to get email or ID token from LIFF.');
       loadingText.value = '無法取得 LINE Email，將導向至網頁登入...';
       if (isDev) {
         console.warn('[LineGuard] DEV MODE: Aborting redirect. Reason: Could not get email from LIFF.');
@@ -134,6 +139,7 @@ const proceedWithBackendLogin = async () => {
       return;
     }
     
+    console.log(`[LineGuard] Sending LINE ID Token to backend for email: ${email}`);
     const apiUrl = `${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/auth/line`;
     const response = await fetch(apiUrl, {
         method: 'POST',
@@ -142,6 +148,7 @@ const proceedWithBackendLogin = async () => {
     });
 
     const authData = await response.json().catch(() => null);
+    console.log('[LineGuard] Backend response:', { status: response.status, ok: response.ok, body: authData });
 
     if (!response.ok) {
         throw new Error(authData?.message || `後端伺服器錯誤: ${response.status}`);
@@ -149,9 +156,11 @@ const proceedWithBackendLogin = async () => {
 
     if (authData?.status === 'SUCCESS') {
       const customToken = authData.customToken;
+      console.log('[LineGuard] Received custom token from backend. Signing in with Firebase...');
       loadingText.value = '正在登入系統...';
       await signInWithCustomToken(auth, customToken);
       // 登入成功，將狀態設為 success 並隱藏遮罩
+      console.log('[LineGuard] Firebase sign-in with custom token successful. Hiding overlay.');
       status.value = 'success';
       showOverlay.value = false;
       return;
@@ -159,6 +168,7 @@ const proceedWithBackendLogin = async () => {
 
     if (authData?.status === 'USER_NOT_FOUND') {
       loadingText.value = '您的 LINE Email 尚未註冊，將導向至登入頁面...';
+      console.log('[LineGuard] Backend reported USER_NOT_FOUND. Redirecting to main login page.');
       // 不要自動重新導向，因為 liff.openWindow 不可靠。
       // 直接顯示錯誤畫面，引導使用者手動操作。
       redirectToExternalBrowserForLogin();
@@ -174,6 +184,7 @@ const proceedWithBackendLogin = async () => {
 }
 
 const handleConsentAndLogin = async () => {
+  console.log('[LineGuard] User consented. Initiating liff.login().');
   status.value = 'logging-in';
   loadingText.value = '正在處理 LINE 登入...';
   try {
@@ -185,9 +196,11 @@ const handleConsentAndLogin = async () => {
     url.searchParams.delete('liffClientId');
     url.searchParams.delete('liffRedirectUri');
 
+    const redirectUri = url.toString();
+    console.log(`[LineGuard] Calling liff.login() with redirectUri: ${redirectUri}`);
     await liff.login({ // `scope` is not a valid property for `liff.login()`.
       // 明確指定重新導向的 URL 為當前頁面，避免跳轉到正式環境
-      redirectUri: url.toString()
+      redirectUri: redirectUri
     });
     // liff.login() 會重新導向頁面，此函式在此之後的程式碼不會被執行。
   } catch (err: any) {
@@ -199,23 +212,25 @@ const handleConsentAndLogin = async () => {
 };
 
 const initializeLiffAndLogin = async () => {
+  console.log('[LineGuard] Initializing LIFF and login flow...');
   try {
     // 根據使用者要求，在開發模式且非電腦版瀏覽器時，啟用 vConsole 以利除錯。
     const isDesktop = !/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    if (isDev && !isDesktop) {
-      // vConsole 不是 LIFF 插件，直接實例化即可。
-      new VConsole();
-    }
+    new VConsole();
+    console.log('[LineGuard] vConsole initialized.');
 
     // 初始化 LIFF
     // 現在 liff 是從 npm 套件 import，不再需要動態載入 script
+    console.log(`[LineGuard] Calling liff.init() with LIFF ID: ${LIFF_ID}`);
     await liff.init({ liffId: LIFF_ID });
+    console.log('[LineGuard] liff.init() successful.');
 
     // 在 init 之後，立即檢查 URL 是否包含 LIFF 的重新導向參數。
     // 如果有，表示我們剛從 LINE 的登入頁面跳轉回來。
     // 清理這些一次性的參數，可以避免在使用者重新整理頁面時，LIFF SDK 嘗試重複使用它們而導致錯誤。
     const url = new URL(window.location.href);
     if (url.searchParams.has('code')) {
+      console.log('[LineGuard] Found LIFF redirect params in URL. Cleaning them up.');
       url.searchParams.delete('code');
       url.searchParams.delete('state');
       url.searchParams.delete('liffClientId');
@@ -223,24 +238,25 @@ const initializeLiffAndLogin = async () => {
       window.history.replaceState({}, document.title, url.toString());
     }
 
+    console.log(`[LineGuard] liff.isLoggedIn() returned: ${liff.isLoggedIn()}`);
     if (liff.isLoggedIn()) {
       // 使用者已登入 LIFF，檢查 email 權限並繼續後端登入流程
       const decodedIDToken = liff.getDecodedIDToken();
-      if (isDev) {
-        console.log('[LineGuard] Decoded ID Token:', decodedIDToken);
-      }
 
       if (!decodedIDToken?.email) {
         // 已登入但無 email 權限，可能是使用者撤銷了授權。
         // 登出 LIFF 以便下次能重新觸發完整的授權流程。
+        console.log('[LineGuard] User is logged in to LIFF, but no email permission found. Logging out and requesting consent again.');
         await liff.logout();
         status.value = 'consent-required';
       } else {
         // 已登入且有 email 權限，直接進行後端登入。
+        console.log('[LineGuard] User is logged in to LIFF with email permission. Proceeding to backend login.');
         await proceedWithBackendLogin();
       }
     } else {
       // 使用者未登入 LIFF，顯示我們自訂的同意畫面
+      console.log('[LineGuard] User is not logged in to LIFF. Showing consent screen.');
       status.value = 'consent-required';
     }
   } catch (err: any) {
@@ -251,19 +267,24 @@ const initializeLiffAndLogin = async () => {
 };
 
 const startLineLoginFlow = () => {
+    console.log('[LineGuard] start-line-login event received. Starting flow...');
     currentUrl.value = window.location.href;
     showOverlay.value = true;
     status.value = 'initializing';
 
     // 透過 onAuthStateChanged 等待 Firebase 完成其初始狀態檢查。
     // 這可以防止在 Firebase 於背景恢復有效會話時，我們又嘗試進行 LIFF 登入，從而導致競態條件。
+    console.log('[LineGuard] Setting up onAuthStateChanged listener to check for existing Firebase session...');
     const unsubscribe = auth.onAuthStateChanged(user => {
+        console.log('[LineGuard] onAuthStateChanged callback triggered.');
         unsubscribe(); // 我們只需要在載入時檢查一次。
         if (user) {
             // 如果 Firebase 會話已存在，此防護元件的任務即告完成。
+            console.log('[LineGuard] Firebase user already logged in. Aborting LIFF flow.');
             showOverlay.value = false;
         } else {
             // 如果沒有 Firebase 會話，才繼續執行 LIFF 登入流程。
+            console.log('[LineGuard] No active Firebase session. Proceeding with LIFF initialization.');
             initializeLiffAndLogin();
         }
     });
