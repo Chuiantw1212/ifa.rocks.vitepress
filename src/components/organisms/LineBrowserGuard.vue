@@ -53,10 +53,10 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import { auth } from '@/firebaseConfig';
 import liff from '@line/liff';
 import { signInWithCustomToken } from 'firebase/auth';
-
+ 
 // --- LIFF 設定 ---
-const LIFF_ID = '2009612107-QeSJSRV2';
-
+// 從環境變數讀取 LIFF ID，增加靈活性與安全性
+const LIFF_ID = import.meta.env.VITE_LIFF_ID as string;
 const status = ref('idle'); // idle, initializing, consent-required, logging-in, success, error
 const errorMessage = ref('');
 const showOverlay = ref(false);
@@ -93,6 +93,45 @@ const openLinkExternally = () => {
     // 作為備用，或在非 LINE 環境（如桌面開發）中，使用標準的 window.open。
     window.open(currentUrl.value, '_blank');
   }
+};
+
+/**
+ * 偵測當前環境是否為一個已知有問題的內嵌 WebView。
+ * 這些環境通常會阻擋 OAuth 登入流程（如 Google 登入）。
+ * @returns {boolean} 如果是已知的問題 WebView，則為 true。
+ */
+const isProblematicWebView = (): boolean => {
+  // liff.isInClient() 是最可靠的判斷，如果我們在 LINE App 中，那它就不是「有問題」的 WebView。
+  if (liff.isInClient()) {
+    return false;
+  }
+
+  const ua = navigator.userAgent || navigator.vendor || (window as any).opera;
+
+  // 已知的 App 內建瀏覽器特徵
+  const isFacebook = /FBAV|FBAN/i.test(ua);
+  const isInstagram = /Instagram/i.test(ua);
+
+  // 通用 Android WebView 特徵
+  const isAndroidWV = /wv/i.test(ua);
+
+  // 通用 iOS WebView 特徵 (User Agent 是 iPhone/iPad 但不是 Safari)
+  const isIOSWebView = /(iPhone|iPod|iPad)(?!.*Safari)/i.test(ua);
+
+  const result = isFacebook || isInstagram || isAndroidWV || isIOSWebView;
+
+  if (isDev) {
+    console.log('[LineGuard] WebView Detection:', {
+      ua,
+      isFacebook,
+      isInstagram,
+      isAndroidWV,
+      isIOSWebView,
+      result
+    });
+  }
+
+  return result;
 };
 
 const proceedWithBackendLogin = async () => {
@@ -230,11 +269,19 @@ const initializeLiffAndLogin = async () => {
 
     // 根據使用者需求：只有在 LIFF 環境內，或是開發者使用測試參數時，才顯示 LINE 登入流程。
     if (!liff.isInClient() && !(isDev && isLiffTestMode)) {
-      // 其他所有情況 (包含一般手機瀏覽器)，都應使用標準登入流程。
-      console.log('[LineGuard] Not in LIFF client or test mode. Falling back to standard login.');
-      showOverlay.value = false; // 隱藏 Guard
-      window.dispatchEvent(new CustomEvent('open-firebase-login')); // 通知 LoginModule 打開登入視窗
-      return; // 中止 LIFF 登入流程
+      // 非 LIFF 環境，進一步檢查是否為有問題的 WebView
+      if (isProblematicWebView()) {
+        console.warn('[LineGuard] Problematic WebView detected. Blocking login and showing guidance.');
+        status.value = 'error';
+        errorMessage.value = '此瀏覽器不支援安全登入。請點擊右上角選單，並選擇「在系統瀏覽器中開啟」以完成操作。';
+        return; // 中止後續流程，停留在錯誤畫面
+      }
+
+      // 是正常的瀏覽器環境 (電腦或手機標準瀏覽器)，退回標準登入流程
+      console.log('[LineGuard] Not in LIFF client. Falling back to standard Firebase login.');
+      showOverlay.value = false;
+      window.dispatchEvent(new CustomEvent('open-firebase-login'));
+      return;
     }
 
     loadingText.value = '正在檢查您的 LINE 登入狀態...';
@@ -275,9 +322,17 @@ const initializeLiffAndLogin = async () => {
     }
   } catch (err: any) {
     console.error('LIFF Initialization Error:', err);
-    // LIFF 初始化失敗，很可能不是在 LIFF 環境中，或網路有問題。
-    // 無論如何，都應退回至標準登入流程，而不是顯示錯誤。
-    console.log('[LineGuard] LIFF init failed. Falling back to standard login.');
+
+    // LIFF 初始化失敗，檢查是否因為在 WebView 中
+    if (isProblematicWebView()) {
+        console.warn('[LineGuard] LIFF init failed, likely due to being in a problematic WebView. Showing guidance.');
+        status.value = 'error';
+        errorMessage.value = '此瀏覽器不支援安全登入。請點擊右上角選單，並選擇「在系統瀏覽器中開啟」以完成操作。';
+        return;
+    }
+
+    // 如果不是 WebView，或偵測失敗，則退回標準登入流程
+    console.log('[LineGuard] LIFF init failed. Falling back to standard Firebase login.');
     showOverlay.value = false;
     window.dispatchEvent(new CustomEvent('open-firebase-login'));
   }
