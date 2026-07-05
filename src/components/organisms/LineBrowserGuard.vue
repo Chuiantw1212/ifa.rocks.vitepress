@@ -300,42 +300,53 @@ const initializeLiffAndLogin = async () => {
   }
 };
 
-const startLineLoginFlow = () => {
-    console.log('[LineGuard] start-line-login event received. Starting flow...');
+const startLineLoginFlow = async () => {
+    console.log('[LineGuard] start-line-login event or auto-start triggered. Starting flow...');
 
     // 防呆機制：直接檢查 Firebase 的當前使用者狀態。
-    // 這比檢查 store 更即時，能更可靠地防止因 UI 重新渲染延遲而導致的競爭條件。
     if (auth.currentUser) {
       console.warn('[LineGuard] Flow aborted: A Firebase user (auth.currentUser) already exists.');
       return;
     }
 
     // 第二層防護：檢查 agent store 的狀態。
-    // 這可以防止在 UI 重新渲染的空窗期，使用者重複點擊登入按鈕，導致流程卡死。
     if (agentStore.isLoggedIn) {
       console.warn('[LineGuard] Flow aborted: User is already logged in according to the agent store.');
       return;
     }
 
+    // --- 核心邏輯變更 ---
+    // 舊方法是使用 onAuthStateChanged，但這會引入不必要的延遲，尤其是在 LIFF redirect 後，
+    // 這個延遲會導致 liff.init() 無法及時處理 URL 參數而超時。
+    // 新方法改為依賴 agentStore 的 isInitialized 狀態。
+    // agentStore.init() 會在應用程式啟動時設定一個全域的 onAuthStateChanged 監聽器。
+    // 我們只需等待這個全域監聽器完成首次檢查 (isInitialized 變為 true)，
+    // 即可安全地、立即地繼續我們的 LIFF 流程，從而避免了競爭條件和延遲。
+    if (!agentStore.isInitialized) {
+      console.log('[LineGuard] Waiting for global auth state to be initialized...');
+      await new Promise(resolve => {
+        const unwatch = watch(() => agentStore.isInitialized, (initialized) => {
+          if (initialized) {
+            unwatch();
+            resolve(true);
+          }
+        });
+      });
+      console.log('[LineGuard] Global auth state is now initialized.');
+    }
+
+    // 此時，agentStore.isInitialized 必定為 true，且 Firebase 的初始狀態已確定。
+    // 我們可以安全地再次檢查 auth.currentUser，以防在等待期間有 session 被恢復。
+    if (auth.currentUser) {
+      console.log('[LineGuard] Firebase user detected after initialization. Aborting LIFF flow.');
+      showOverlay.value = false;
+      return;
+    }
+
     showOverlay.value = true;
     status.value = 'initializing';
-
-    // 透過 onAuthStateChanged 等待 Firebase 完成其初始狀態檢查。
-    // 這可以防止在 Firebase 於背景恢復有效會話時，我們又嘗試進行 LIFF 登入，從而導致競態條件。
-    console.log('[LineGuard] Setting up onAuthStateChanged listener to check for existing Firebase session...');
-    const unsubscribe = auth.onAuthStateChanged(user => {
-        console.log('[LineGuard] onAuthStateChanged callback triggered.');
-        unsubscribe(); // 我們只需要在載入時檢查一次。
-        if (user) {
-            // 如果 Firebase 會話已存在，此防護元件的任務即告完成。
-            console.log('[LineGuard] Firebase user already logged in. Aborting LIFF flow.');
-            showOverlay.value = false;
-        } else {
-            // 如果沒有 Firebase 會話，才繼續執行 LIFF 登入流程。
-            console.log('[LineGuard] No active Firebase session. Proceeding with LIFF initialization.');
-            initializeLiffAndLogin();
-        }
-    });
+    console.log('[LineGuard] No active Firebase session. Proceeding with LIFF initialization.');
+    initializeLiffAndLogin();
 };
 
 onMounted(async () => {
@@ -361,11 +372,32 @@ onMounted(async () => {
   // 這是最高優先級的任務，必須立刻、優先執行 liff.init() 來處理 URL 上的參數，
   // 避免被 SPA 路由或其他腳本干擾。
   if (isLiffRedirect) {
-    console.log('[LineGuard] LIFF redirect detected. Initializing LIFF immediately to process URL params.');
+    console.log('[LineGuard] LIFF redirect detected. The page will now process parameters and reload.');
     showOverlay.value = true;
     status.value = 'initializing';
-    initializeLiffAndLogin(); // 直接呼叫，繞過 onAuthStateChanged 的延遲
-    return; // 此情境的邏輯到此為止
+    loadingText.value = '正在完成 LINE 登入...';
+
+    // 在 LIFF redirect 後，我們需要一個特殊的處理流程來解決競爭條件：
+    // 1. 呼叫 liff.init()，讓 LIFF SDK 處理 URL 中的 code 和 state，並將 session 存入 localStorage。
+    // 2. liff.init() 成功後，我們使用 window.location.replace() 手動重新載入頁面，並移除 URL 上的參數。
+    // 3. 頁面重新載入後，會進入下面的「正常載入情境」，此時 liff.init() 會從 localStorage 讀取到有效的 session，
+    //    liff.isLoggedIn() 將會是 true，登入流程就能順利繼續。
+    // 這自動化了「關閉再重開」的行為，確保了登入狀態的穩定。
+    liff.init({ liffId: LIFF_ID })
+      .then(() => {
+        const cleanUrl = new URL(window.location.href);
+        cleanUrl.searchParams.delete('code');
+        cleanUrl.searchParams.delete('state');
+        cleanUrl.searchParams.delete('liffClientId');
+        cleanUrl.searchParams.delete('liffRedirectUri');
+        window.location.replace(cleanUrl.toString());
+      })
+      .catch(err => {
+        console.error('[LineGuard] Critical error during LIFF redirect processing:', err);
+        errorMessage.value = `[Redirect Handler] ${err.message || '處理 LINE 回傳資訊時發生嚴重錯誤。'}`;
+        status.value = 'error';
+      });
+    return; // 停止執行後續的 onMounted 邏輯，等待頁面重新載入
   }
 
   // 情況 2: 其他所有正常的頁面載入情境。
