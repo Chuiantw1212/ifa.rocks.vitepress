@@ -52,6 +52,7 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { auth } from '@/firebaseConfig';
 import liff from '@line/liff';
+import liffInspect from '@line/liff-inspector';
 import { signInWithCustomToken } from 'firebase/auth';
 import { useAgentStore } from '@/stores/agent';
 
@@ -77,7 +78,7 @@ const redirectToExternalBrowserForLogin = () => {
     // 因此，我們立即更新 UI，提供手動操作的備用說明。
     // 這樣即使用戶切換回 LINE，或 openWindow 失敗，他們也能看到清晰的指引。
     status.value = 'error';
-    errorMessage.value = '為了使用 Google 或其他方式登入，我們已嘗試為您開啟手機的預設瀏覽器。';
+    errorMessage.value = '[redirectToExternalBrowserForLogin] 為了使用 Google 或其他方式登入，我們已嘗試為您開啟手機的預設瀏覽器。';
   } else {
     // 在普通瀏覽器（例如開發模式），直接重新導向。
     window.location.href = loginUrl;
@@ -125,7 +126,7 @@ const proceedWithBackendLogin = async () => {
       loadingText.value = '無法取得 LINE Email，將導向至網頁登入...';
       if (isDev) {
         console.warn('[LineGuard] DEV MODE: Aborting redirect. Reason: Could not get email from LIFF.');
-        errorMessage.value = '開發模式：無法從 LINE 取得 Email。為保留 log 已中止重新導向。';
+        errorMessage.value = '[proceedWithBackendLogin] 開發模式：無法從 LINE 取得 Email。為保留 log 已中止重新導向。';
         status.value = 'error';
       } else {
         redirectToExternalBrowserForLogin();
@@ -167,7 +168,7 @@ const proceedWithBackendLogin = async () => {
     throw new Error(authData?.message || '後端回傳未知的狀態');
   } catch (err: any) {
     console.error('Backend/Firebase Login Error:', err);
-    errorMessage.value = err.message || '登入過程中發生未知錯誤，請稍後再試。';
+    errorMessage.value = `[proceedWithBackendLogin] ${err.message || '登入過程中發生未知錯誤，請稍後再試。'}`;
     status.value = 'error';
   }
 }
@@ -193,7 +194,7 @@ const handleConsentAndLogin = async () => {
   } catch (err: any) {
     // 這通常發生在使用者在 LINE 的同意畫面上點擊「取消」
     console.error('LIFF Login initiation failed:', err);
-    errorMessage.value = err.message || 'LINE 登入請求失敗，請再試一次。';
+    errorMessage.value = `[handleConsentAndLogin] ${err.message || 'LINE 登入請求失敗，請再試一次。'}`;
     status.value = 'error';
   }
 };
@@ -203,6 +204,12 @@ const initializeLiffAndLogin = async () => {
     // 初始化 LIFF
     // 現在 liff 是從 npm 套件 import，不再需要動態載入 script
     await liff.init({ liffId: LIFF_ID });
+
+    // 預設啟用 LIFF Inspector，但在非 LIFF 環境 (如電腦版瀏覽器) 中則不啟用。
+    // 如果 Firebase 已登入，此函式不會執行，因此 Inspector 不會顯示，符合「登入成功後關閉」的預期。
+    if (liff.isInClient()) {
+      liffInspect.init();
+    }
 
     // 在 init 之後，立即檢查 URL 是否包含 LIFF 的重新導向參數。
     // 如果有，表示我們剛從 LINE 的登入頁面跳轉回來。
@@ -238,7 +245,7 @@ const initializeLiffAndLogin = async () => {
     }
   } catch (err: any) {
     console.error('LIFF Initialization Error:', err);
-    errorMessage.value = err.message || 'LIFF 初始化失敗，請確認網路連線或稍後再試。';
+    errorMessage.value = `[initializeLiffAndLogin] ${err.message || 'LIFF 初始化失敗，請確認網路連線或稍後再試。'}`;
     status.value = 'error';
   }
 };
