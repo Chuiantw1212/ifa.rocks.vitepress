@@ -52,7 +52,7 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { auth } from '@/firebaseConfig';
 import liff from '@line/liff';
-import liffInspect from '@line/liff-inspector';
+import VConsole from 'vconsole';
 import { signInWithCustomToken } from 'firebase/auth';
 import { useAgentStore } from '@/stores/agent';
 
@@ -106,7 +106,7 @@ const proceedWithBackendLogin = async () => {
 
     // 檢查 ID Token 是否已過期。exp 是以秒為單位的 Unix 時間戳。
     // 為避免後端驗證失敗 (IdToken expired)，在前端預先檢查。
-    if (decodedIDToken && decodedIDToken.exp * 1000 < Date.now()) {
+    if (decodedIDToken?.exp && decodedIDToken.exp * 1000 < Date.now()) {
       console.warn('[LineGuard] LINE ID Token has expired. Re-initiating login flow.');
       loadingText.value = 'LINE 登入資訊已過期，將為您重新登入...';
 
@@ -185,8 +185,7 @@ const handleConsentAndLogin = async () => {
     url.searchParams.delete('liffClientId');
     url.searchParams.delete('liffRedirectUri');
 
-    await liff.login({
-      scope: 'profile openid email',
+    await liff.login({ // `scope` is not a valid property for `liff.login()`.
       // 明確指定重新導向的 URL 為當前頁面，避免跳轉到正式環境
       redirectUri: url.toString()
     });
@@ -201,15 +200,16 @@ const handleConsentAndLogin = async () => {
 
 const initializeLiffAndLogin = async () => {
   try {
+    // 根據使用者要求，在開發模式且非電腦版瀏覽器時，啟用 vConsole 以利除錯。
+    const isDesktop = !/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isDev && !isDesktop) {
+      // vConsole 不是 LIFF 插件，直接實例化即可。
+      new VConsole();
+    }
+
     // 初始化 LIFF
     // 現在 liff 是從 npm 套件 import，不再需要動態載入 script
     await liff.init({ liffId: LIFF_ID });
-
-    // 預設啟用 LIFF Inspector，但在非 LIFF 環境 (如電腦版瀏覽器) 中則不啟用。
-    // 如果 Firebase 已登入，此函式不會執行，因此 Inspector 不會顯示，符合「登入成功後關閉」的預期。
-    if (liff.isInClient()) {
-      liffInspect.init();
-    }
 
     // 在 init 之後，立即檢查 URL 是否包含 LIFF 的重新導向參數。
     // 如果有，表示我們剛從 LINE 的登入頁面跳轉回來。
