@@ -53,7 +53,6 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import { auth } from '@/firebaseConfig';
 import liff from '@line/liff';
 import { signInWithCustomToken } from 'firebase/auth';
-import { useAgentStore } from '@/stores/agent';
 
 // --- LIFF 設定 ---
 const LIFF_ID = '2009612107-QeSJSRV2';
@@ -65,7 +64,6 @@ const currentUrl = ref('')
 const loadingText = ref('正在初始化服務...')
 // Vite 環境變數，用於判斷是否為開發模式
 const isDev = import.meta.env.DEV;
-const agentStore = useAgentStore();
 
 const redirectToExternalBrowserForLogin = () => {
   // 導向到應用程式的主登入頁面 (`/pro/`)，FirebaseUI 會在那裡處理登入。
