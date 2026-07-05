@@ -263,7 +263,12 @@ const initializeLiffAndLogin = async () => {
     }
   } catch (err: any) {
     console.error('LIFF Initialization Error:', err);
-    errorMessage.value = `[initializeLiffAndLogin] ${err.message || 'LIFF 初始化失敗，請確認網路連線或稍後再試。'}`;
+    // 針對 'Failed to fetch' 錯誤提供更具體的指引
+    if (err.message && err.message.includes('Failed to fetch')) {
+      errorMessage.value = `[initializeLiffAndLogin] LIFF 必要元件載入失敗。這通常是由於網路連線問題，或瀏覽器擴充功能 (如廣告攔截器) 阻擋了請求。請檢查您的網路設定、暫時停用廣告攔截器，然後再試一次。`;
+    } else {
+      errorMessage.value = `[initializeLiffAndLogin] ${err.message || 'LIFF 初始化失敗，請確認網路連線或稍後再試。'}`;
+    }
     status.value = 'error';
   }
 };
