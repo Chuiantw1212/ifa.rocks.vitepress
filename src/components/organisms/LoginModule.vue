@@ -31,10 +31,14 @@ import { UserFilled } from '@element-plus/icons-vue'
 import { auth } from '@/firebaseConfig'
 import liff from '@line/liff';
 import { GoogleAuthProvider, EmailAuthProvider, signInWithCustomToken, signOut, setPersistence, browserSessionPersistence } from 'firebase/auth';
+import { isDesktop, isProblematicWebView } from '@/composables/useWebView';
 import { useAgentStore } from '@/stores/agent';
 
 // Vite 環境變數，用於判斷是否為開發模式
 const isDev = import.meta.env.DEV;
+// 從環境變數讀取 LIFF ID，以便在登出時也能初始化 LIFF
+const LIFF_ID = import.meta.env.VITE_LIFF_ID as string;
+
 // 宣告全域變數，讓 TypeScript 認得從 CDN 載入的 firebaseui
 declare global {
     interface Window {
@@ -180,6 +184,7 @@ watch(loginDialogVisible, (newValue) => {
 });
 
 onMounted(() => {
+  // Firebase 的儲存模式設定已移至 agent.ts 的 init() 函式中，以確保在應用程式最早的階段就完成設定。
   // 監聽來自 LineBrowserGuard 的事件，以在非 LIFF 環境中開啟標準登入對話框。
   window.addEventListener('open-firebase-login', agentStore.openLoginDialog);
 });
@@ -194,18 +199,34 @@ const handleLogout = async () => {
         // 它會清除使用者的登入狀態，包括任何持久化的 session。
         // agentStore 應該會透過 onAuthStateChanged 監聽器自動更新其狀態。
         await signOut(auth);
- 
-        // 僅在非桌面環境下嘗試登出 LIFF。
-        // 在純桌面環境中，liff.init() 從未被呼叫，直接檢查 liff.isLoggedIn() 會導致錯誤。
-        // 這個判斷可以避免在電腦版登出時出現不必要的錯誤 log。
-        const isDesktop = !/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-        if (!isDesktop) {
-            if (liff.isLoggedIn()) {
-                liff.logout();
+        console.log('[LoginModule] Firebase sign-out successful.');
+
+        // 為了確保「乾淨登出」，我們需要根據不同環境，決定是否要執行 LIFF 登出。
+        if (isDesktop()) {
+            console.log('[LoginModule] Desktop environment, skipping LIFF logout.');
+        } else {
+            // 在行動裝置上，我們需要嘗試初始化 LIFF，以判斷環境並清除可能存在的 LIFF session。
+            console.log('[LoginModule] Mobile environment detected. Attempting to initialize LIFF for logout...');
+            try {
+                await liff.init({ liffId: LIFF_ID });
+                
+                // 使用共享的 composable 來判斷環境，確保邏輯一致。
+                // liff.isInClient() 會在 isProblematicWebView 內部被檢查。
+                if (liff.isInClient() || isProblematicWebView()) {
+                    console.log(`[LoginModule] In ${liff.isInClient() ? 'LIFF Client' : 'WebView'}. Proceeding with LIFF logout.`);
+                    if (liff.isLoggedIn()) {
+                        liff.logout();
+                        console.log('[LoginModule] LIFF logout successful.');
+                    }
+                } else {
+                    console.log('[LoginModule] Standard mobile browser. No LIFF logout necessary.');
+                }
+            } catch (liffError) {
+                console.warn('[LoginModule] LIFF SDK could not be initialized. This is normal for standard mobile browsers.');
             }
         }
 
-        ElMessage.info('您已成功登出')
+        ElMessage.info('您已成功登出');
 
         // 登出後自動跳轉至儀表板
         await router.go('/pro/dashboard');
