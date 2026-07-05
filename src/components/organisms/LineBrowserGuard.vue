@@ -211,11 +211,27 @@ const initializeLiffAndLogin = async () => {
     // 根據使用者要求，在呼叫 liff.init() 之前，先記錄當前的 Firebase 登入狀態。
     console.log('[LineGuard] Pre-init check. Firebase auth state:', auth.currentUser ? `Logged in as ${auth.currentUser.uid}` : 'Not logged in');
 
-    // 初始化 LIFF
-    // 現在 liff 是從 npm 套件 import，不再需要動態載入 script
-    console.log(`[LineGuard] Calling liff.init() with LIFF ID: ${LIFF_ID}`);
-    await liff.init({ liffId: LIFF_ID });
-    console.log('[LineGuard] liff.init() successful.');
+    // --- LIFF 初始化與超時控制 ---
+    try {
+      console.log(`[LineGuard] Calling liff.init() with LIFF ID: ${LIFF_ID}. Setting a 10s timeout.`);
+      const liffInitPromise = liff.init({ liffId: LIFF_ID });
+      
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('LIFF init timed out after 10 seconds')), 10000)
+      );
+
+      // 使用 Promise.race 來競爭 liff.init() 和超時
+      await Promise.race([liffInitPromise, timeoutPromise]);
+      console.log('[LineGuard] liff.init() successful.');
+    } catch (initError: any) {
+      // 這個 catch 區塊專門處理 liff.init() 的失敗或超時
+      console.error('[LineGuard] LIFF Initialization failed or timed out. Error details:', {
+        message: initError.message,
+        errorObject: initError
+      });
+      // 由於 liff.init() 失敗是關鍵錯誤，我們直接拋出，讓外層的 catch 處理後續的 fallback 邏輯
+      throw initError;
+    }
 
     const isLiffTestMode = new URLSearchParams(window.location.search).has('liff-test');
 
@@ -268,7 +284,7 @@ const initializeLiffAndLogin = async () => {
       status.value = 'consent-required';
     }
   } catch (err: any) {
-    console.error('LIFF Initialization Error:', err);
+    console.error('LIFF Flow Error (could be init or subsequent steps):', err);
 
     // LIFF 初始化失敗，檢查是否因為在 WebView 中。
     // 如果是，我們仍然嘗試顯示同意畫面，讓使用者有機會觸發 liff.login()。
@@ -339,12 +355,18 @@ onMounted(async () => {
   // For mobile devices, the flow is triggered by a click on the login avatar.
   window.addEventListener('start-line-login', startLineLoginFlow);
 
-  // For desktop testing, allow forcing the LIFF flow with a query parameter.
+  // --- 自動啟動登入流程的判斷 ---
   const isLiffTestMode = new URLSearchParams(window.location.search).has('liff-test');
   const isProPage = window.location.pathname.includes('/pro/');
+  const shouldAutoStartForTest = isDev && isProPage && isLiffTestMode;
 
-  if (isDev && isProPage && isLiffTestMode) {
-    console.log('[LineGuard] LIFF test mode activated on page load.');
+  // 自動啟動登入流程的兩個主要情境：
+  // 1. 在非 LIFF 的 WebView 環境中 (isProblematicWebView)。這能確保從 LINE 授權頁跳轉回來後，流程能自動繼續，無需使用者再次點擊。
+  // 2. 在桌面開發模式下，透過 `liff-test` 參數強制啟動流程，以方便除錯。
+  if (isProblematicWebView() || shouldAutoStartForTest) {
+    if (shouldAutoStartForTest) console.log('[LineGuard] LIFF test mode activated on page load.');
+    if (isProblematicWebView()) console.log('[LineGuard] Problematic WebView detected. Auto-starting login flow.');
+    
     startLineLoginFlow();
   }
 });
