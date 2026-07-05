@@ -181,14 +181,6 @@ watch(loginDialogVisible, (newValue) => {
 
 onMounted(() => {
   // 監聽來自 LineBrowserGuard 的事件，以在非 LIFF 環境中開啟標準登入對話框。
-  // 針對 WebView 環境，Firebase 的預設儲存方式 (indexedDB) 可能會被阻擋，導致重新整理後登入狀態遺失。
-  // 我們在此明確地將其設定為 browserSessionPersistence (sessionStorage)，這種方式的相容性更高，
-  // 能解決在 WebView 中重新整理後，因誤判為登出而重複觸發登入流程並卡死的問題。
-  setPersistence(auth, browserSessionPersistence)
-    .catch((error) => {
-      console.error('[LoginModule] Failed to set auth persistence:', error);
-    });
-
   window.addEventListener('open-firebase-login', agentStore.openLoginDialog);
 });
 
