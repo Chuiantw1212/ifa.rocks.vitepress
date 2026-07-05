@@ -249,22 +249,21 @@ const initializeLiffAndLogin = async () => {
 
     loadingText.value = '正在檢查您的 LINE 登入狀態...';
 
-    // 在 init 之後，立即檢查 URL 是否包含 LIFF 的重新導向參數。
-    // 如果有，表示我們剛從 LINE 的登入頁面跳轉回來。
-    // 清理這些一次性的參數，可以避免在使用者重新整理頁面時，LIFF SDK 嘗試重複使用它們而導致錯誤。
-    const url = new URL(window.location.href);
-    if (url.searchParams.has('code')) {
-      console.log('[LineGuard] Found LIFF redirect params in URL. Cleaning them up.');
-      url.searchParams.delete('code');
-      url.searchParams.delete('state');
-      url.searchParams.delete('liffClientId');
-      url.searchParams.delete('liffRedirectUri');
-      window.history.replaceState({}, document.title, url.toString());
-    }
-
     console.log(`[LineGuard] liff.isLoggedIn() returned: ${liff.isLoggedIn()}`);
     if (liff.isLoggedIn()) {
-      // 使用者已登入 LIFF，檢查 email 權限並繼續後端登入流程
+      // 使用者已登入 LIFF，表示 SDK 已成功處理完重新導向的參數。
+      // 現在是清理 URL 的安全時機，避免使用者重新整理頁面時，LIFF SDK 嘗試重複使用舊參數而導致錯誤。
+      const url = new URL(window.location.href);
+      if (url.searchParams.has('code')) {
+        console.log('[LineGuard] Login successful, cleaning up LIFF redirect params from URL.');
+        url.searchParams.delete('code');
+        url.searchParams.delete('state');
+        url.searchParams.delete('liffClientId');
+        url.searchParams.delete('liffRedirectUri');
+        window.history.replaceState({}, document.title, url.toString());
+      }
+
+      // 接著檢查 email 權限並繼續後端登入流程
       const decodedIDToken = liff.getDecodedIDToken();
 
       if (!decodedIDToken?.email) {
