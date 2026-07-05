@@ -52,12 +52,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
 import { auth } from '@/firebaseConfig';
 import liff from '@line/liff';
 import { useAgentStore } from '@/stores/agent';
 import { signInWithCustomToken } from 'firebase/auth';
 import { isProblematicWebView } from '@/composables/useWebView';
+
+const agentStore = useAgentStore();
+let vConsoleInstance: any = null;
+
+// 監聽登入狀態，一旦使用者成功登入，就自動銷毀 vConsole。
+watch(() => agentStore.isLoggedIn, (isLoggedIn) => {
+  if (isLoggedIn && vConsoleInstance) {
+    vConsoleInstance.destroy();
+    vConsoleInstance = null;
+    console.log('[LineGuard] vConsole destroyed after successful login.');
+  }
+});
  
 // --- LIFF 設定 ---
 // 從環境變數讀取 LIFF ID，增加靈活性與安全性
@@ -196,14 +208,6 @@ const handleConsentAndLogin = async () => {
 const initializeLiffAndLogin = async () => {
   console.log('[LineGuard] Initializing LIFF and login flow...');
   try {
-    // 為了避免 SSR build 錯誤 (XMLHttpRequest is not defined)，
-    // 我們只在客戶端環境下才動態載入並初始化 vConsole。
-    if (!import.meta.env.SSR) {
-      const VConsole = (await import('vconsole')).default;
-      new VConsole();
-      console.log('[LineGuard] vConsole initialized.');
-    }
-
     // 根據使用者要求，在呼叫 liff.init() 之前，先記錄當前的 Firebase 登入狀態。
     console.log('[LineGuard] Pre-init check. Firebase auth state:', auth.currentUser ? `Logged in as ${auth.currentUser.uid}` : 'Not logged in');
 
@@ -293,7 +297,7 @@ const startLineLoginFlow = () => {
 
     // 第二層防護：檢查 agent store 的狀態。
     // 這可以防止在 UI 重新渲染的空窗期，使用者重複點擊登入按鈕，導致流程卡死。
-    if (useAgentStore().isLoggedIn) {
+    if (agentStore.isLoggedIn) {
       console.warn('[LineGuard] Flow aborted: User is already logged in according to the agent store.');
       return;
     }
@@ -319,7 +323,19 @@ const startLineLoginFlow = () => {
     });
 };
 
-onMounted(() => {
+onMounted(async () => {
+  // 在非 LIFF 的 WebView 環境中 (isProblematicWebView)，無論是開發或正式環境，都預設啟用 vConsole 以利除錯。
+  // vConsole 會在偵測到登入成功後自動銷毀。
+  if (isProblematicWebView()) {
+    try {
+      const VConsole = (await import('vconsole')).default;
+      vConsoleInstance = new VConsole();
+      console.log('[LineGuard] vConsole initialized for WebView debugging.');
+    } catch (e) {
+      console.error('Failed to initialize vConsole:', e);
+    }
+  }
+
   // For mobile devices, the flow is triggered by a click on the login avatar.
   window.addEventListener('start-line-login', startLineLoginFlow);
 
