@@ -242,6 +242,9 @@ const initializeLiffAndLogin = async () => {
       console.log('[LineGuard] vConsole initialized.');
     }
 
+    // 根據使用者要求，在呼叫 liff.init() 之前，先記錄當前的 Firebase 登入狀態。
+    console.log('[LineGuard] Pre-init check. Firebase auth state:', auth.currentUser ? `Logged in as ${auth.currentUser.uid}` : 'Not logged in');
+
     // 初始化 LIFF
     // 現在 liff 是從 npm 套件 import，不再需要動態載入 script
     console.log(`[LineGuard] Calling liff.init() with LIFF ID: ${LIFF_ID}`);
@@ -319,7 +322,14 @@ const initializeLiffAndLogin = async () => {
 const startLineLoginFlow = () => {
     console.log('[LineGuard] start-line-login event received. Starting flow...');
 
-    // 防呆機制：如果 agent store 中已經是登入狀態，則直接中止流程。
+    // 防呆機制：直接檢查 Firebase 的當前使用者狀態。
+    // 這比檢查 store 更即時，能更可靠地防止因 UI 重新渲染延遲而導致的競爭條件。
+    if (auth.currentUser) {
+      console.warn('[LineGuard] Flow aborted: A Firebase user (auth.currentUser) already exists.');
+      return;
+    }
+
+    // 第二層防護：檢查 agent store 的狀態。
     // 這可以防止在 UI 重新渲染的空窗期，使用者重複點擊登入按鈕，導致流程卡死。
     if (useAgentStore().isLoggedIn) {
       console.warn('[LineGuard] Flow aborted: User is already logged in according to the agent store.');
