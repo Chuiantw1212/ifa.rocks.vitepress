@@ -53,7 +53,6 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import { auth } from '@/firebaseConfig';
 import liff from '@line/liff';
 import { signInWithCustomToken } from 'firebase/auth';
-import { useAgentStore } from '@/stores/agent';
 
 // --- LIFF 設定 ---
 const LIFF_ID = '2009612107-QeSJSRV2';
@@ -65,7 +64,6 @@ const currentUrl = ref('')
 const loadingText = ref('正在初始化服務...')
 // Vite 環境變數，用於判斷是否為開發模式
 const isDev = import.meta.env.DEV;
-const agentStore = useAgentStore();
 
 const redirectToExternalBrowserForLogin = () => {
   // 導向到應用程式的主登入頁面 (`/pro/`)，FirebaseUI 會在那裡處理登入。
@@ -263,7 +261,12 @@ const initializeLiffAndLogin = async () => {
     }
   } catch (err: any) {
     console.error('LIFF Initialization Error:', err);
-    errorMessage.value = `[initializeLiffAndLogin] ${err.message || 'LIFF 初始化失敗，請確認網路連線或稍後再試。'}`;
+    // 針對 'Failed to fetch' 錯誤提供更具體的指引
+    if (err.message && err.message.includes('Failed to fetch')) {
+      errorMessage.value = `[initializeLiffAndLogin] LIFF 必要元件載入失敗。這通常是由於網路連線問題，或瀏覽器擴充功能 (如廣告攔截器) 阻擋了請求。請檢查您的網路設定、暫時停用廣告攔截器，然後再試一次。`;
+    } else {
+      errorMessage.value = `[initializeLiffAndLogin] ${err.message || 'LIFF 初始化失敗，請確認網路連線或稍後再試。'}`;
+    }
     status.value = 'error';
   }
 };
