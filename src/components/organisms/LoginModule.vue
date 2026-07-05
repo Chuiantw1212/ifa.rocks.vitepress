@@ -29,12 +29,12 @@ import { storeToRefs } from 'pinia';
 import { ElMessage } from 'element-plus'
 import { UserFilled } from '@element-plus/icons-vue'
 import { auth } from '@/firebaseConfig'
+import liff from '@line/liff';
 import { GoogleAuthProvider, EmailAuthProvider, signInWithCustomToken, signOut } from 'firebase/auth';
 import { useAgentStore } from '@/stores/agent';
 
 // Vite 環境變數，用於判斷是否為開發模式
 const isDev = import.meta.env.DEV;
-
 // 宣告全域變數，讓 TypeScript 認得從 CDN 載入的 firebaseui
 declare global {
     interface Window {
@@ -196,9 +196,9 @@ const handleLogout = async () => {
         await signOut(auth);
 
         // 同步登出 LINE LIFF，以便下次能重新觸發授權流程
-        // 檢查 liff 物件是否存在且使用者已登入
-        if (window.liff && window.liff.isLoggedIn()) {
-            window.liff.logout();
+        // liff.isLoggedIn() 只有在 liff.init() 後才能呼叫，此處假設 Guard 已完成初始化
+        if (liff.isLoggedIn()) {
+            liff.logout();
         }
 
         ElMessage.info('您已成功登出')

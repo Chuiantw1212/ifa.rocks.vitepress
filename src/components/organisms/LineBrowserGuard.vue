@@ -1,11 +1,7 @@
 <template>
   <div v-if="showOverlay" class="line-guard-overlay">
     <el-card class="line-guard-card" shadow="always" v-loading="status === 'initializing'" :element-loading-text="loadingText" style="text-align: center;">
-      <el-result
-        v-if="status === 'error'"
-        icon="warning"
-        :title="isDev ? 'LIFF 登入失敗' : '請使用預設瀏覽器開啟'"
-      >
+      <el-result v-if="status === 'error'" icon="warning" :title="isDev ? 'LIFF 登入失敗' : '請使用預設瀏覽器開啟'">
         <template #sub-title>
           <p>{{ errorMessage }}</p>
         </template>
@@ -18,10 +14,7 @@
               :closable="false"
               center
               style="margin-bottom: 20px;"
-            />
-            <el-button v-if="!isDev" tag="a" :href="currentUrl" target="_blank" type="primary" link>
-              或點此嘗試直接開啟
-            </el-button>
+            /><el-button v-if="!isDev" type="primary" link @click="openLinkExternally">或點此嘗試直接開啟</el-button>
           </div>
           <el-alert
             v-if="isDev"
@@ -30,12 +23,7 @@
             :closable="false"
           />
         </template>
-      </el-result>
-      <el-result
-        v-if="status === 'consent-required'"
-        icon="info"
-        title="授權請求"
-      >
+      </el-result><el-result v-if="status === 'consent-required'" icon="info" title="授權請求">
         <template #sub-title>
           <div style="text-align: left; max-width: 320px; margin: 0 auto;">
             <p>為了將您的 LINE 帳號與 IFA 會員帳號連結，我們需要取得您的電子郵件地址。這將用於：</p>
@@ -50,7 +38,7 @@
         <template #extra>
           <div class="consent-buttons">
             <el-button type="primary" @click="handleConsentAndLogin">同意並以 LINE 登入</el-button>
-            <el-button @click="showExternalBrowserInstructions">使用其他方式登入</el-button>
+            <el-button @click="redirectToExternalBrowserForLogin">使用其他方式登入</el-button>
           </div>
         </template>
       </el-result>
@@ -63,11 +51,9 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
 import { auth } from '@/firebaseConfig';
+import liff from '@line/liff';
 import { signInWithCustomToken } from 'firebase/auth';
 import { useAgentStore } from '@/stores/agent';
-
-// 讓 TypeScript 認得從 CDN 載入的 liff 全域變數
-declare const liff: any;
 
 // --- LIFF 設定 ---
 const LIFF_ID = '2009612107-QeSJSRV2';
@@ -98,9 +84,15 @@ const redirectToExternalBrowserForLogin = () => {
   }
 };
 
-const showExternalBrowserInstructions = () => {
-  // 根據使用者要求，此按鈕現在會嘗試自動開啟外部瀏覽器
-  redirectToExternalBrowserForLogin();
+const openLinkExternally = () => {
+  // 當使用者點擊「或點此嘗試直接開啟」時，我們應該優先使用 liff.openWindow
+  // 因為這是在 LINE 內建瀏覽器中開啟外部瀏覽器的最可靠方法。
+  if (liff.isInClient()) {
+    liff.openWindow({ url: currentUrl.value, external: true });
+  } else {
+    // 作為備用，或在非 LINE 環境（如桌面開發）中，使用標準的 window.open。
+    window.open(currentUrl.value, '_blank');
+  }
 };
 
 const proceedWithBackendLogin = async () => {
@@ -168,7 +160,7 @@ const proceedWithBackendLogin = async () => {
       loadingText.value = '您的 LINE Email 尚未註冊，將導向至登入頁面...';
       // 不要自動重新導向，因為 liff.openWindow 不可靠。
       // 直接顯示錯誤畫面，引導使用者手動操作。
-      showExternalBrowserInstructions();
+      redirectToExternalBrowserForLogin();
       return;
     }
 
@@ -208,17 +200,8 @@ const handleConsentAndLogin = async () => {
 
 const initializeLiffAndLogin = async () => {
   try {
-    // 動態載入 LIFF SDK
-    const script = document.createElement('script');
-    script.src = 'https://static.line-scdn.net/liff/edge/2/sdk.js';
-    document.head.appendChild(script);
-
-    await new Promise<void>((resolve, reject) => {
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error('LIFF SDK 載入失敗。'));
-    });
-
     // 初始化 LIFF
+    // 現在 liff 是從 npm 套件 import，不再需要動態載入 script
     await liff.init({ liffId: LIFF_ID });
 
     // 在 init 之後，立即檢查 URL 是否包含 LIFF 的重新導向參數。
