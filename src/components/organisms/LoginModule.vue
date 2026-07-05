@@ -23,7 +23,7 @@
 </template>
 
 <script setup lang="ts">
-import { watch, nextTick, computed } from 'vue';
+import { watch, nextTick, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vitepress';
 import { storeToRefs } from 'pinia';
 import { ElMessage } from 'element-plus'
@@ -51,18 +51,9 @@ const isLoggedIn = computed(() => agentStore.isLoggedIn)
 const agent = computed(() => agentStore.agent || { username: '', avatarUrl: '' })
 
 const handleLoginClick = () => {
-    const isLiffTestMode = new URLSearchParams(window.location.search).has('liff-test');
-    // 透過 User Agent 判斷是否為桌面環境
-    const isDesktop = !/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-    if (isDesktop && !(isDev && isLiffTestMode)) {
-        // 在桌面環境，直接打開 FirebaseUI 登入對話框
-        agentStore.openLoginDialog();
-    } else {
-        // 在行動裝置，或是在 liff-test 模式下，觸發 LINE 登入流程
-        if (isDev && isLiffTestMode) console.log('[LoginModule] Triggering LIFF flow in test mode via click.');
-        window.dispatchEvent(new CustomEvent('start-line-login'));
-    }
+    // 無論環境如何，都觸發登入流程。
+    // LineBrowserGuard 將會判斷應該使用 LINE 登入還是標準登入。
+    window.dispatchEvent(new CustomEvent('start-line-login'));
 };
 
 const router = useRouter();
@@ -186,6 +177,15 @@ watch(loginDialogVisible, (newValue) => {
             document.head.appendChild(script);
         }
     }
+});
+
+onMounted(() => {
+  // 監聽來自 LineBrowserGuard 的事件，以在非 LIFF 環境中開啟標準登入對話框。
+  window.addEventListener('open-firebase-login', agentStore.openLoginDialog);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('open-firebase-login', agentStore.openLoginDialog);
 });
 
 const handleLogout = async () => {

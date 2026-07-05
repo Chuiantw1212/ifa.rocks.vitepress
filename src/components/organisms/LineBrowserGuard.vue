@@ -225,6 +225,18 @@ const initializeLiffAndLogin = async () => {
     console.log(`[LineGuard] Calling liff.init() with LIFF ID: ${LIFF_ID}`);
     await liff.init({ liffId: LIFF_ID });
     console.log('[LineGuard] liff.init() successful.');
+
+    const isLiffTestMode = new URLSearchParams(window.location.search).has('liff-test');
+
+    // 根據使用者需求：只有在 LIFF 環境內，或是開發者使用測試參數時，才顯示 LINE 登入流程。
+    if (!liff.isInClient() && !(isDev && isLiffTestMode)) {
+      // 其他所有情況 (包含一般手機瀏覽器)，都應使用標準登入流程。
+      console.log('[LineGuard] Not in LIFF client or test mode. Falling back to standard login.');
+      showOverlay.value = false; // 隱藏 Guard
+      window.dispatchEvent(new CustomEvent('open-firebase-login')); // 通知 LoginModule 打開登入視窗
+      return; // 中止 LIFF 登入流程
+    }
+
     loadingText.value = '正在檢查您的 LINE 登入狀態...';
 
     // 在 init 之後，立即檢查 URL 是否包含 LIFF 的重新導向參數。
@@ -263,13 +275,11 @@ const initializeLiffAndLogin = async () => {
     }
   } catch (err: any) {
     console.error('LIFF Initialization Error:', err);
-    // 針對 'Failed to fetch' 錯誤提供更具體的指引
-    if (err.message && err.message.includes('Failed to fetch')) {
-      errorMessage.value = `[initializeLiffAndLogin] LIFF 必要元件載入失敗。這通常是由於網路連線問題，或瀏覽器擴充功能 (如廣告攔截器) 阻擋了請求。請檢查您的網路設定、暫時停用廣告攔截器，然後再試一次。`;
-    } else {
-      errorMessage.value = `[initializeLiffAndLogin] ${err.message || 'LIFF 初始化失敗，請確認網路連線或稍後再試。'}`;
-    }
-    status.value = 'error';
+    // LIFF 初始化失敗，很可能不是在 LIFF 環境中，或網路有問題。
+    // 無論如何，都應退回至標準登入流程，而不是顯示錯誤。
+    console.log('[LineGuard] LIFF init failed. Falling back to standard login.');
+    showOverlay.value = false;
+    window.dispatchEvent(new CustomEvent('open-firebase-login'));
   }
 };
 
