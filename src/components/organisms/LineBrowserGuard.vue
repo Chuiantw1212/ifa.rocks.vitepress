@@ -9,12 +9,12 @@
           <div>
             <el-alert
               v-if="!isDev"
-              title="為了獲得最佳體驗，請點擊右上角的「...」選單，然後選擇「使用預設瀏覽器開啟」。"
+              title="為了獲得最佳體驗，請點擊角落的「...」選單，然後選擇「使用預設瀏覽器開啟」。"
               type="info"
               :closable="false"
               center
               style="margin-bottom: 20px;"
-            /><el-button v-if="!isDev" type="primary" link @click="openLinkExternally">或點此嘗試直接開啟</el-button>
+            />
           </div>
           <el-alert
             v-if="isDev"
@@ -38,7 +38,6 @@
         <template #extra>
           <div class="consent-buttons">
             <el-button type="primary" @click="handleConsentAndLogin">同意並以 LINE 登入</el-button>
-            <el-button @click="redirectToExternalBrowserForLogin">使用其他方式登入</el-button>
           </div>
         </template>
       </el-result>
@@ -60,40 +59,9 @@ const LIFF_ID = import.meta.env.VITE_LIFF_ID as string;
 const status = ref('idle'); // idle, initializing, consent-required, logging-in, success, error
 const errorMessage = ref('');
 const showOverlay = ref(false);
-const currentUrl = ref('')
 const loadingText = ref('正在初始化服務...')
 // Vite 環境變數，用於判斷是否為開發模式
 const isDev = import.meta.env.DEV;
-
-const redirectToExternalBrowserForLogin = () => {
-  // 導向到應用程式的主登入頁面 (`/pro/`)，FirebaseUI 會在那裡處理登入。
-  const loginUrl = `${window.location.origin}/pro/dashboard`;
-  console.log(`[LineGuard] Redirecting to external browser for login. URL: ${loginUrl}`);
-  if (liff.isInClient()) {
-    // 嘗試在外部瀏覽器中開啟登入頁面。
-    // 這是一個「即發即忘」的操作，我們無法得知它是否成功。
-    liff.openWindow({ url: loginUrl, external: true });
-    // 因此，我們立即更新 UI，提供手動操作的備用說明。
-    // 這樣即使用戶切換回 LINE，或 openWindow 失敗，他們也能看到清晰的指引。
-    status.value = 'error';
-    errorMessage.value = '[redirectToExternalBrowserForLogin] 為了使用 Google 或其他方式登入，我們已嘗試為您開啟手機的預設瀏覽器。';
-  } else {
-    // 在普通瀏覽器（例如開發模式），直接重新導向。
-    window.location.href = loginUrl;
-  }
-};
-
-const openLinkExternally = () => {
-  // 當使用者點擊「或點此嘗試直接開啟」時，我們應該優先使用 liff.openWindow
-  // 因為這是在 LINE 內建瀏覽器中開啟外部瀏覽器的最可靠方法。
-  console.log(`[LineGuard] Attempting to open URL externally via liff.openWindow: ${currentUrl.value}`);
-  if (liff.isInClient()) {
-    liff.openWindow({ url: currentUrl.value, external: true });
-  } else {
-    // 作為備用，或在非 LINE 環境（如桌面開發）中，使用標準的 window.open。
-    window.open(currentUrl.value, '_blank');
-  }
-};
 
 /**
  * 偵測當前環境是否為一個已知有問題的內嵌 WebView。
@@ -170,7 +138,8 @@ const proceedWithBackendLogin = async () => {
         errorMessage.value = '[proceedWithBackendLogin] 開發模式：無法從 LINE 取得 Email。為保留 log 已中止重新導向。';
         status.value = 'error';
       } else {
-        redirectToExternalBrowserForLogin();
+        status.value = 'error';
+        errorMessage.value = '[proceedWithBackendLogin] 無法從 LINE 取得必要的登入資訊。請依照提示操作，或聯絡客服人員。';
       }
       return;
     }
@@ -205,10 +174,19 @@ const proceedWithBackendLogin = async () => {
 
     if (authData?.status === 'USER_NOT_FOUND') {
       loadingText.value = '您的 LINE Email 尚未註冊，將導向至登入頁面...';
-      console.log('[LineGuard] Backend reported USER_NOT_FOUND. Redirecting to main login page.');
-      // 不要自動重新導向，因為 liff.openWindow 不可靠。
-      // 直接顯示錯誤畫面，引導使用者手動操作。
-      redirectToExternalBrowserForLogin();
+      console.log('[LineGuard] Backend reported USER_NOT_FOUND.');
+
+      if (isProblematicWebView()) {
+        // 在有問題的 WebView 中，FirebaseUI 彈窗會失敗。引導使用者切換瀏覽器。
+        console.warn('[LineGuard] In a problematic WebView. Guiding user to switch browser for registration.');
+        status.value = 'error';
+        errorMessage.value = '您的 LINE 帳號尚未註冊。請點擊右上角選單，並選擇「在系統瀏覽器中開啟」，以完成註冊。';
+      } else {
+        // 在 LIFF 客戶端或標準瀏覽器中，直接嘗試退回至 FirebaseUI 登入流程。
+        console.log('[LineGuard] In LIFF client. Attempting to fall back to Firebase login flow.');
+        showOverlay.value = false;
+        window.dispatchEvent(new CustomEvent('open-firebase-login'));
+      }
       return;
     }
 
@@ -267,22 +245,17 @@ const initializeLiffAndLogin = async () => {
 
     const isLiffTestMode = new URLSearchParams(window.location.search).has('liff-test');
 
-    // 根據使用者需求：只有在 LIFF 環境內，或是開發者使用測試參數時，才顯示 LINE 登入流程。
-    if (!liff.isInClient() && !(isDev && isLiffTestMode)) {
-      // 非 LIFF 環境，進一步檢查是否為有問題的 WebView
-      if (isProblematicWebView()) {
-        console.warn('[LineGuard] Problematic WebView detected. Blocking login and showing guidance.');
-        status.value = 'error';
-        errorMessage.value = '此瀏覽器不支援安全登入。請點擊右上角選單，並選擇「在系統瀏覽器中開啟」以完成操作。';
-        return; // 中止後續流程，停留在錯誤畫面
-      }
+    // 判斷是否應退回至標準 Firebase 登入流程。
+    // 條件：不在 LIFF 中，也不是有問題的 WebView，且不是開發者測試模式。
+    const shouldFallbackToFirebase = !liff.isInClient() && !isProblematicWebView() && !(isDev && isLiffTestMode);
 
-      // 是正常的瀏覽器環境 (電腦或手機標準瀏覽器)，退回標準登入流程
-      console.log('[LineGuard] Not in LIFF client. Falling back to standard Firebase login.');
+    if (shouldFallbackToFirebase) {
+      console.log('[LineGuard] Normal browser environment detected. Falling back to standard Firebase login.');
       showOverlay.value = false;
       window.dispatchEvent(new CustomEvent('open-firebase-login'));
       return;
     }
+    // 若為 LIFF 環境或 WebView，則繼續執行 LINE 登入流程。
 
     loadingText.value = '正在檢查您的 LINE 登入狀態...';
 
@@ -323,16 +296,16 @@ const initializeLiffAndLogin = async () => {
   } catch (err: any) {
     console.error('LIFF Initialization Error:', err);
 
-    // LIFF 初始化失敗，檢查是否因為在 WebView 中
+    // LIFF 初始化失敗，檢查是否因為在 WebView 中。
+    // 如果是，我們仍然嘗試顯示同意畫面，讓使用者有機會觸發 liff.login()。
     if (isProblematicWebView()) {
-        console.warn('[LineGuard] LIFF init failed, likely due to being in a problematic WebView. Showing guidance.');
-        status.value = 'error';
-        errorMessage.value = '此瀏覽器不支援安全登入。請點擊右上角選單，並選擇「在系統瀏覽器中開啟」以完成操作。';
+        console.warn('[LineGuard] LIFF init failed, likely in a WebView. Showing consent screen as a fallback.');
+        status.value = 'consent-required';
         return;
     }
 
-    // 如果不是 WebView，或偵測失敗，則退回標準登入流程
-    console.log('[LineGuard] LIFF init failed. Falling back to standard Firebase login.');
+    // 如果不是 WebView，或偵測失敗，則退回標準 Firebase 登入流程。
+    console.log('[LineGuard] LIFF init failed in a non-WebView environment. Falling back to standard Firebase login.');
     showOverlay.value = false;
     window.dispatchEvent(new CustomEvent('open-firebase-login'));
   }
@@ -340,7 +313,6 @@ const initializeLiffAndLogin = async () => {
 
 const startLineLoginFlow = () => {
     console.log('[LineGuard] start-line-login event received. Starting flow...');
-    currentUrl.value = window.location.href;
     showOverlay.value = true;
     status.value = 'initializing';
 
