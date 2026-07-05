@@ -51,6 +51,7 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { auth } from '@/firebaseConfig';
 import liff from '@line/liff';
+import { useAgentStore } from '@/stores/agent';
 import { signInWithCustomToken } from 'firebase/auth';
  
 // --- LIFF 設定 ---
@@ -313,6 +314,14 @@ const initializeLiffAndLogin = async () => {
 
 const startLineLoginFlow = () => {
     console.log('[LineGuard] start-line-login event received. Starting flow...');
+
+    // 防呆機制：如果 agent store 中已經是登入狀態，則直接中止流程。
+    // 這可以防止在 UI 重新渲染的空窗期，使用者重複點擊登入按鈕，導致流程卡死。
+    if (useAgentStore().isLoggedIn) {
+      console.warn('[LineGuard] Flow aborted: User is already logged in according to the agent store.');
+      return;
+    }
+
     showOverlay.value = true;
     status.value = 'initializing';
 
