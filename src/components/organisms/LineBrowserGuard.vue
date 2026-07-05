@@ -57,7 +57,7 @@ import { auth } from '@/firebaseConfig';
 import liff from '@line/liff';
 import { useAgentStore } from '@/stores/agent';
 import { signInWithCustomToken } from 'firebase/auth';
-import { isProblematicWebView } from '@/composables/useWebiew';
+import { isProblematicWebView } from '@/composables/useWebView';
  
 // --- LIFF 設定 ---
 // 從環境變數讀取 LIFF ID，增加靈活性與安全性
