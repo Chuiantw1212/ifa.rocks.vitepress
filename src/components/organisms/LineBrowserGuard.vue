@@ -52,7 +52,6 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { auth } from '@/firebaseConfig';
 import liff from '@line/liff';
-import VConsole from 'vconsole';
 import { signInWithCustomToken } from 'firebase/auth';
 import { useAgentStore } from '@/stores/agent';
 
@@ -214,10 +213,13 @@ const handleConsentAndLogin = async () => {
 const initializeLiffAndLogin = async () => {
   console.log('[LineGuard] Initializing LIFF and login flow...');
   try {
-    // 根據使用者要求，在開發模式且非電腦版瀏覽器時，啟用 vConsole 以利除錯。
-    const isDesktop = !/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    new VConsole();
-    console.log('[LineGuard] vConsole initialized.');
+    // 為了避免 SSR build 錯誤 (XMLHttpRequest is not defined)，
+    // 我們只在客戶端環境下才動態載入並初始化 vConsole。
+    if (!import.meta.env.SSR) {
+      const VConsole = (await import('vconsole')).default;
+      new VConsole();
+      console.log('[LineGuard] vConsole initialized.');
+    }
 
     // 初始化 LIFF
     // 現在 liff 是從 npm 套件 import，不再需要動態載入 script
