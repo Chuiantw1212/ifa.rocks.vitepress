@@ -57,6 +57,7 @@ import { auth } from '@/firebaseConfig';
 import liff from '@line/liff';
 import { useAgentStore } from '@/stores/agent';
 import { signInWithCustomToken } from 'firebase/auth';
+import { isProblematicWebView } from '@/composables/useWebiew';
  
 // --- LIFF 設定 ---
 // 從環境變數讀取 LIFF ID，增加靈活性與安全性
@@ -67,45 +68,6 @@ const showOverlay = ref(false);
 const loadingText = ref('正在初始化服務...')
 // Vite 環境變數，用於判斷是否為開發模式
 const isDev = import.meta.env.DEV;
-
-/**
- * 偵測當前環境是否為一個已知有問題的內嵌 WebView。
- * 這些環境通常會阻擋 OAuth 登入流程（如 Google 登入）。
- * @returns {boolean} 如果是已知的問題 WebView，則為 true。
- */
-const isProblematicWebView = (): boolean => {
-  // liff.isInClient() 是最可靠的判斷，如果我們在 LINE App 中，那它就不是「有問題」的 WebView。
-  if (liff.isInClient()) {
-    return false;
-  }
-
-  const ua = navigator.userAgent || navigator.vendor || (window as any).opera;
-
-  // 已知的 App 內建瀏覽器特徵
-  const isFacebook = /FBAV|FBAN/i.test(ua);
-  const isInstagram = /Instagram/i.test(ua);
-
-  // 通用 Android WebView 特徵
-  const isAndroidWV = /wv/i.test(ua);
-
-  // 通用 iOS WebView 特徵 (User Agent 是 iPhone/iPad 但不是 Safari)
-  const isIOSWebView = /(iPhone|iPod|iPad)(?!.*Safari)/i.test(ua);
-
-  const result = isFacebook || isInstagram || isAndroidWV || isIOSWebView;
-
-  if (isDev) {
-    console.log('[LineGuard] WebView Detection:', {
-      ua,
-      isFacebook,
-      isInstagram,
-      isAndroidWV,
-      isIOSWebView,
-      result
-    });
-  }
-
-  return result;
-};
 
 const proceedWithBackendLogin = async () => {
   try {
