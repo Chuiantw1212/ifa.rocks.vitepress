@@ -1,48 +1,52 @@
 <template>
   <div v-if="showOverlay" class="line-guard-overlay">
-    <el-card class="line-guard-card" shadow="always" v-loading="status === 'initializing'" :element-loading-text="loadingText" style="text-align: center;">
-      <el-result v-if="status === 'error'" icon="warning" :title="isDev ? 'LIFF 登入失敗' : '請使用預設瀏覽器開啟'">
-        <template #sub-title>
-          <p>{{ errorMessage }}</p>
-        </template>
-        <template #extra>
-          <div>
+    <el-card class="line-guard-card" shadow="always" style="text-align: center;">
+      <div
+        v-loading="status === 'initializing' || status === 'logging-in'"
+        :element-loading-text="loadingText"
+        style="min-height: 280px; display: flex; justify-content: center; align-items: center;"
+      >
+        <el-result v-if="status === 'error'" icon="warning" :title="isDev ? 'LIFF 登入失敗' : '請使用預設瀏覽器開啟'">
+          <template #sub-title>
+            <p>{{ errorMessage }}</p>
+          </template>
+          <template #extra>
+            <div>
+              <el-alert
+                v-if="!isDev"
+                title="為了獲得最佳體驗，請點擊角落的「...」選單，然後選擇「使用預設瀏覽器開啟」。"
+                type="info"
+                :closable="false"
+                center
+                style="margin-bottom: 20px;"
+              />
+            </div>
             <el-alert
-              v-if="!isDev"
-              title="為了獲得最佳體驗，請點擊角落的「...」選單，然後選擇「使用預設瀏覽器開啟」。"
-              type="info"
+              v-if="isDev"
+              title="請檢查瀏覽器開發者工具 (Console) 的錯誤訊息以進行除錯。"
+              type="error"
               :closable="false"
-              center
-              style="margin-bottom: 20px;"
             />
-          </div>
-          <el-alert
-            v-if="isDev"
-            title="請檢查瀏覽器開發者工具 (Console) 的錯誤訊息以進行除錯。"
-            type="error"
-            :closable="false"
-          />
-        </template>
-      </el-result><el-result v-if="status === 'consent-required'" icon="info" title="授權請求">
-        <template #sub-title>
-          <div style="text-align: left; max-width: 320px; margin: 0 auto;">
-            <p>為了將您的 LINE 帳號與 IFA 會員帳號連結，我們需要取得您的電子郵件地址。這將用於：</p>
-            <el-steps direction="vertical" :space="50" style="height: 160px; margin: 20px 0; max-width: 100%;">
-              <el-step title="驗證您的身分" />
-              <el-step title="建立或連結您的 IFA 會員帳號" />
-              <el-step title="接收重要的會員通知" />
-            </el-steps>
-            <p>我們承諾保護您的個人資訊安全。點擊「同意並以 LINE 登入」即表示您同意我們基於上述目的使用您的電子郵件。</p>
-          </div>
-        </template>
-        <template #extra>
-          <div class="consent-buttons">
-            <el-button type="primary" @click="handleConsentAndLogin">同意並以 LINE 登入</el-button>
-          </div>
-        </template>
-      </el-result>
-      <!-- This div is for the loading spinner to have a size -->
-      <div v-if="status === 'initializing' || status === 'logging-in'" style="height: 280px;" />
+          </template>
+        </el-result><el-result v-if="status === 'consent-required'" icon="info" title="授權請求">
+          <template #sub-title>
+            <div style="text-align: left; max-width: 320px; margin: 0 auto;">
+              <p>為了將您的 LINE 帳號與 IFA 會員帳號連結，我們需要取得您的電子郵件地址。這將用於：</p>
+              <el-steps direction="vertical" :space="50" style="height: 160px; margin: 20px 0; max-width: 100%;">
+                <el-step title="驗證您的身分" />
+                <el-step title="建立或連結您的 IFA 會員帳號" />
+                <el-step title="接收重要的會員通知" />
+              </el-steps>
+              <p>我們承諾保護您的個人資訊安全。點擊「同意並以 LINE 登入」即表示您同意我們基於上述目的使用您的電子郵件。</p>
+            </div>
+          </template>
+          <template #extra>
+            <div class="consent-buttons">
+              <el-button type="primary" @click="handleConsentAndLogin">同意並以 LINE 登入</el-button>
+            </div>
+          </template>
+        </el-result>
+      </div>
     </el-card>
   </div>
 </template>
