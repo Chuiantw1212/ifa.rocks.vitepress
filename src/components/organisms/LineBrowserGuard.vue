@@ -339,29 +339,44 @@ const startLineLoginFlow = () => {
 };
 
 onMounted(async () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const isLiffRedirect = urlParams.has('code') && urlParams.has('state');
+
   // 在非 LIFF 的 WebView 環境中 (isProblematicWebView)，無論是開發或正式環境，都預設啟用 vConsole 以利除錯。
   // vConsole 會在偵測到登入成功後自動銷毀。
-  if (isProblematicWebView()) {
+  // 在 LIFF 跳轉回來時也強制開啟，方便追蹤初始化流程。
+  if (isProblematicWebView() || (isDev && isLiffRedirect)) {
     try {
       const VConsole = (await import('vconsole')).default;
       vConsoleInstance = new VConsole();
-      console.log('[LineGuard] vConsole initialized for WebView debugging.');
+      console.log('[LineGuard] vConsole initialized for debugging.');
     } catch (e) {
       console.error('Failed to initialize vConsole:', e);
     }
   }
 
+  // --- 登入流程啟動邏輯 ---
+
+  // 情況 1: 如果是從 LINE 授權頁跳轉回來 (URL 含有 code 和 state)。
+  // 這是最高優先級的任務，必須立刻、優先執行 liff.init() 來處理 URL 上的參數，
+  // 避免被 SPA 路由或其他腳本干擾。
+  if (isLiffRedirect) {
+    console.log('[LineGuard] LIFF redirect detected. Initializing LIFF immediately to process URL params.');
+    showOverlay.value = true;
+    status.value = 'initializing';
+    initializeLiffAndLogin(); // 直接呼叫，繞過 onAuthStateChanged 的延遲
+    return; // 此情境的邏輯到此為止
+  }
+
+  // 情況 2: 其他所有正常的頁面載入情境。
   // For mobile devices, the flow is triggered by a click on the login avatar.
   window.addEventListener('start-line-login', startLineLoginFlow);
 
-  // --- 自動啟動登入流程的判斷 ---
-  const isLiffTestMode = new URLSearchParams(window.location.search).has('liff-test');
+  const isLiffTestMode = urlParams.has('liff-test');
   const isProPage = window.location.pathname.includes('/pro/');
   const shouldAutoStartForTest = isDev && isProPage && isLiffTestMode;
 
-  // 自動啟動登入流程的兩個主要情境：
-  // 1. 在非 LIFF 的 WebView 環境中 (isProblematicWebView)。這能確保從 LINE 授權頁跳轉回來後，流程能自動繼續，無需使用者再次點擊。
-  // 2. 在桌面開發模式下，透過 `liff-test` 參數強制啟動流程，以方便除錯。
+  // 在非 LIFF 的 WebView 或桌面測試模式下，自動啟動登入流程（首次進入頁面時）。
   if (isProblematicWebView() || shouldAutoStartForTest) {
     if (shouldAutoStartForTest) console.log('[LineGuard] LIFF test mode activated on page load.');
     if (isProblematicWebView()) console.log('[LineGuard] Problematic WebView detected. Auto-starting login flow.');
