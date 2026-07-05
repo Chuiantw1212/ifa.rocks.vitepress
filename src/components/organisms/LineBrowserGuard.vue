@@ -56,7 +56,7 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import { auth } from '@/firebaseConfig';
 import liff from '@line/liff';
 import { useAgentStore } from '@/stores/agent';
-import { setPersistence, browserSessionPersistence, signInWithCustomToken } from 'firebase/auth';
+import { signInWithCustomToken } from 'firebase/auth';
  
 // --- LIFF 設定 ---
 // 從環境變數讀取 LIFF ID，增加靈活性與安全性
@@ -319,17 +319,8 @@ const initializeLiffAndLogin = async () => {
   }
 };
 
-const startLineLoginFlow = async () => {
+const startLineLoginFlow = () => {
     console.log('[LineGuard] start-line-login event received. Starting flow...');
-
-    // 針對 WebView 環境，Firebase 的預設儲存方式 (indexedDB) 可能會被阻擋，導致重新整理後登入狀態遺失。
-    // 我們在此明確地將其設定為 browserSessionPersistence (sessionStorage)，這種方式的相容性更高，
-    // 並確保在執行任何驗證操作之前完成設定。
-    try {
-      await setPersistence(auth, browserSessionPersistence);
-    } catch (error) {
-      console.error('[LineGuard] Failed to set auth persistence:', error);
-    }
 
     // 防呆機制：直接檢查 Firebase 的當前使用者狀態。
     // 這比檢查 store 更即時，能更可靠地防止因 UI 重新渲染延遲而導致的競爭條件。
