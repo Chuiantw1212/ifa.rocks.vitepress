@@ -108,69 +108,6 @@ export const useAgentStore = defineStore('agent', () => {
     }
 
     /**
-     * 使用 LIFF ID Token 向後端換取 Firebase Custom Token 並登入
-     * @param liffIdToken - 從 liff.getIDToken() 取得的 JWT 字串
-     */
-    async function loginWithLiff(liffIdToken: string) {
-        try {
-            // 這個後端端點 `/auth/line` 需要您在後端實作。
-            // 它的職責是：
-            // 1. 接收前端傳來的原始 LIFF ID Token。
-            // 2. 在後端驗證此 Token 的合法性 (與 LINE 的 API 驗證)。
-            // 3. 根據 Token 中的 LINE User ID，在您的資料庫中尋找或建立對應的顧問帳號。
-            // 4. 使用 Firebase Admin SDK 為該帳號產生一個 Firebase Custom Token。
-            // 5. 將 Custom Token 回傳給前端。
-            const response = await fetch(`${API_BASE_URL}/api/v1/auth/line`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ idToken: liffIdToken }),
-            });
-
-            // 即使 response.ok 為 false，也嘗試解析 JSON 以獲取後端提供的錯誤訊息
-            const responseData = await response.json().catch(async () => {
-                // 如果後端回傳的不是 JSON (例如 500 錯誤頁面)，則取得原始文字
-                return { message: await response.text() || response.statusText };
-            });
-
-            if (!response.ok) {
-                throw new Error(`後端驗證失敗: ${responseData.message || '未提供詳細錯誤訊息。'}`);
-            }
-
-            const { status, token } = responseData;
-
-            // 根據後端回傳的狀態進行處理
-            if (status === 'SUCCESS') {
-                // --- 除錯輔助 ---
-                console.log('Received Firebase Custom Token from backend:', token);
-                if (!token) {
-                    throw new Error('後端回傳成功，但 Firebase Custom Token 是空的，請檢查後端 API 的回傳值。');
-                }
-                // --- 除錯結束 ---
-
-                await signInWithCustomToken(auth, token);
-                // 登入成功後，onAuthStateChanged 會自動觸發，更新 agent 狀態。
-            } else {
-                // 處理後端回傳的業務邏輯錯誤，例如帳號已存在但未連結
-                const errorMessages: { [key: string]: string } = {
-                    'ACCOUNT_EXISTS_EMAIL_MISMATCH': '此 LINE 帳號的 Email 已被註冊，但尚未連結。請先用 Email 登入，並在「帳號設定」中連結您的 LINE。', // 保留舊的狀態以供相容
-                    'REDIRECT_TO_FIREBASE_LOGIN': responseData.message || '此帳號需要您先使用 Email 或 Google 登入一次。請點擊下方按鈕，在您的手機預設瀏覽器中完成登入後，再返回 LINE 即可。'
-                };
-
-                // 拋出一個帶有具體訊息的錯誤，讓 LineBrowserGuard 可以捕捉並顯示給使用者
-                const error = new Error(errorMessages[status] || `登入失敗，原因: ${status}`);
-                // 將 status 附加到 error 物件上，以便 UI 層可以根據不同的錯誤類型執行特定操作（例如跳轉）
-                (error as any).code = status;
-                throw error;
-            }
-        } catch (error) {
-            console.error('LIFF Login failed:', error);
-            throw error; // 將錯誤向上拋出，讓 LineBrowserGuard 可以捕捉到並顯示備用畫面。
-        }
-    }
-
-    /**
      * 將 LINE 帳號連結到當前已登入的 Firebase 使用者。
      * 此函式應在使用者已透過其他方式（如 Email/密碼）登入後，於「帳號設定」頁面中呼叫。
      * @param lineIdToken - 從前端 LIFF SDK 取得的 LINE ID Token 字串。
@@ -236,5 +173,5 @@ export const useAgentStore = defineStore('agent', () => {
         loginDialogVisible.value = false;
     }
 
-    return { agent, isInitialized, isLoggedIn, isProfileLoading, init, logout, loginWithLiff, linkLineAccount, fetchAgentProfile, loginDialogVisible, openLoginDialog, closeLoginDialog }
+    return { agent, isInitialized, isLoggedIn, isProfileLoading, init, logout, linkLineAccount, fetchAgentProfile, loginDialogVisible, openLoginDialog, closeLoginDialog }
 })
