@@ -228,6 +228,9 @@ const handleConsentAndLogin = async () => {
 const initializeLiffAndLogin = async () => {
   console.log('[LineGuard] Initializing LIFF and login flow...');
   try {
+    // ========================================================================
+    // 步驟 1: 前置檢查 (Pre-flight Checks)
+    // ========================================================================
     if (props.liffInitError) {
       // 如果 liff.init() 在 Layout 層就失敗了，檢查是否為 WebView 環境。
       if (isProblematicWebView()) {
@@ -240,13 +243,18 @@ const initializeLiffAndLogin = async () => {
     }
     console.log('[LineGuard] LIFF is pre-initialized. Proceeding with login flow.');
 
+    // ========================================================================
+    // 步驟 2: 環境判斷與分流 (Environment Branching)
+    // 核心邏輯：根據執行的環境（LIFF App、App內建WebView、一般瀏覽器）決定登入流程。
+    // ========================================================================
     const isLiffTestMode = new URLSearchParams(window.location.search).has('liff-test');
 
-    // 情況 1: 在 LIFF App 中，或正在進行 LIFF 測試。這是主要登入路徑。
+    // 情況 1: 在 LIFF App 中，或正在進行 LIFF 測試。這是最主要的登入路徑。
     if (liff.isInClient() || (isDev && isLiffTestMode)) {
       console.log(`[LineGuard] In LIFF client or test mode. Proceeding with LIFF login flow.`);
       loadingText.value = '正在檢查您的 LINE 登入狀態...';
 
+      // 檢查使用者是否已經在 LIFF 層登入。
       if (liff.isLoggedIn()) {
         // 已登入 LIFF，檢查 email 權限並繼續後端登入流程
         const decodedIDToken = liff.getDecodedIDToken();

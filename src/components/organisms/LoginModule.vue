@@ -200,30 +200,22 @@ const handleLogout = async () => {
         // agentStore 應該會透過 onAuthStateChanged 監聽器自動更新其狀態。
         await signOut(auth);
         console.log('[LoginModule] Firebase sign-out successful.');
-
-        // 為了確保「乾淨登出」，我們需要根據不同環境，決定是否要執行 LIFF 登出。
-        if (isDesktop()) {
-            console.log('[LoginModule] Desktop environment, skipping LIFF logout.');
-        } else {
-            // 在行動裝置上，我們需要嘗試初始化 LIFF，以判斷環境並清除可能存在的 LIFF session。
-            console.log('[LoginModule] Mobile environment detected. Attempting to initialize LIFF for logout...');
-            try {
-                await liff.init({ liffId: LIFF_ID });
-                
-                // 使用共享的 composable 來判斷環境，確保邏輯一致。
-                // liff.isInClient() 會在 isProblematicWebView 內部被檢查。
-                if (liff.isInClient() || isProblematicWebView()) {
-                    console.log(`[LoginModule] In ${liff.isInClient() ? 'LIFF Client' : 'WebView'}. Proceeding with LIFF logout.`);
-                    if (liff.isLoggedIn()) {
-                        liff.logout();
-                        console.log('[LoginModule] LIFF logout successful.');
-                    }
-                } else {
-                    console.log('[LoginModule] Standard mobile browser. No LIFF logout necessary.');
-                }
-            } catch (liffError) {
-                console.warn('[LoginModule] LIFF SDK could not be initialized. This is normal for standard mobile browsers.');
+        
+        // 登出 Firebase 後，也檢查是否需要登出 LIFF。
+        // LIFF 已在 Layout.vue 中初始化，這裡不需重複 init。
+        // liff.isLoggedIn() 只有在 LIFF 環境中 (liff.isInClient() 為 true) 才有意義。
+        // 在外部瀏覽器呼叫 liff.logout() 會導致錯誤，所以要先判斷環境。
+        if (liff.isInClient()) {
+            console.log('[LoginModule] In LIFF client. Checking LIFF login status for logout.');
+            if (liff.isLoggedIn()) {
+                liff.logout();
+                console.log('[LoginModule] LIFF logout successful.');
             }
+        } else {
+            // 在標準瀏覽器、桌面或有問題的 WebView 中，我們只登出 Firebase 即可。
+            // isProblematicWebView() 的情況下，使用者通常不在 LIFF session 中，
+            // 嘗試登出 LIFF 沒有意義且可能引發不必要的錯誤。
+            console.log('[LoginModule] Not in LIFF client, skipping LIFF logout.');
         }
 
         ElMessage.info('您已成功登出');
