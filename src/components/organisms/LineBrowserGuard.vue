@@ -28,7 +28,23 @@
               :closable="false"
             />
           </template>
-        </el-result><el-result v-if="status === 'consent-required'" icon="info" title="授權請求">
+        </el-result>
+        <el-result v-if="status === 'webview-unsupported'" icon="info" title="不支援的瀏覽器環境">
+          <template #sub-title>
+            <p>為了確保所有功能正常運作，請使用您手機預設的瀏覽器開啟此頁面。</p>
+          </template>
+          <template #extra>
+            <el-button type="primary" @click="handleOpenInBrowser">使用預設瀏覽器開啟</el-button>
+            <el-alert
+              title="點擊按鈕後，如果頁面沒有自動跳轉，請手動點擊角落的「...」選單，然後選擇「使用預設瀏覽器開啟」。"
+              type="info"
+              :closable="false"
+              center
+              style="margin-top: 20px;"
+            />
+          </template>
+        </el-result>
+        <el-result v-if="status === 'consent-required'" icon="info" title="授權請求">
           <template #sub-title>
             <div style="text-align: left; max-width: 320px; margin: 0 auto;">
               <p>為了將您的 LINE 帳號與 IFA 會員帳號連結，我們需要取得您的電子郵件地址。這將用於：</p>
@@ -70,7 +86,7 @@ const agentStore = useAgentStore();
 // --- LIFF 設定 ---
 // 使用者強調：此 LIFF ID 為固定值，請勿改回環境變數。
 const LIFF_ID = '2009612107-QeSJSRV2';
-const status = ref('idle'); // idle, initializing, consent-required, logging-in, success, error
+const status = ref('idle'); // idle, initializing, consent-required, logging-in, success, error, webview-unsupported
 const errorMessage = ref('');
 const showOverlay = ref(false);
 const loadingText = ref('正在初始化服務...')
@@ -173,6 +189,13 @@ const proceedWithBackendLogin = async () => {
   }
 }
 
+const handleOpenInBrowser = () => {
+  console.log('[LineGuard] User clicked "Open in Browser". Redirecting...');
+  const newUrl = new URL(window.location.href);
+  newUrl.searchParams.set('openExternalBrowser', '1');
+  window.location.replace(newUrl.toString());
+};
+
 const handleConsentAndLogin = async () => {
   console.log('[LineGuard] User consented. Initiating liff.login().');
   status.value = 'logging-in';
@@ -205,80 +228,74 @@ const handleConsentAndLogin = async () => {
 const initializeLiffAndLogin = async () => {
   console.log('[LineGuard] Initializing LIFF and login flow...');
   try {
-    // LIFF 初始化已移至 Layout.vue 執行，以確保在應用程式啟動前完成。
-    // 在這裡，我們檢查從 Layout.vue 傳來的初始化結果。
     if (props.liffInitError) {
-      // 如果 liff.init() 在 Layout 層就失敗了，直接拋出錯誤。
+      // 如果 liff.init() 在 Layout 層就失敗了，檢查是否為 WebView 環境。
+      if (isProblematicWebView()) {
+        console.warn('[LineGuard] LIFF init failed in a problematic WebView. Showing "open in browser" message.');
+        status.value = 'error';
+        errorMessage.value = '系統初始化失敗，請嘗試使用預設瀏覽器開啟本頁。';
+        return;
+      }
       throw props.liffInitError;
     }
     console.log('[LineGuard] LIFF is pre-initialized. Proceeding with login flow.');
 
     const isLiffTestMode = new URLSearchParams(window.location.search).has('liff-test');
 
-    // 判斷是否應退回至標準 Firebase 登入流程。
-    // 條件：不在 LIFF 中，也不是有問題的 WebView，且不是開發者測試模式。
-    const shouldFallbackToFirebase = !liff.isInClient() && !isProblematicWebView() && !(isDev && isLiffTestMode);
+    // 情況 1: 在 LIFF App 中，或正在進行 LIFF 測試。這是主要登入路徑。
+    if (liff.isInClient() || (isDev && isLiffTestMode)) {
+      console.log(`[LineGuard] In LIFF client or test mode. Proceeding with LIFF login flow.`);
+      loadingText.value = '正在檢查您的 LINE 登入狀態...';
 
-    if (shouldFallbackToFirebase) {
-      console.log('[LineGuard] Normal browser environment detected. Falling back to standard Firebase login.');
-      showOverlay.value = false;
-      window.dispatchEvent(new CustomEvent('open-firebase-login'));
+      if (liff.isLoggedIn()) {
+        // 已登入 LIFF，檢查 email 權限並繼續後端登入流程
+        const decodedIDToken = liff.getDecodedIDToken();
+        if (!decodedIDToken?.email) {
+          // 已登入但無 email 權限，可能是使用者撤銷了授權。
+          // 登出 LIFF 以便下次能重新觸發完整的授權流程。
+          console.log('[LineGuard] User is logged in to LIFF, but no email permission found. Logging out and requesting consent again.');
+          await liff.logout();
+          status.value = 'consent-required'; // 顯示 LIFF 同意畫面
+        } else {
+          // 已登入且有 email 權限，直接進行後端登入。
+          console.log('[LineGuard] User is logged in to LIFF with email permission. Proceeding to backend login.');
+          await proceedWithBackendLogin();
+        }
+      } else {
+        // 未登入 LIFF，顯示我們自訂的同意畫面
+        console.log('[LineGuard] User is not logged in to LIFF. Showing consent screen.');
+        status.value = 'consent-required'; // 顯示 LIFF 同意畫面
+      }
       return;
     }
-    // 若為 LIFF 環境或 WebView，則繼續執行 LINE 登入流程。
 
-    loadingText.value = '正在檢查您的 LINE 登入狀態...';
-
-    console.log(`[LineGuard] liff.isLoggedIn() returned: ${liff.isLoggedIn()}`);
-    if (liff.isLoggedIn()) {
-      // 使用者已登入 LIFF，表示 SDK 已成功處理完重新導向的參數。
-      // URL 清理邏輯已移至 Layout.vue
-
-      // 接著檢查 email 權限並繼續後端登入流程
-      const decodedIDToken = liff.getDecodedIDToken();
-
-      if (!decodedIDToken?.email) {
-        // 已登入但無 email 權限，可能是使用者撤銷了授權。
-        // 登出 LIFF 以便下次能重新觸發完整的授權流程。
-        console.log('[LineGuard] User is logged in to LIFF, but no email permission found. Logging out and requesting consent again.');
-        await liff.logout();
-        status.value = 'consent-required';
-      } else {
-        // 已登入且有 email 權限，直接進行後端登入。
-        console.log('[LineGuard] User is logged in to LIFF with email permission. Proceeding to backend login.');
-        await proceedWithBackendLogin();
-      }
-    } else {
-      // 使用者未登入 LIFF，顯示我們自訂的同意畫面
-      console.log('[LineGuard] User is not logged in to LIFF. Showing consent screen.');
-
-      // 根據使用者要求，在顯示同意畫面之前，預先計算並印出將要使用的 redirectUri
-      const url = new URL(window.location.href);
-      url.hash = '';
-      url.searchParams.delete('code');
-      url.searchParams.delete('state');
-      url.searchParams.delete('liffClientId');
-      url.searchParams.delete('liffRedirectUri');
-      const redirectUri = url.toString();
-      console.log('[LineGuard] The redirectUri that will be used for liff.login() is:', redirectUri);
-
-      status.value = 'consent-required';
-    }
-  } catch (err: any) {
-    console.error('LIFF Flow Error (could be init or subsequent steps):', err);
-
-    // LIFF 初始化失敗，檢查是否因為在 WebView 中。
-    // 如果是，我們仍然嘗試顯示同意畫面，讓使用者有機會觸發 liff.login()。
+    // 情況 2: 在有問題的 WebView 中 (但不是 LIFF App)。
     if (isProblematicWebView()) {
-        console.warn('[LineGuard] LIFF init failed, likely in a WebView. Showing consent screen as a fallback.');
-        status.value = 'consent-required';
-        return;
+      const urlParams = new URLSearchParams(window.location.search);
+      // 如果 URL 已經有 openExternalBrowser=1 參數，代表使用者已經點擊過按鈕但可能又返回了。
+      // 這種情況下，我們顯示一個更通用的錯誤訊息，而不是再次顯示按鈕。
+      if (urlParams.has('openExternalBrowser')) {
+        console.log('[LineGuard] In a problematic WebView with flag. Displaying generic error.');
+        status.value = 'error';
+        errorMessage.value = '請使用您手機的預設瀏覽器（如 Chrome 或 Safari）開啟此頁面以完成操作。';
+      } else {
+        // 首次偵測到，顯示引導使用者操作的畫面。
+        console.log('[LineGuard] In a problematic WebView (but not LIFF client). Displaying "open in browser" instructions.');
+        status.value = 'webview-unsupported';
+      }
+      return;
     }
 
-    // 如果不是 WebView，或偵測失敗，則退回標準 Firebase 登入流程。
-    console.log('[LineGuard] LIFF init failed in a non-WebView environment. Falling back to standard Firebase login.');
+    // 情況 3: 在標準瀏覽器中。
+    // 退回至標準的 Firebase 登入流程。
+    console.log('[LineGuard] Normal browser environment detected. Falling back to standard Firebase login.');
     showOverlay.value = false;
     window.dispatchEvent(new CustomEvent('open-firebase-login'));
+
+  } catch (err: any) {
+    console.error('LIFF Flow Error (could be init or subsequent steps):', err);
+    status.value = 'error';
+    errorMessage.value = `[LIFF Flow] ${err.message || '發生未知錯誤'}`;
   }
 };
 
