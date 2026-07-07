@@ -290,7 +290,6 @@ export default defineConfig({
       headers: {
         // Fix Firebase popup login being blocked by COOP policy in dev environment
         'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
-        'Cross-Origin-Embedder-Policy': 'require-corp',
       }
     },
     build: { // Some chunks are larger than 500 kB
