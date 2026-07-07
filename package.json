@@ -4,21 +4,22 @@
   "private": true,
   "scripts": {
     "dev": "cross-env VITE_API_BASE_URL=\"http://localhost:8080\" vitepress dev",
-    "build": "cross-env VITE_LIFF_ID=\"2009612107-QeSJSRV2\" VITE_API_BASE_URL=\"https://ifa-rocks-spring-899902006292.asia-east1.run.app\" vitepress build",
+    "build": "cross-env VITE_API_BASE_URL=\"https://ifa-rocks-spring-899902006292.asia-east1.run.app\" vitepress build",
     "predeploy": "pnpm run build",
     "deploy": "firebase use enchu && firebase deploy"
   },
   "devDependencies": {
     "cross-env": "^10.1.0",
     "sass": "^1.98.0",
+    "vconsole": "^3.15.1",
     "vite": "^8.0.2",
     "vitepress": "^1.2.2",
-    "vconsole": "^3.15.1",
     "vue": "^3.4.27"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",
     "@line/liff": "^2.29.1",
+    "@line/liff-inspector": "^1.0.3",
     "chart.js": "^4.5.1",
     "element-plus": "^2.13.5",
     "financial": "^0.2.4",

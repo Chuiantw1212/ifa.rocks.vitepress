@@ -68,8 +68,8 @@ const props = defineProps({
 
 const agentStore = useAgentStore();
 // --- LIFF 設定 ---
-// 從環境變數讀取 LIFF ID，增加靈活性與安全性
-const LIFF_ID = import.meta.env.VITE_LIFF_ID as string;
+// 使用者強調：此 LIFF ID 為固定值，請勿改回環境變數。
+const LIFF_ID = '2009612107-QeSJSRV2';
 const status = ref('idle'); // idle, initializing, consent-required, logging-in, success, error
 const errorMessage = ref('');
 const showOverlay = ref(false);
@@ -187,7 +187,8 @@ const handleConsentAndLogin = async () => {
     url.searchParams.delete('liffRedirectUri');
 
     const redirectUri = url.toString();
-    console.log(`[LineGuard] Calling liff.login() with redirectUri: ${redirectUri}`);
+    // 根據使用者要求，在執行 liff.login 前印出 redirectUri 以利除錯
+    console.log('[LineGuard] Preparing to call liff.login() with redirectUri:', redirectUri);
     await liff.login({ // `scope` is not a valid property for `liff.login()`.
       // 明確指定重新導向的 URL 為當前頁面，避免跳轉到正式環境
       redirectUri: redirectUri
@@ -250,6 +251,17 @@ const initializeLiffAndLogin = async () => {
     } else {
       // 使用者未登入 LIFF，顯示我們自訂的同意畫面
       console.log('[LineGuard] User is not logged in to LIFF. Showing consent screen.');
+
+      // 根據使用者要求，在顯示同意畫面之前，預先計算並印出將要使用的 redirectUri
+      const url = new URL(window.location.href);
+      url.hash = '';
+      url.searchParams.delete('code');
+      url.searchParams.delete('state');
+      url.searchParams.delete('liffClientId');
+      url.searchParams.delete('liffRedirectUri');
+      const redirectUri = url.toString();
+      console.log('[LineGuard] The redirectUri that will be used for liff.login() is:', redirectUri);
+
       status.value = 'consent-required';
     }
   } catch (err: any) {
