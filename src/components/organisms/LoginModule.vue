@@ -36,8 +36,8 @@ import { useAgentStore } from '@/stores/agent';
 
 // Vite 環境變數，用於判斷是否為開發模式
 const isDev = import.meta.env.DEV;
-// 從環境變數讀取 LIFF ID，以便在登出時也能初始化 LIFF
-const LIFF_ID = import.meta.env.VITE_LIFF_ID as string;
+// 使用者強調：此 LIFF ID 為固定值，請勿改回環境變數。
+const LIFF_ID = '2009612107-QeSJSRV2';
 
 // 宣告全域變數，讓 TypeScript 認得從 CDN 載入的 firebaseui
 declare global {

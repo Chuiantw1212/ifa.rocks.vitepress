@@ -1,7 +1,7 @@
 <script setup>
 import DefaultTheme from 'vitepress/theme'
 import { onMounted, ref, watch } from 'vue'
-import { useData, withBase } from 'vitepress'
+import LIFFInspectorPlugin from '@line/liff-inspector';
 import liff from '@line/liff'
 import { useDynamicSidebar } from '@/composables/useDynamicSidebar'
 import { useAgent } from '@/composables/useAgent'
@@ -36,13 +36,11 @@ watch(() => agentStore.isLoggedIn, (isLoggedIn) => {
 // liff.init() 必須在應用程式完全可互動之前完成，以避免競爭條件和中斷。
 const isLiffReady = ref(false)
 const liffError = ref(null)
-const LIFF_ID = import.meta.env.VITE_LIFF_ID
+// 使用者強調：此 LIFF ID 為固定值，請勿改回環境變數。
+const LIFF_ID = '2009612107-QeSJSRV2'
 const { initAgentListener } = useAgent()
 
 onMounted(async () => {
-  // --- 初始化監聽器與修正 ---
-  initAgentListener()
-
   // SEO & Accessibility Fix: 確保頁面一定有 <main> landmark
   const content = document.querySelector('.VPContent')
   if (content && !content.querySelector('main')) {
@@ -67,10 +65,17 @@ onMounted(async () => {
 
     const isLiffRedirect = urlParams.has('code') && urlParams.has('state')
 
+    // 僅在開發環境中初始化 LIFF Inspector，避免在正式環境載入不必要的除錯工具
+    if (isDev) {
+      liff.use(new LIFFInspectorPlugin({
+        origin: 'wss://palpable-kimono-trimming.ngrok-free.dev'
+      }))
+    }
+
     try {
-      console.log('[Layout] Initializing LIFF...')
+      console.log(`[Layout] Initializing LIFF (${LIFF_ID})...`)
       await liff.init({ liffId: LIFF_ID })
-      console.log('[Layout] LIFF initialized successfully.')
+      console.log(`[Layout] LIFF (${LIFF_ID}) initialized successfully. Logged in: ${liff.isLoggedIn()}`)
 
       // 如果是從 LINE 授權後跳轉回來，liff.init() 會處理 URL 參數。
       // 處理完後，我們手動重新載入頁面並清除 URL 參數，以確保一個乾淨的狀態。
@@ -87,9 +92,13 @@ onMounted(async () => {
         return
       }
     } catch (error) {
-      console.error('[Layout] LIFF initialization failed:', error)
+      console.error(`[Layout] LIFF (${LIFF_ID}) initialization failed:`, error)
       liffError.value = error
     } finally {
+      // 在解除 UI 閘門之前，確保 Firebase 驗證狀態的監聽器已準備就緒。
+      // 這確保了 LineBrowserGuard 中的登入流程可以被正確地監聽到。
+      initAgentListener()
+
       // 無論成功或失敗，我們都將解除閘門，讓應用程式繼續渲染。
       // LineBrowserGuard 將會處理後續的登入邏輯或錯誤顯示。
       isLiffReady.value = true

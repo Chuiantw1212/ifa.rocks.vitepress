@@ -280,6 +280,13 @@ export default defineConfig({
   },
   vite: {
     server: {
+      host: true, // Allow access from network/ngrok, disabling the host check.
+      hmr: {
+        // This is required for HMR websockets to work through a tunnel.
+        // The host should be the public URL of your tunnel.
+        host: 'palpable-kimono-trimming.ngrok-free.dev',
+        protocol: 'wss',
+      },
       headers: {
         // Fix Firebase popup login being blocked by COOP policy in dev environment
         'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
