@@ -59,6 +59,13 @@ import { useAgentStore } from '@/stores/agent';
 import { signInWithCustomToken } from 'firebase/auth';
 import { isProblematicWebView } from '@/composables/useWebView';
 
+const props = defineProps({
+  liffInitError: {
+    type: Error,
+    default: null
+  }
+})
+
 const agentStore = useAgentStore();
 let vConsoleInstance: any = null;
 
@@ -208,30 +215,13 @@ const handleConsentAndLogin = async () => {
 const initializeLiffAndLogin = async () => {
   console.log('[LineGuard] Initializing LIFF and login flow...');
   try {
-    // 根據使用者要求，在呼叫 liff.init() 之前，先記錄當前的 Firebase 登入狀態。
-    console.log('[LineGuard] Pre-init check. Firebase auth state:', auth.currentUser ? `Logged in as ${auth.currentUser.uid}` : 'Not logged in');
-
-    // --- LIFF 初始化與超時控制 ---
-    try {
-      console.log(`[LineGuard] Calling liff.init() with LIFF ID: ${LIFF_ID}. Setting a 10s timeout.`);
-      const liffInitPromise = liff.init({ liffId: LIFF_ID });
-      
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('LIFF init timed out after 10 seconds')), 10000)
-      );
-
-      // 使用 Promise.race 來競爭 liff.init() 和超時
-      await Promise.race([liffInitPromise, timeoutPromise]);
-      console.log('[LineGuard] liff.init() successful.');
-    } catch (initError: any) {
-      // 這個 catch 區塊專門處理 liff.init() 的失敗或超時
-      console.error('[LineGuard] LIFF Initialization failed or timed out. Error details:', {
-        message: initError.message,
-        errorObject: initError
-      });
-      // 由於 liff.init() 失敗是關鍵錯誤，我們直接拋出，讓外層的 catch 處理後續的 fallback 邏輯
-      throw initError;
+    // LIFF 初始化已移至 Layout.vue 執行，以確保在應用程式啟動前完成。
+    // 在這裡，我們檢查從 Layout.vue 傳來的初始化結果。
+    if (props.liffInitError) {
+      // 如果 liff.init() 在 Layout 層就失敗了，直接拋出錯誤。
+      throw props.liffInitError;
     }
+    console.log('[LineGuard] LIFF is pre-initialized. Proceeding with login flow.');
 
     const isLiffTestMode = new URLSearchParams(window.location.search).has('liff-test');
 
@@ -252,16 +242,7 @@ const initializeLiffAndLogin = async () => {
     console.log(`[LineGuard] liff.isLoggedIn() returned: ${liff.isLoggedIn()}`);
     if (liff.isLoggedIn()) {
       // 使用者已登入 LIFF，表示 SDK 已成功處理完重新導向的參數。
-      // 現在是清理 URL 的安全時機，避免使用者重新整理頁面時，LIFF SDK 嘗試重複使用舊參數而導致錯誤。
-      const url = new URL(window.location.href);
-      if (url.searchParams.has('code')) {
-        console.log('[LineGuard] Login successful, cleaning up LIFF redirect params from URL.');
-        url.searchParams.delete('code');
-        url.searchParams.delete('state');
-        url.searchParams.delete('liffClientId');
-        url.searchParams.delete('liffRedirectUri');
-        window.history.replaceState({}, document.title, url.toString());
-      }
+      // URL 清理邏輯已移至 Layout.vue
 
       // 接著檢查 email 權限並繼續後端登入流程
       const decodedIDToken = liff.getDecodedIDToken();
@@ -350,13 +331,12 @@ const startLineLoginFlow = async () => {
 };
 
 onMounted(async () => {
-  const urlParams = new URLSearchParams(window.location.search);
-  const isLiffRedirect = urlParams.has('code') && urlParams.has('state');
-
   // 在非 LIFF 的 WebView 環境中 (isProblematicWebView)，無論是開發或正式環境，都預設啟用 vConsole 以利除錯。
   // vConsole 會在偵測到登入成功後自動銷毀。
-  // 在 LIFF 跳轉回來時也強制開啟，方便追蹤初始化流程。
-  if (isProblematicWebView() || (isDev && isLiffRedirect)) {
+  // LIFF redirect 相關的偵錯已由 Layout 層處理。
+  const urlParams = new URLSearchParams(window.location.search);
+  const isLiffTestMode = urlParams.has('liff-test');
+  if (isProblematicWebView() || (isDev && isLiffTestMode)) {
     try {
       const VConsole = (await import('vconsole')).default;
       vConsoleInstance = new VConsole();
@@ -366,45 +346,11 @@ onMounted(async () => {
     }
   }
 
-  // --- 登入流程啟動邏輯 ---
-
-  // 情況 1: 如果是從 LINE 授權頁跳轉回來 (URL 含有 code 和 state)。
-  // 這是最高優先級的任務，必須立刻、優先執行 liff.init() 來處理 URL 上的參數，
-  // 避免被 SPA 路由或其他腳本干擾。
-  if (isLiffRedirect) {
-    console.log('[LineGuard] LIFF redirect detected. The page will now process parameters and reload.');
-    showOverlay.value = true;
-    status.value = 'initializing';
-    loadingText.value = '正在完成 LINE 登入...';
-
-    // 在 LIFF redirect 後，我們需要一個特殊的處理流程來解決競爭條件：
-    // 1. 呼叫 liff.init()，讓 LIFF SDK 處理 URL 中的 code 和 state，並將 session 存入 localStorage。
-    // 2. liff.init() 成功後，我們使用 window.location.replace() 手動重新載入頁面，並移除 URL 上的參數。
-    // 3. 頁面重新載入後，會進入下面的「正常載入情境」，此時 liff.init() 會從 localStorage 讀取到有效的 session，
-    //    liff.isLoggedIn() 將會是 true，登入流程就能順利繼續。
-    // 這自動化了「關閉再重開」的行為，確保了登入狀態的穩定。
-    liff.init({ liffId: LIFF_ID })
-      .then(() => {
-        const cleanUrl = new URL(window.location.href);
-        cleanUrl.searchParams.delete('code');
-        cleanUrl.searchParams.delete('state');
-        cleanUrl.searchParams.delete('liffClientId');
-        cleanUrl.searchParams.delete('liffRedirectUri');
-        window.location.replace(cleanUrl.toString());
-      })
-      .catch(err => {
-        console.error('[LineGuard] Critical error during LIFF redirect processing:', err);
-        errorMessage.value = `[Redirect Handler] ${err.message || '處理 LINE 回傳資訊時發生嚴重錯誤。'}`;
-        status.value = 'error';
-      });
-    return; // 停止執行後續的 onMounted 邏輯，等待頁面重新載入
-  }
-
-  // 情況 2: 其他所有正常的頁面載入情境。
+  // LIFF 初始化與 redirect 處理已移至 Layout.vue。
+  // 此處僅需設定後續的登入流程觸發器。
   // For mobile devices, the flow is triggered by a click on the login avatar.
   window.addEventListener('start-line-login', startLineLoginFlow);
 
-  const isLiffTestMode = urlParams.has('liff-test');
   const isProPage = window.location.pathname.includes('/pro/');
   const shouldAutoStartForTest = isDev && isProPage && isLiffTestMode;
 
