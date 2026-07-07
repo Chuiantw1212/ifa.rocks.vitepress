@@ -67,17 +67,6 @@ const props = defineProps({
 })
 
 const agentStore = useAgentStore();
-let vConsoleInstance: any = null;
-
-// 監聽登入狀態，一旦使用者成功登入，就自動銷毀 vConsole。
-watch(() => agentStore.isLoggedIn, (isLoggedIn) => {
-  if (isLoggedIn && vConsoleInstance) {
-    vConsoleInstance.destroy();
-    vConsoleInstance = null;
-    console.log('[LineGuard] vConsole destroyed after successful login.');
-  }
-});
- 
 // --- LIFF 設定 ---
 // 從環境變數讀取 LIFF ID，增加靈活性與安全性
 const LIFF_ID = import.meta.env.VITE_LIFF_ID as string;
@@ -331,27 +320,14 @@ const startLineLoginFlow = async () => {
 };
 
 onMounted(async () => {
-  // 在非 LIFF 的 WebView 環境中 (isProblematicWebView)，無論是開發或正式環境，都預設啟用 vConsole 以利除錯。
-  // vConsole 會在偵測到登入成功後自動銷毀。
-  // LIFF redirect 相關的偵錯已由 Layout 層處理。
-  const urlParams = new URLSearchParams(window.location.search);
-  const isLiffTestMode = urlParams.has('liff-test');
-  if (isProblematicWebView() || (isDev && isLiffTestMode)) {
-    try {
-      const VConsole = (await import('vconsole')).default;
-      vConsoleInstance = new VConsole();
-      console.log('[LineGuard] vConsole initialized for debugging.');
-    } catch (e) {
-      console.error('Failed to initialize vConsole:', e);
-    }
-  }
-
   // LIFF 初始化與 redirect 處理已移至 Layout.vue。
   // 此處僅需設定後續的登入流程觸發器。
   // For mobile devices, the flow is triggered by a click on the login avatar.
   window.addEventListener('start-line-login', startLineLoginFlow);
 
   const isProPage = window.location.pathname.includes('/pro/');
+  const urlParams = new URLSearchParams(window.location.search);
+  const isLiffTestMode = urlParams.has('liff-test');
   const shouldAutoStartForTest = isDev && isProPage && isLiffTestMode;
 
   // 在非 LIFF 的 WebView 或桌面測試模式下，自動啟動登入流程（首次進入頁面時）。

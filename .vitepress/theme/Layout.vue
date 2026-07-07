@@ -1,34 +1,33 @@
 <script setup>
 import DefaultTheme from 'vitepress/theme'
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useData, withBase } from 'vitepress'
 import liff from '@line/liff'
 import { useDynamicSidebar } from '@/composables/useDynamicSidebar'
 import { useAgent } from '@/composables/useAgent'
+import { useAgentStore } from '@/stores/agent'
+import { isProblematicWebView } from '@/composables/useWebView'
 import LoginModule from '@/components/organisms/LoginModule.vue'
 import LineBrowserGuard from '@/components/organisms/LineBrowserGuard.vue'
 import HeroImage from './components/HeroImage.vue'
 
 const { Layout } = DefaultTheme
+const isDev = import.meta.env.DEV
+const agentStore = useAgentStore()
+let vConsoleInstance = null
 
 // --- Layout Hooks ---
 // 監聽 Agent (顧問) 狀態
-const { initAgentListener } = useAgent()
-onMounted(() => {
-  initAgentListener()
-})
-
 // 這個 Composable 會設定監聽器，自動更新側邊欄連結
 useDynamicSidebar()
 
-// --- SEO & Accessibility Fix ---
-// 確保頁面一定有 <main> landmark
-onMounted(() => {
-  // The default theme should have a <main> tag inside .VPContent.
-  // This is a fallback for cases where it might be missing.
-  const content = document.querySelector('.VPContent')
-  if (content && !content.querySelector('main')) {
-    content.setAttribute('role', 'main')
+// --- vConsole Management ---
+// 監聽登入狀態，一旦使用者成功登入，就自動銷毀 vConsole。
+watch(() => agentStore.isLoggedIn, (isLoggedIn) => {
+  if (isLoggedIn && vConsoleInstance) {
+    vConsoleInstance.destroy()
+    vConsoleInstance = null
+    console.log('[Layout] vConsole destroyed after successful login.')
   }
 })
 
@@ -38,11 +37,34 @@ onMounted(() => {
 const isLiffReady = ref(false)
 const liffError = ref(null)
 const LIFF_ID = import.meta.env.VITE_LIFF_ID
+const { initAgentListener } = useAgent()
 
 onMounted(async () => {
+  // --- 初始化監聽器與修正 ---
+  initAgentListener()
+
+  // SEO & Accessibility Fix: 確保頁面一定有 <main> landmark
+  const content = document.querySelector('.VPContent')
+  if (content && !content.querySelector('main')) {
+    content.setAttribute('role', 'main')
+  }
+
   // 僅在瀏覽器環境中執行
   if (typeof window !== 'undefined') {
     const urlParams = new URLSearchParams(window.location.search)
+
+    // 根據使用者要求，為方便除錯，永遠在 onMounted 頂部優先載入 vConsole
+    const isLiffTestMode = urlParams.has('liff-test')
+    if (isProblematicWebView() || (isDev && isLiffTestMode)) {
+      try {
+        const VConsole = (await import('vconsole')).default
+        vConsoleInstance = new VConsole()
+        console.log('[Layout] vConsole initialized for debugging.')
+      } catch (e) {
+        console.error('Failed to initialize vConsole:', e)
+      }
+    }
+
     const isLiffRedirect = urlParams.has('code') && urlParams.has('state')
 
     try {
