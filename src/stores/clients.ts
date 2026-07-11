@@ -17,10 +17,13 @@ export interface Client {
   birthDate?: string | null;
   gender?: string | null;
   currentAge?: number | null;
+  retirementAge?: number | null;
   lifeExpectancy?: number | null;
+  lifeExpectancyAtRetirement?: number | null;
   marriageYear?: number | null;
   careerInsuranceType?: string | null;
   biography?: string | null;
+  clientFirebaseUid?: string;
 }
 
 export interface NewClientForm {
@@ -49,11 +52,11 @@ export const useClientsStore = defineStore('clients', () => {
         try {
             const res = await authFetch('/api/v1/client/profiles')
             const data = await res.json()
-            // API 回傳一個包含 list 屬性的物件
-            if (data && Array.isArray(data.list)) {
+            // API 回傳一個包含 data 屬性的物件
+            if (data && Array.isArray(data.data)) {
                 // 將 API 回傳的 client profile 對應到前端的 Client 型別
                 // 並為儀表板所需的欄位提供預設值
-                clientList.value = data.list.map((profile: any) => ({
+                clientList.value = data.data.map((profile: any) => ({
                     ...profile,
                     progress: profile.progress || 0,
                     lastUpdated: profile.lastUpdated || new Date().toISOString().split('T')[0],
@@ -63,7 +66,7 @@ export const useClientsStore = defineStore('clients', () => {
                     setCurrentClientId(clientList.value[0].id)
                 }
             } else {
-                console.warn('API /api/v1/client/profiles 並未回傳一個有效的列表物件', data)
+                console.warn('API /api/v1/client/profiles 並未回傳一個有效的 data 陣列', data)
                 clientList.value = []
             }
         } catch (error: any) {
