@@ -90,6 +90,17 @@ const { metadata } = storeToRefs(metadataStore)
 const route = useRoute()
 const router = useRouter()
 
+const createDefaultProfile = () => ({
+    birthDate: null,
+    gender: null,
+    currentAge: null,
+    lifeExpectancy: null,
+    marriageYear: null,
+    careerInsuranceType: null,
+    retirementAge: null,
+    lifeExpectancyAtRetirement: null,
+});
+
 async function fetchProfile(clientId: string) {
     if (!clientPlan.value) return;
     try {
@@ -99,12 +110,12 @@ async function fetchProfile(clientId: string) {
             clientPlan.value.profile = data;
         } else {
             ElMessage.error(data.message || '取得客戶基本資料失敗');
-            clientPlan.value.profile = null;
+            clientPlan.value.profile = createDefaultProfile();
         }
     } catch (e) {
         console.error('Fetch profile error:', e);
         ElMessage.error('取得客戶基本資料時發生錯誤');
-        if (clientPlan.value) clientPlan.value.profile = null;
+        if (clientPlan.value) clientPlan.value.profile = createDefaultProfile();
     }
 }
 
@@ -142,11 +153,11 @@ onMounted(() => {
             // 列表已載入，但找不到來自 URL 的 client ID，這可能是個無效/過期的連結
             console.warn(`Client with ID ${newId} not found in client list after loading.`);
             ElMessage.error('找不到指定的客戶資料，可能已被刪除或連結已失效。');
-            if (clientPlan.value) clientPlan.value.profile = null;
+            if (clientPlan.value) clientPlan.value.profile = createDefaultProfile();
             clientsStore.setCurrentClientId(null);
         } else {
             if (clientPlan.value) {
-                clientPlan.value.profile = null;
+                clientPlan.value.profile = createDefaultProfile();
             }
             clientsStore.setCurrentClientId(null);
         }
@@ -241,8 +252,8 @@ const disableFutureDates = (time: Date) => {
 function handleBirthdayChange(val: string | null) {
     if (!clientPlan.value.profile) return
     if (!val) {
-        clientPlan.value.profile.birthDate = ''
-        clientPlan.value.profile.currentAge = 0
+        clientPlan.value.profile.birthDate = null
+        clientPlan.value.profile.currentAge = null
     } else {
         const birthDateObj = new Date(val)
         const today = new Date()
