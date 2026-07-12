@@ -110,3 +110,94 @@
 
     </el-space>
 </template>
+
+<script setup lang="ts">
+import { computed } from 'vue'
+import { storeToRefs } from 'pinia'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Plus, Delete, CreditCard } from '@element-plus/icons-vue'
+import { useCreditCardsStore } from '@/stores/creditCards'
+import { useMetadataStore } from '@/stores/metadata'
+import type { ClientCreditCard } from '@/types/client-credit-card'
+
+const creditCardsStore = useCreditCardsStore()
+const { creditCards } = storeToRefs(creditCardsStore)
+
+const metadataStore = useMetadataStore()
+const { metadata } = storeToRefs(metadataStore)
+
+const usageOptions = computed(() => metadata.value?.opt_credit_card_usage?.list || [])
+
+const STORAGE_ICONS = {
+    wallet: '💳',
+    digital: '📱',
+    drawer: '🗄️',
+}
+
+const getUsageMeta = (code: string) => {
+    return usageOptions.value.find(opt => opt.code === code)
+}
+
+const formatCurrency = (value: number) => {
+    if (typeof value !== 'number') return '-'
+    return new Intl.NumberFormat('zh-TW', {
+        style: 'currency',
+        currency: 'TWD',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    }).format(value)
+}
+
+const addCard = async () => {
+    const newCardData: Omit<ClientCreditCard, 'id' | 'clientId' | 'firebaseUid' | 'createdAt' | 'updatedAt'> = {
+        name: '',
+        deductionAccount: '',
+        usageType: '',
+        storageLocation: 'wallet',
+        averageMonthlyExpense: 0,
+    }
+    try {
+        await creditCardsStore.createCreditCard(newCardData)
+    } catch (error) {
+        // 錯誤已在 store 中處理
+        console.error('Failed to add card:', error)
+    }
+}
+
+const removeCard = (index: number, item: ClientCreditCard) => {
+    ElMessageBox.confirm(
+        `確定要刪除信用卡 「${item.name || `信用卡 ${index + 1}`}」 嗎？此操作無法復原。`,
+        '確認刪除',
+        {
+            confirmButtonText: '確定刪除',
+            cancelButtonText: '取消',
+            type: 'warning',
+        }
+    ).then(async () => {
+        if (item.id) {
+            try {
+                await creditCardsStore.deleteCreditCard(item.id)
+            } catch (error) {
+                // 錯誤已在 store 中處理
+            }
+        } else {
+            creditCards.value.splice(index, 1)
+            ElMessage.info('已移除未儲存的卡片')
+        }
+    }).catch(() => {
+        ElMessage.info('已取消刪除')
+    })
+}
+
+const handleUpdate = async (item: ClientCreditCard) => {
+    if (!item.id) {
+        console.warn('Attempted to update a card without an ID. This should be a create operation.', item)
+        return
+    }
+    try {
+        await creditCardsStore.updateCreditCard(item.id, item)
+    } catch (error) {
+        // 錯誤已在 store 中處理
+    }
+}
+</script>
