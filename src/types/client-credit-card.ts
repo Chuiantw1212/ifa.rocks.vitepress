@@ -3,6 +3,9 @@
  * 用於支出管理與現金流追蹤
  */
 export interface ClientCreditCard {
+    /** 資料庫唯一識別碼 */
+    id?: string;
+
     clientId?: string;
 
     /** Firebase UID */
