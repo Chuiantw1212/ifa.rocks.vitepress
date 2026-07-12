@@ -62,7 +62,7 @@
                     </el-col>
                     <el-col :span="12" :xs="24">
                         <el-form-item label="實體/數位狀態">
-                            <el-radio-group v-model="item.storageLocation" style="width: 100%; display: flex;"
+                            <el-radio-group v-model="item.storageLocation"
                                 @change="handleUpdate(item)">
                                 <el-radio-button label="wallet" style="flex: 1; text-align: center;">
                                     <el-tooltip content="隨身攜帶 (低摩擦)" placement="top">
@@ -126,7 +126,7 @@ const { creditCards } = storeToRefs(creditCardsStore)
 const metadataStore = useMetadataStore()
 const { metadata } = storeToRefs(metadataStore)
 
-const usageOptions = computed(() => metadata.value?.opt_credit_card_usage?.list || [])
+const usageOptions = computed(() => metadata.value?.opt_credit_card_usage_type?.list || [])
 
 const STORAGE_ICONS = {
     wallet: '💳',
