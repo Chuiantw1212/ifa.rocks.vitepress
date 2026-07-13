@@ -1,6 +1,8 @@
 
 # IFA規劃儀表板
 
+管理您的所有客戶與他們的理財計畫。
+
 <div v-if="isInitialized">
   <ClientDashboard v-if="isLoggedIn" />
   <AgentManual v-else />

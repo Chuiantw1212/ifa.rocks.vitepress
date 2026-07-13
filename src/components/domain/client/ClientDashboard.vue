@@ -1,18 +1,20 @@
 <template>
-  <div class="client-crm-container" style="max-width: 1000px; margin: 0 auto; padding: 24px;">
+  <div class="client-crm-container">
 
-    <!-- Client Overview & Actions -->
-    <el-card shadow="never" style="border-radius: 12px; border: 1px solid #EBEEF5; margin-bottom: 24px;">
-      <div style="display: flex; justify-content: flex-end; align-items: center;">
-        <div style="flex-shrink: 0;" class="hidden-xs-only">
-          <el-button type="primary" round :icon="Plus" @click="handleCreateClientClick">建立新客戶</el-button>
-        </div>
-      </div>
-    </el-card>
+    <!-- Page Header -->
+    <el-row justify="space-between" align="middle" style="margin-bottom: 24px;">
+      <el-col :span="12">
+      </el-col>
+      <el-col :span="12" style="text-align: right;">
+        <el-button type="primary" :icon="Plus" @click="handleCreateClientClick" class="hidden-xs-only" size="large">
+          建立新客戶
+        </el-button>
+      </el-col>
+    </el-row>
 
     <!-- Client Card List -->
-    <div v-loading="isLoading" style="min-height: 150px;">
-      <div v-if="clientList.length > 0" style="display: flex; flex-direction: column; gap: 16px;">
+    <div v-loading="isLoading" style="min-height: 200px;">
+      <el-space v-if="clientList.length > 0" direction="vertical" alignment="stretch" :size="16" style="width: 100%;">
         <ClientCard
           v-for="client in clientList"
           :key="client.id"
@@ -21,11 +23,15 @@
           @edit="handleEditClient"
           @delete="deleteClient"
         />
-      </div>
+      </el-space>
 
       <!-- Empty State -->
-      <el-card v-else-if="!isLoading" shadow="never" style="border-radius: 12px; border: 1px solid #EBEEF5; text-align: center; padding: 32px 0;">
-        <el-empty description="還沒有任何客戶，快來建立第一筆吧！" />
+      <el-card v-else-if="!isLoading" shadow="never" style="border-radius: 12px;">
+        <el-empty description="還沒有任何客戶，快來建立第一筆吧！">
+          <el-button type="primary" :icon="Plus" @click="handleCreateClientClick">
+            立即建立第一位客戶
+          </el-button>
+        </el-empty>
       </el-card>
     </div>
 
