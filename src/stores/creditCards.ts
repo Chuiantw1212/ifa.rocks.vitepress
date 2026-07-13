@@ -70,7 +70,6 @@ export const useCreditCardsStore = defineStore('creditCards', () => {
 
             const newCard = await res.json()
             creditCards.value.push(newCard)
-            ElMessage.success('信用卡新增成功')
             return newCard
         } catch (error: any) {
             console.error('Create credit card error:', error)
@@ -109,7 +108,6 @@ export const useCreditCardsStore = defineStore('creditCards', () => {
             if (index !== -1) {
                 creditCards.value[index] = updatedCard
             }
-            ElMessage.success('信用卡更新成功')
             return updatedCard
         } catch (error: any) {
             console.error('Update credit card error:', error)
@@ -143,7 +141,6 @@ export const useCreditCardsStore = defineStore('creditCards', () => {
             }
 
             creditCards.value = creditCards.value.filter(c => c.id !== cardId)
-            ElMessage.success('信用卡刪除成功')
         } catch (error: any) {
             console.error('Delete credit card error:', error)
             ElMessage.error(error.message || '刪除信用卡時發生錯誤')
