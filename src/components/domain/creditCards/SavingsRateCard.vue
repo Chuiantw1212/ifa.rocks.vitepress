@@ -15,22 +15,21 @@
           <el-statistic :value="monthlyExpenses" title="月支出 (信用卡)" />
         </el-col>
         <el-col :span="6" :xs="12">
-          <el-statistic :value="monthlySavings" title="月儲蓄">
-            <template #formatter>
-              <span :style="{ color: monthlySavings < 0 ? 'var(--el-color-danger)' : 'var(--el-color-success)' }">
-                {{ Math.round(monthlySavings).toLocaleString() }}
-              </span>
-            </template>
-          </el-statistic>
+          <el-statistic
+            :value="monthlySavings"
+            title="月儲蓄"
+            :formatter="(val) => Math.round(val).toLocaleString()"
+            :value-style="{ color: monthlySavings < 0 ? 'var(--el-color-danger)' : 'var(--el-color-success)' }"
+          />
         </el-col>
         <el-col :span="6" :xs="12">
-          <el-statistic title="儲蓄率">
-            <template #formatter>
-              <span :style="{ color: savingsRate < 10 ? 'var(--el-color-danger)' : 'inherit' }">
-                {{ savingsRate.toFixed(1) }}%
-              </span>
-            </template>
-          </el-statistic>
+          <el-statistic
+            :value="savingsRate"
+            title="儲蓄率"
+            :formatter="() => formattedSavingsRate"
+            suffix="%"
+            :value-style="{ color: savingsRate < 10 ? 'var(--el-color-danger)' : 'inherit' }"
+          />
         </el-col>
       </el-row>
 
@@ -38,8 +37,16 @@
 
       <el-alert
         v-if="savingsRate > 0"
-        :title="`恭喜！您 ${savingsRate.toFixed(1)}% 的儲蓄率，已超越了全國約 ${userPercentile.toFixed(0)}% 的人！`"
+        :title="`恭喜！您 ${formattedSavingsRate}% 的儲蓄率，已超越了全國約 ${userPercentile.toFixed(0)}% 的人！`"
         type="success"
+        :closable="false"
+        show-icon
+        style="margin-bottom: 20px;"
+      />
+      <el-alert
+        v-else-if="savingsRate === 0"
+        title="您的收支剛好平衡，試著找出可優化的支出，開始累積資產吧！"
+        type="info"
         :closable="false"
         show-icon
         style="margin-bottom: 20px;"
@@ -112,6 +119,15 @@ const monthlySavings = computed(() => monthlyIncome.value - monthlyExpenses.valu
 const savingsRate = computed(() => {
   if (monthlyIncome.value <= 0) return 0;
   return (monthlySavings.value / monthlyIncome.value) * 100;
+});
+
+const formattedSavingsRate = computed(() => {
+  const rate = savingsRate.value;
+  if (rate === 0) return '0.0';
+  // 對於介於 0 和 0.1 之間的小數，給予特殊顯示，避免因 toFixed(1) 顯示為 0.0
+  if (rate > 0 && rate < 0.1) return '<0.1';
+  // 否則正常顯示，保留一位小數
+  return rate.toFixed(1);
 });
 
 // --- Percentile Calculation ---
