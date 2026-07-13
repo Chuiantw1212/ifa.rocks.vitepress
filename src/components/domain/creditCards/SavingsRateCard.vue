@@ -37,7 +37,7 @@
       <el-divider style="margin: 24px 0;" />
 
       <el-alert
-        v-if="userPercentile > 0"
+        v-if="savingsRate > 0"
         :title="`恭喜！您 ${savingsRate.toFixed(1)}% 的儲蓄率，已超越了全國約 ${userPercentile.toFixed(0)}% 的人！`"
         type="success"
         :closable="false"
@@ -119,10 +119,19 @@ const savingsRate = computed(() => {
 const savingsDistribution = computed(() => {
   const deciles = metadata.value?.opt_savings_rate_deciles?.list || [];
   if (deciles.length === 0) return [];
-  return deciles.map(item => ({
-    p: Number(item.code),    // 百分位
-    rate: Number(item.label) // 儲蓄率
+
+  const mappedData = deciles.map(item => ({
+    p: item.cum_pct,    // 使用 cum_pct 作為累積百分位
+    rate: item.rate     // 使用 rate 作為儲蓄率
   })).sort((a, b) => a.p - b.p);
+
+  // 為了讓圖表從 0% 開始，並確保低儲蓄率的百分位計算正確，
+  // 我們在數據最前面加上一個 0% 的基準點。
+  if (mappedData.length > 0 && mappedData[0].p > 0) {
+      mappedData.unshift({ p: 0, rate: -20 }); // 假設 0% 的儲蓄率為 -20%，讓曲線更合理
+  }
+
+  return mappedData;
 });
 
 const userPercentile = computed(() => {
@@ -228,5 +237,5 @@ const goToLaborPage = () => {
 };
 
 onMounted(renderChart);
-watch([chartData, chartOptions], renderChart, { deep: true });
+watch([chartData, chartOptions], renderChart, { deep: true, flush: 'post' });
 </script>

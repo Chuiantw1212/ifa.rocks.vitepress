@@ -64,17 +64,17 @@
                         <el-form-item label="實體/數位狀態">
                             <el-radio-group v-model="item.storageLocation"
                                 @change="handleUpdate(item)">
-                                <el-radio-button label="wallet" style="flex: 1; text-align: center;">
+                                <el-radio-button value="wallet" style="flex: 1; text-align: center;">
                                     <el-tooltip content="隨身攜帶 (低摩擦)" placement="top">
                                         <span>{{ STORAGE_ICONS.wallet }} 錢包</span>
                                     </el-tooltip>
                                 </el-radio-button>
-                                <el-radio-button label="digital" style="flex: 1; text-align: center;">
+                                <el-radio-button value="digital" style="flex: 1; text-align: center;">
                                     <el-tooltip content="僅數位綁定 (中摩擦)" placement="top">
                                         <span>{{ STORAGE_ICONS.digital }} 數位</span>
                                     </el-tooltip>
                                 </el-radio-button>
-                                <el-radio-button label="drawer" style="flex: 1; text-align: center;">
+                                <el-radio-button value="drawer" style="flex: 1; text-align: center;">
                                     <el-tooltip content="抽屜/保險箱 (高摩擦)" placement="top">
                                         <span>{{ STORAGE_ICONS.drawer }} 抽屜</span>
                                     </el-tooltip>
@@ -182,8 +182,10 @@ const removeCard = (index: number, item: ClientCreditCard) => {
             }
         } else {
             creditCards.value.splice(index, 1)
+            ElMessage.info('已移除未儲存的卡片')
         }
     }).catch(() => {
+        ElMessage.info('已取消刪除')
     })
 }
 
