@@ -22,6 +22,6 @@
 
 
 <script setup>
-import CareerIncomeEstimator from '@/components/career/CareerIncomeEstimator.vue'
-import CareerSalaryCalculator from '@/components/career/CareerSalaryCalculator.vue'
+import CareerIncomeEstimator from '@/components/domain/career/CareerIncomeEstimator.vue'
+import CareerSalaryCalculator from '@/components/domain/career/CareerSalaryCalculator.vue'
 </script>

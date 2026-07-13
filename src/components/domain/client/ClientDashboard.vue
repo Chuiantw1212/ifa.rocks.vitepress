@@ -49,8 +49,8 @@ import { useClientsStore, type NewClientForm, type Client } from '@/stores/clien
 import { useAgentStore } from '@/stores/agent'
 import { ElMessage } from 'element-plus'
 // Import the new component
-import DashboardClientDialog from '../organisms/DashboardClientDialog.vue'
-import ClientCard from '../organisms/ClientCard.vue'
+import DashboardClientDialog from './DashboardClientDialog.vue'
+import ClientCard from './ClientCard.vue'
 // --- 類型定義 ---
 // API
 const router = useRouter()

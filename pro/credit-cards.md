@@ -3,5 +3,5 @@
 <CreditCards></CreditCards>
 
 <script setup>
-import CreditCards from '@/components/creditCards/creditCards.vue'
+import CreditCards from '@/components/domain/creditCards/creditCards.vue'
 </script>

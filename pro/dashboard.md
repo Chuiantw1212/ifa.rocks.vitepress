@@ -10,8 +10,8 @@
 <script setup>
 import { computed } from 'vue'
 import { useAgentStore } from '@/stores/agent'
-import AgentManual from '@/components/agent/AgentManual.vue'
-import ClientDashboard from '@/components/pages/ClientDashboard.vue'
+import AgentManual from '@/components/domain/agent/AgentManual.vue'
+import ClientDashboard from '@/components/domain/client/ClientDashboard.vue'
 
 const agentStore = useAgentStore()
 const isLoggedIn = computed(() => agentStore.isLoggedIn)
