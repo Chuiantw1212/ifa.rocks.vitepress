@@ -4,6 +4,9 @@
 
 <CreditCards></CreditCards>
 
+<SavingsRateCard />
+
 <script setup>
 import CreditCards from '@/components/domain/creditCards/creditCards.vue'
+import SavingsRateCard from '@/components/domain/creditCards/SavingsRateCard.vue'
 </script>
