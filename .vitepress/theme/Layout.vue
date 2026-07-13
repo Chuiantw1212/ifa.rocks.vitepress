@@ -7,8 +7,8 @@ import { useDynamicSidebar } from '@/composables/useDynamicSidebar'
 import { useAgent } from '@/composables/useAgent'
 import { useAgentStore } from '@/stores/agent'
 import { isProblematicWebView } from '@/composables/useWebView'
-import LoginModule from '@/components/organisms/LoginModule.vue'
-import LineBrowserGuard from '@/components/organisms/LineBrowserGuard.vue'
+import LoginModule from '@/components/domain/auth/LoginModule.vue'
+import LineBrowserGuard from '@/components/domain/auth/LineBrowserGuard.vue'
 import HeroImage from './components/HeroImage.vue'
 
 const { Layout } = DefaultTheme

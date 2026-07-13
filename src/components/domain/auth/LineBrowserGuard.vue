@@ -90,10 +90,12 @@ const status = ref('idle'); // idle, initializing, consent-required, logging-in,
 const errorMessage = ref('');
 const showOverlay = ref(false);
 const loadingText = ref('正在初始化服務...')
+const countdown = ref(0);
 // Vite 環境變數，用於判斷是否為開發模式
 const isDev = import.meta.env.DEV;
 
 const proceedWithBackendLogin = async () => {
+  let countdownInterval: number | undefined;
   try {
     console.log('[LineGuard] Starting backend login process...');
     // 此函式在確認使用者已登入 LIFF 且已授予 email 權限後呼叫。
@@ -136,14 +138,31 @@ const proceedWithBackendLogin = async () => {
     }
     
     console.log(`[LineGuard] Sending LINE ID Token to backend for email: ${email}`);
-    loadingText.value = '已取得 LINE 帳號資訊，正在與伺服器同步...';
+    countdown.value = 30;
+    const updateLoadingText = () => {
+      if (countdown.value > 0) {
+        loadingText.value = `免費版主機啟動中，請稍候 ${countdown.value} 秒...`;
+      } else {
+        loadingText.value = '主機已喚醒，正在處理您的登入請求...';
+      }
+    };
+    updateLoadingText();
+
+    countdownInterval = window.setInterval(() => {
+      countdown.value--;
+      updateLoadingText();
+      if (countdown.value <= 0) {
+        clearInterval(countdownInterval);
+        countdownInterval = undefined;
+      }
+    }, 1000);
     const apiUrl = `${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/auth/line`;
     const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idToken: lineIdToken }),
     });
-
+    if (countdownInterval) clearInterval(countdownInterval);
     const authData = await response.json().catch(() => null);
     console.log('[LineGuard] Backend response:', { status: response.status, ok: response.ok, body: authData });
 
@@ -183,6 +202,7 @@ const proceedWithBackendLogin = async () => {
 
     throw new Error(authData?.message || '後端回傳未知的狀態');
   } catch (err: any) {
+    if (countdownInterval) clearInterval(countdownInterval);
     console.error('Backend/Firebase Login Error:', err);
     errorMessage.value = `[proceedWithBackendLogin] ${err.message || '登入過程中發生未知錯誤，請稍後再試。'}`;
     status.value = 'error';

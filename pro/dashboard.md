@@ -1,6 +1,8 @@
 
 # IFA規劃儀表板
 
+管理您的所有客戶與他們的理財計畫。
+
 <div v-if="isInitialized">
   <ClientDashboard v-if="isLoggedIn" />
   <AgentManual v-else />
@@ -10,8 +12,8 @@
 <script setup>
 import { computed } from 'vue'
 import { useAgentStore } from '@/stores/agent'
-import AgentManual from '@/components/agent/AgentManual.vue'
-import ClientDashboard from '@/components/pages/ClientDashboard.vue'
+import AgentManual from '@/components/domain/agent/AgentManual.vue'
+import ClientDashboard from '@/components/domain/client/ClientDashboard.vue'
 
 const agentStore = useAgentStore()
 const isLoggedIn = computed(() => agentStore.isLoggedIn)

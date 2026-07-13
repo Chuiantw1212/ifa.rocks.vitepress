@@ -17,10 +17,13 @@ export interface Client {
   birthDate?: string | null;
   gender?: string | null;
   currentAge?: number | null;
+  retirementAge?: number | null;
   lifeExpectancy?: number | null;
+  lifeExpectancyAtRetirement?: number | null;
   marriageYear?: number | null;
   careerInsuranceType?: string | null;
   biography?: string | null;
+  clientFirebaseUid?: string;
 }
 
 export interface NewClientForm {
@@ -63,7 +66,7 @@ export const useClientsStore = defineStore('clients', () => {
                     setCurrentClientId(clientList.value[0].id)
                 }
             } else {
-                console.warn('API /api/v1/client/profiles 並未回傳一個有效的列表物件', data)
+                console.warn('API /api/v1/client/profiles 並未回傳一個有效的 list 陣列', data)
                 clientList.value = []
             }
         } catch (error: any) {

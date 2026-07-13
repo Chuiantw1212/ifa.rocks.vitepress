@@ -165,6 +165,7 @@ export default defineConfig({
           text: '規劃模組',
           items: [
             { text: '職業總收入', link: '/pro/career' },
+            { text: '信用卡收支', link: '/pro/credit-cards' },
             { text: '勞保勞退', link: '/pro/labor' }
           ]
         },

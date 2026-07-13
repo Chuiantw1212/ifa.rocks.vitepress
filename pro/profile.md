@@ -17,6 +17,6 @@
 <RetirementUnderestimationCard />
 
 <script setup>
-import ClientProfile from '@/components/templates/ClientProfile.vue'
-import RetirementUnderestimationCard from '@/components/organisms/RetirementUnderestimationCard.vue'
+import ClientProfile from '@/components/domain/client/ClientProfile.vue'
+import RetirementUnderestimationCard from '@/components/domain/client/RetirementUnderestimationCard.vue'
 </script>
