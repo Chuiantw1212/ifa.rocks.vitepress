@@ -47,7 +47,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive, watch, onMounted } from 'vue'
+import { ref, computed, reactive, watchEffect, onMounted } from 'vue'
 import { useRouter } from 'vitepress'
 import { storeToRefs } from 'pinia'
 import { Trophy, Plus } from '@element-plus/icons-vue'
@@ -72,6 +72,14 @@ const { isLoggedIn, isInitialized } = storeToRefs(agentStore)
 // 彈窗控制
 const dialogVisible = ref(false) // This now controls the DashboardClientDialog component
 const clientToEdit = ref<Client | null>(null)
+
+// 當客戶列表載入後，如果沒有預設選擇的客戶，則自動選擇第一位。
+// 這是從 store 移至此處的 UI 邏輯。
+watchEffect(() => {
+  if (clientList.value.length > 0 && !currentClientId.value) {
+    clientsStore.setCurrentClientId(clientList.value[0].id)
+  }
+})
 
 const handleClientSwitch = (newId: string | null) => {
   clientsStore.setCurrentClientId(newId)
