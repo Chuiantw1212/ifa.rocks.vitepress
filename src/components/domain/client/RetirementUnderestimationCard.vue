@@ -7,42 +7,12 @@
       </div>
     </template>
 
-    <!-- 上半部 -->
-    <div>
-      <el-text type="info">普遍認知</el-text>
-      <p style="font-size: 14px; margin: 8px 0;">用「現在的平均餘命」推算退休後需要準備的年數。</p>
-      <el-row align="middle" justify="center" style="text-align: center; padding: 10px 0;">
-        <el-col :span="7">
-          <div style="font-size: 28px; font-weight: bold; color: var(--el-text-color-primary);">{{ lifeExpectancy }}</div>
-          <div style="font-size: 12px; color: var(--el-text-color-secondary); margin-top: 4px;">(現在餘命)</div>
-        </el-col>
-        <el-col :span="2" style="font-size: 20px; color: var(--el-text-color-secondary);">-</el-col>
-        <el-col :span="7">
-          <div style="font-size: 28px; font-weight: bold; color: var(--el-text-color-primary);">{{ yearsToRetirement }}</div>
-          <div style="font-size: 12px; color: var(--el-text-color-secondary); margin-top: 4px;">(距離退休年數)</div>
-        </el-col>
-        <el-col :span="2" style="font-size: 20px; color: var(--el-text-color-secondary);">=</el-col>
-        <el-col :span="6">
-          <div style="font-size: 28px; font-weight: bold; color: var(--el-color-primary);">{{ commonPostRetirementYears }} <span style="font-size: 18px;">年</span></div>
-          <div style="font-size: 12px; margin-top: 4px;">(預計準備年期)</div>
-        </el-col>
-      </el-row>
+    <!-- Chart -->
+    <div style="position: relative; height: 150px; margin-bottom: 24px;">
+      <canvas ref="chartCanvas"></canvas>
     </div>
 
-    <el-divider />
-
-    <!-- 中部 -->
-    <div>
-      <el-text type="danger">更精確的計算</el-text>
-      <p style="font-size: 14px; margin: 8px 0;">考量到醫療進步，更安全的作法是直接採用國發會對您「退休那年的預期餘命」推估。</p>
-      <div style="text-align: center; padding: 10px 0;">
-        <el-statistic title="實際上應準備" :value="actualPostRetirementYears" suffix="年" :value-style="{ color: 'var(--el-color-danger)', fontSize: '32px', fontWeight: 'bold' }" />
-      </div>
-    </div>
-
-    <el-divider />
-
-    <!-- 末尾 -->
+    <!-- Summary -->
     <div>
       <div style="display: flex; align-items: flex-start;">
         <el-icon style="margin-right: 8px; color: var(--el-color-warning); font-size: 18px; margin-top: 2px;"><Warning /></el-icon>
@@ -50,8 +20,8 @@
           <p style="font-weight: bold; font-size: 16px; color: var(--el-text-color-primary); margin: 0; line-height: 1.5;">
             {{ `您的退休準備年期可能低估了 ${planningYearsDifference} 年，相當於 ${underestimationPercentage.toFixed(0)}% 的缺口！` }}
           </p>
-          <p style="line-height: 1.6; margin: 8px 0 0 0; font-size: 14px; color: var(--el-text-color-regular);">
-            看似只差了幾年，但若以退休後的生活年數來看，這個差異將導致退休金準備出現嚴重缺口。
+          <p style="line-height: 1.7; margin: 8px 0 0 0; font-size: 14px; color: var(--el-text-color-regular);">
+            上圖顯示，若僅用<b>您現在這個年紀</b>的平均餘命推算，您的退休準備年期為 <el-text type="primary" style="font-weight: bold;">{{ commonPostRetirementYears }}</el-text> 年。但更精確的作法，是採用您<b>退休當天</b>的預期餘命來規劃，實際上應準備 <el-text type="danger" style="font-weight: bold;">{{ actualPostRetirementYears }}</el-text> 年，且最好每年重新評估。這個差異將導致退休金準備出現嚴重缺口。
           </p>
         </div>
       </div>
@@ -60,37 +30,49 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, shallowRef, onMounted, watch } from 'vue'
 import { useAgent } from '@/composables/useAgent'
 import { Warning } from '@element-plus/icons-vue'
+import {
+    Chart as ChartJS,
+    type ChartData,
+    type ChartOptions,
+    BarController,
+    BarElement,
+    CategoryScale,
+    LinearScale,
+    Title,
+    Tooltip,
+    Legend,
+} from 'chart.js';
+import annotationPlugin from 'chartjs-plugin-annotation';
+
+// Register Chart.js components and plugins
+ChartJS.register(
+    BarController, BarElement, CategoryScale, LinearScale,
+    Title, Tooltip, Legend, annotationPlugin
+);
 
 const { agentPlan: clientPlan } = useAgent()
 
+// --- Data Calculation ---
+const retirementAge = computed(() => clientPlan.value.profile?.retirementAge || 0);
 const lifeExpectancy = computed(() => clientPlan.value.profile?.lifeExpectancy || 0);
-
-const yearsToRetirement = computed(() => {
-    const profile = clientPlan.value.profile;
-    if (!profile || profile.retirementAge == null || profile.currentAge == null) {
-        return 0;
-    }
-    const years = profile.retirementAge - profile.currentAge;
-    return years > 0 ? years : 0;
-});
+const currentAge = computed(() => clientPlan.value.profile?.currentAge || 0);
 
 // 普遍認知：用 (現在餘命) - (距離退休年數)
 const commonPostRetirementYears = computed(() => {
-    const profile = clientPlan.value.profile;
-    if (!profile || profile.currentAge == null || profile.lifeExpectancy == null || profile.retirementAge == null) {
+    if (!currentAge.value || !lifeExpectancy.value || !retirementAge.value) {
         return 0;
     }
     // The calculation is equivalent to: lifeExpectancy - (retirementAge - currentAge)
-    const expectedDeathAge = profile.currentAge + profile.lifeExpectancy;
-    const years = expectedDeathAge - profile.retirementAge;
+    const expectedDeathAge = currentAge.value + lifeExpectancy.value;
+    const years = expectedDeathAge - retirementAge.value;
     return years > 0 ? Math.round(years) : 0;
 })
 
 // 更精確的計算：直接採用退休後的預期餘命
-const actualPostRetirementYears = computed(() => clientPlan.value.profile?.lifeExpectancyAtRetirement || 0)
+const actualPostRetirementYears = computed(() => Math.round(clientPlan.value.profile?.lifeExpectancyAtRetirement || 0))
 
 // 差異年數
 const planningYearsDifference = computed(() => {
@@ -109,4 +91,134 @@ const underestimationPercentage = computed(() => {
     }
     return 0;
 })
+
+// --- Chart ---
+const chartCanvas = ref<HTMLCanvasElement | null>(null);
+const chartInstance = shallowRef<ChartJS<'bar'> | null>(null);
+
+const chartData = computed<ChartData<'bar'>>(() => ({
+  // 為了確保圖表順序穩定，我們將標籤順序與 Chart.js 的預設渲染順序對齊。
+  // 預設情況下，陣列中的第一個標籤會被渲染在最下方。
+  // 因此，我們將「更精確」放在第一位，讓它成為下方的長條圖。
+  labels: ['普遍認知','更精確',],
+  datasets: [
+    {
+      label: '退休前',
+      data: [retirementAge.value, retirementAge.value],
+      backgroundColor: 'rgba(144, 147, 153, 0.3)',
+      barPercentage: 0.6,
+      categoryPercentage: 1.0,
+    },
+    {
+      label: `普遍認知準備年期 (${commonPostRetirementYears.value}年)`,
+      data: [commonPostRetirementYears.value, commonPostRetirementYears.value],
+      backgroundColor: 'rgba(64, 158, 255, 0.7)',
+      barPercentage: 0.6,
+      categoryPercentage: 1.0,
+    },
+    {
+      label: `低估的缺口 (${planningYearsDifference.value}年)`,
+      // 將缺口數據放在陣列的第一個位置，對應到下方的「更精確」長條圖
+      data: [0,planningYearsDifference.value, ],
+      backgroundColor: 'rgba(245, 108, 108, 0.7)',
+      barPercentage: 0.6,
+      categoryPercentage: 1.0,
+    },
+  ],
+}));
+
+const chartOptions = computed<ChartOptions<'bar'>>(() => {
+  const commonEndAge = retirementAge.value + commonPostRetirementYears.value;
+  const actualEndAge = retirementAge.value + actualPostRetirementYears.value;
+  const maxAge = Math.max(commonEndAge, actualEndAge);
+
+  return {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    layout: {
+      padding: {
+        right: 30, // Make space for end age label
+      }
+    },
+    scales: {
+      x: {
+        stacked: true,
+        title: {
+          display: true,
+          text: '年齡',
+        },
+        min: 0,
+        max: Math.ceil(maxAge / 10) * 10 + 5, // Round up to nearest 10 and add padding
+      },
+      y: {
+        stacked: true,
+        // 移除 reverse: true，使用 Chart.js 的預設渲染順序（由下往上）
+        // 這樣 '普遍認知' (labels[1]) 就會自然地顯示在上方。
+      },
+    },
+    plugins: {
+      legend: {
+        display: true,
+        position: 'bottom',
+        align: 'start',
+      },
+      tooltip: {
+        enabled: false,
+      },
+      annotation: {
+        annotations: {
+          retirementLine: {
+            type: 'line',
+            xMin: retirementAge.value,
+            xMax: retirementAge.value,
+            borderColor: 'rgba(0, 0, 0, 0.6)',
+            borderWidth: 1,
+            borderDash: [6, 6],
+            label: {
+              content: `退休 ${retirementAge.value}歲`,
+              enabled: true,
+              position: 'start',
+              yAdjust: -10,
+              backgroundColor: 'rgba(0, 0, 0, 0.6)',
+              font: { size: 12 },
+            },
+          },
+          actualEndAgeLabel: {
+            type: 'label',
+            xValue: actualEndAge, // 長條圖的終點
+            yValue: 0, // 對應到 Y 軸下方的「更精確」
+            content: `${actualEndAge}歲`,
+            font: { size: 12 },
+            color: 'rgba(0, 0, 0, 0.8)',
+            xAdjust: 15,
+          },
+          commonEndAgeLabel: {
+            type: 'label',
+            xValue: commonEndAge, // 短條圖的終點
+            yValue: 1, // 對應到 Y 軸上方的「普遍認知」
+            content: `${commonEndAge}歲`,
+            font: { size: 12 },
+            color: 'rgba(0, 0, 0, 0.8)',
+            xAdjust: 15,
+          },
+        },
+      },
+    },
+  }
+});
+
+const renderChart = () => {
+  if (!chartCanvas.value) return;
+  if (chartInstance.value) {
+    chartInstance.value.data = chartData.value;
+    chartInstance.value.options = chartOptions.value;
+    chartInstance.value.update();
+  } else {
+    chartInstance.value = new ChartJS(chartCanvas.value, { type: 'bar', data: chartData.value, options: chartOptions.value });
+  }
+};
+
+onMounted(renderChart);
+watch([chartData, chartOptions], renderChart, { deep: true, flush: 'post' });
 </script>
