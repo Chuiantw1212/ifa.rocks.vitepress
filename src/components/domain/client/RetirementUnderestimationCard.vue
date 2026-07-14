@@ -21,7 +21,9 @@
             {{ `您的退休準備年期可能低估了 ${planningYearsDifference} 年，相當於 ${underestimationPercentage.toFixed(0)}% 的缺口！` }}
           </p>
           <p style="line-height: 1.7; margin: 8px 0 0 0; font-size: 14px; color: var(--el-text-color-regular);">
-            上圖顯示，若僅用<b>您現在這個年紀</b>的平均餘命推算，您的退休準備年期為 <el-text type="primary" style="font-weight: bold;">{{ commonPostRetirementYears }}</el-text> 年。但更精確的作法，是採用您<b>退休當天</b>的預期餘命來規劃，實際上應準備 <el-text type="danger" style="font-weight: bold;">{{ actualPostRetirementYears }}</el-text> 年，且最好每年重新評估。這個差異將導致退休金準備出現嚴重缺口。
+            上圖顯示，若僅用<b>您現在這個年紀</b>的平均餘命推算，您的退休準備年期為 <el-text type="primary" style="font-weight: bold;">{{ commonPostRetirementYears }}</el-text> 年。
+             </p>
+           <p style="line-height: 1.7; margin: 8px 0 0 0; font-size: 14px; color: var(--el-text-color-regular);"> 但更精確的作法，是採用您<b>退休當天</b>的預期餘命來規劃，實際上應準備 <el-text type="danger" style="font-weight: bold;">{{ actualPostRetirementYears }}</el-text> 年，且最好每年重新評估。這個差異將導致退休金準備出現嚴重缺口。
           </p>
         </div>
       </div>
@@ -97,31 +99,29 @@ const chartCanvas = ref<HTMLCanvasElement | null>(null);
 const chartInstance = shallowRef<ChartJS<'bar'> | null>(null);
 
 const chartData = computed<ChartData<'bar'>>(() => ({
-  // 為了確保圖表順序穩定，我們將標籤順序與 Chart.js 的預設渲染順序對齊。
-  // 預設情況下，陣列中的第一個標籤會被渲染在最下方。
-  // 因此，我們將「更精確」放在第一位，讓它成為下方的長條圖。
-  labels: ['普遍認知','更精確',],
+  // 標籤順序對應我們希望的視覺順序（由上到下）
+  labels: ['普遍認知', '更精確'],
   datasets: [
     {
       label: '退休前',
       data: [retirementAge.value, retirementAge.value],
       backgroundColor: 'rgba(144, 147, 153, 0.3)',
-      barPercentage: 0.6,
+      barPercentage: 0.7,
       categoryPercentage: 1.0,
     },
     {
       label: `普遍認知準備年期 (${commonPostRetirementYears.value}年)`,
       data: [commonPostRetirementYears.value, commonPostRetirementYears.value],
       backgroundColor: 'rgba(64, 158, 255, 0.7)',
-      barPercentage: 0.6,
+      barPercentage: 0.7,
       categoryPercentage: 1.0,
     },
     {
       label: `低估的缺口 (${planningYearsDifference.value}年)`,
-      // 將缺口數據放在陣列的第一個位置，對應到下方的「更精確」長條圖
-      data: [0,planningYearsDifference.value, ],
+      // 缺口數據對應到 '更精確'，也就是 labels 陣列中的第二個元素 (index 1)
+      data: [0, planningYearsDifference.value],
       backgroundColor: 'rgba(245, 108, 108, 0.7)',
-      barPercentage: 0.6,
+      barPercentage: 0.7,
       categoryPercentage: 1.0,
     },
   ],
@@ -153,8 +153,6 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => {
       },
       y: {
         stacked: true,
-        // 移除 reverse: true，使用 Chart.js 的預設渲染順序（由下往上）
-        // 這樣 '普遍認知' (labels[1]) 就會自然地顯示在上方。
       },
     },
     plugins: {
@@ -184,20 +182,20 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => {
               font: { size: 12 },
             },
           },
-          actualEndAgeLabel: {
+          commonEndAgeLabel: {
             type: 'label',
-            xValue: actualEndAge, // 長條圖的終點
-            yValue: 0, // 對應到 Y 軸下方的「更精確」
-            content: `${actualEndAge}歲`,
+            xValue: commonEndAge,
+            yValue: 0, // 對應到 Y 軸上方的「普遍認知」
+            content: `${commonEndAge}歲`,
             font: { size: 12 },
             color: 'rgba(0, 0, 0, 0.8)',
             xAdjust: 15,
           },
-          commonEndAgeLabel: {
+          actualEndAgeLabel: {
             type: 'label',
-            xValue: commonEndAge, // 短條圖的終點
-            yValue: 1, // 對應到 Y 軸上方的「普遍認知」
-            content: `${commonEndAge}歲`,
+            xValue: actualEndAge,
+            yValue: 1, // 對應到 Y 軸下方的「更精確」
+            content: `${actualEndAge}歲`,
             font: { size: 12 },
             color: 'rgba(0, 0, 0, 0.8)',
             xAdjust: 15,
