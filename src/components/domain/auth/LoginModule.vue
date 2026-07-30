@@ -197,11 +197,10 @@ watch(loginDialogVisible, (newValue) => {
             });
         };
 
-        const wakeUpServerAndLaunchUI = async () => {
-            // --- Server Wake-up Call ---
+        // 喚醒後端服務，並回傳是否成功
+        const wakeUpServer = async (): Promise<boolean> => {
             serverStatus.value = 'pending';
             try {
-                // 使用根路徑來喚醒伺服器
                 const apiUrl = `${import.meta.env.VITE_API_BASE_URL || ''}/`;
                 const response = await fetch(apiUrl);
                 const data = await response.json().catch(() => ({}));
@@ -209,38 +208,48 @@ watch(loginDialogVisible, (newValue) => {
                 if (!response.ok) {
                     throw new Error(data.message || `伺服器錯誤 (狀態碼: ${response.status})`);
                 }
-                
+
                 serverStatus.value = 'success';
                 if (data.startup_time_seconds) {
                     serverMessage.value = `服務已啟動 (耗時 ${parseFloat(data.startup_time_seconds).toFixed(2)} 秒)，您現在可以登入。`;
                 } else {
                     serverMessage.value = data.message || '服務已啟動，您現在可以登入。';
                 }
-
-                // 後端服務就緒後，才載入並啟動 FirebaseUI
-                if (window.firebaseui) {
-                    launchFirebaseUI();
-                } else {
-                    // 動態載入 FirebaseUI 的 JS
-                    const script = document.createElement('script');
-                    script.src = 'https://www.gstatic.com/firebasejs/ui/6.1.0/firebase-ui-auth__zh_tw.js';
-                    script.async = true;
-                    script.onload = launchFirebaseUI; // 載入成功後，啟動 UI
-                    script.onerror = () => {
-                        console.error('Failed to load firebase-ui-auth script from CDN.');
-                        ElMessage.error('登入模組腳本載入失敗');
-                    };
-                    document.head.appendChild(script);
-                }
+                return true;
             } catch (err: any) {
                 console.error('Server wake-up failed:', err);
                 serverStatus.value = 'error';
-                // 後端連線失敗時，不應顯示登入介面，只顯示錯誤訊息。
                 serverMessage.value = err.message || '無法連線至後端服務，請稍後再試。';
+                return false;
+            }
+        };
+
+        // 載入 FirebaseUI 腳本（如果尚未載入），然後啟動 UI
+        const loadAndLaunchFirebaseUI = () => {
+            if (window.firebaseui) {
+                launchFirebaseUI();
+            } else {
+                const script = document.createElement('script');
+                script.src = 'https://www.gstatic.com/firebasejs/ui/6.1.0/firebase-ui-auth__zh_tw.js';
+                script.async = true;
+                script.onload = launchFirebaseUI;
+                script.onerror = () => {
+                    console.error('Failed to load firebase-ui-auth script from CDN.');
+                    ElMessage.error('登入模組腳本載入失敗');
+                };
+                document.head.appendChild(script);
+            }
+        };
+
+        // 執行登入流程：先喚醒伺服器，成功後再啟動登入介面
+        const initializeLoginFlow = async () => {
+            const isServerReady = await wakeUpServer();
+            if (isServerReady) {
+                loadAndLaunchFirebaseUI();
             }
         }
 
-        wakeUpServerAndLaunchUI();
+        initializeLoginFlow();
 
     } else {
         // 當對話框關閉時，重設狀態
