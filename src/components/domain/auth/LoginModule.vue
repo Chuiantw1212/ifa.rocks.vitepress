@@ -60,14 +60,8 @@ import { ElMessage } from 'element-plus'
 import { UserFilled } from '@element-plus/icons-vue'
 import { auth } from '@/firebaseConfig'
 import liff from '@line/liff';
-import { GoogleAuthProvider, EmailAuthProvider, signInWithCustomToken, signOut, setPersistence, browserSessionPersistence } from 'firebase/auth';
-import { isDesktop, isProblematicWebView } from '@/composables/useWebView';
+import { GoogleAuthProvider, EmailAuthProvider, signInWithCustomToken, signOut } from 'firebase/auth';
 import { useAgentStore } from '@/stores/agent';
-
-// Vite 環境變數，用於判斷是否為開發模式
-const isDev = import.meta.env.DEV;
-// 使用者強調：此 LIFF ID 為固定值，請勿改回環境變數。
-const LIFF_ID = '2009612107-QeSJSRV2';
 
 // 宣告全域變數，讓 TypeScript 認得從 CDN 載入的 firebaseui
 declare global {
@@ -106,6 +100,143 @@ watch(() => agentStore.isLoggedIn, (loggedIn, wasLoggedIn) => {
     }
 })
 
+// 將 FirebaseUI 的回呼函式抽離，使程式碼更清晰
+const handleSignInSuccess = async (authResult: any): Promise<boolean> => {
+    // 此回呼是整合的核心。
+    // 當使用者透過提供商（Google、電子郵件等）成功登入後觸發。
+    try {
+        // 1. 從成功的身份驗證中取得 ID Token。
+        const idToken = await authResult.user.getIdToken();
+
+        // 2. 將此 ID Token 發送到我們的後端。
+        // 後端將驗證它，在我們的資料庫中尋找或建立使用者，
+        // 並為我們的 Firebase 專案返回一個自訂 token。
+        const apiUrl = `${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/auth/firebase`;
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ idToken: idToken }),
+        });
+
+        // 將 response body 只讀取一次，並處理非 JSON 的錯誤回應
+        const responseData = await response.json().catch(() => null);
+
+        if (!response.ok) {
+            // 在拋出錯誤前，從臨時會話中登出
+            await auth.signOut();
+            throw new Error(responseData?.message || '與後端系統同步時發生錯誤');
+        }
+
+        // 根據後端 API 的回傳格式，從 'customToken' 欄位取得 custom token
+        const customToken = responseData?.customToken;
+
+        // 3. 使用我們後端提供的自訂 token 登入 Firebase。
+        // 如果 customToken 為空，signInWithCustomToken 會拋出 'auth/missing-custom-token' 錯誤
+        // 這完成了身份驗證循環。agent store 中的 onAuthStateChanged 監聽器
+        // 現在將會捕捉到正確的、經過後端驗證的使用者狀態。
+        await signInWithCustomToken(auth, customToken);
+
+        // 我們返回 false 來告訴 FirebaseUI 我們已經自己處理了登入流程，
+        // 並防止任何重新導向。
+        return false;
+
+    } catch (error) {
+        console.error('Custom authentication flow failed:', error);
+        ElMessage.error((error as Error).message || '登入過程中發生未知錯誤');
+        // 如果任何步驟失敗，確保使用者已登出
+        await auth.signOut();
+        return false;
+    }
+};
+
+const handleSignInFailure = (error: any) => {
+    console.error('FirebaseUI sign-in error:', error);
+    if (error.code !== 'firebaseui/anonymous-upgrade-merge-conflict') {
+        ElMessage.error('登入失敗，請檢查您的憑證或稍後再試。');
+    }
+};
+
+const launchFirebaseUI = () => {
+    // 使用 nextTick 確保 #firebaseui-auth-container 已被渲染到 DOM 中
+    nextTick(() => {
+        // 取得或建立 FirebaseUI 實例
+        const ui = window.firebaseui.auth.AuthUI.getInstance() || new window.firebaseui.auth.AuthUI(auth);
+        const uiConfig = {
+            // credentialHelper: 'local' 在某些瀏覽器（特別是 Safari 或啟用嚴格追蹤保護的 Chrome/Firefox）
+            // 中會因為 iframe 跨域通訊問題導致 popup 登入流程失敗（轉圈後無反應）。
+            // 設置為 NONE 可以停用此機制，改用更直接的方式傳遞結果，解決這個問題。
+            credentialHelper: window.firebaseui.auth.CredentialHelper.NONE,
+            callbacks: {
+                signInSuccessWithAuthResult: handleSignInSuccess,
+                signInFailure: handleSignInFailure,
+            },
+            signInFlow: 'popup', // 永遠不要變更為 'redirect'，因為我們希望在單頁應用中保持狀態。
+            signInOptions: [
+                GoogleAuthProvider.PROVIDER_ID,
+                {
+                    provider: EmailAuthProvider.PROVIDER_ID,
+                    signInMethod: 'password',
+                    requireDisplayName: false 
+                },
+            ],
+        };
+        // 在指定的容器中啟動 FirebaseUI
+        ui.start('#firebaseui-auth-container', uiConfig);
+    });
+};
+
+// 載入 FirebaseUI 腳本（如果尚未載入），然後啟動 UI
+const loadAndLaunchFirebaseUI = () => {
+    if (window.firebaseui) {
+        launchFirebaseUI();
+    } else {
+        const script = document.createElement('script');
+        script.src = 'https://www.gstatic.com/firebasejs/ui/6.1.0/firebase-ui-auth__zh_tw.js';
+        script.async = true;
+        script.onload = launchFirebaseUI;
+        script.onerror = () => {
+            console.error('Failed to load firebase-ui-auth script from CDN.');
+            ElMessage.error('登入模組腳本載入失敗');
+        };
+        document.head.appendChild(script);
+    }
+};
+
+// 喚醒後端服務，並回傳是否成功
+const wakeUpServer = async (): Promise<boolean> => {
+    serverStatus.value = 'pending';
+    try {
+        const apiUrl = `${import.meta.env.VITE_API_BASE_URL || ''}/`;
+        const response = await fetch(apiUrl);
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+            throw new Error(data.message || `伺服器錯誤 (狀態碼: ${response.status})`);
+        }
+
+        serverStatus.value = 'success';
+        if (data.startup_time_seconds) {
+            serverMessage.value = `服務已啟動 (耗時 ${parseFloat(data.startup_time_seconds).toFixed(2)} 秒)，您現在可以登入。`;
+        } else {
+            serverMessage.value = data.message || '服務已啟動，您現在可以登入。';
+        }
+        return true;
+    } catch (err: any) {
+        console.error('Server wake-up failed:', err);
+        serverStatus.value = 'error';
+        serverMessage.value = err.message || '無法連線至後端服務，請稍後再試。';
+        return false;
+    }
+};
+
+// 執行登入流程：先喚醒伺服器，成功後再啟動登入介面
+const initializeLoginFlow = async () => {
+    const isServerReady = await wakeUpServer();
+    if (isServerReady) {
+        loadAndLaunchFirebaseUI();
+    }
+};
+
 // 監看 loginDialogVisible 的變化，當它被打開時，啟動 FirebaseUI
 watch(loginDialogVisible, (newValue) => {
     // 新增的保護機制：如果使用者已經登入，但登入視窗卻被打開，則立即將其關閉。
@@ -117,138 +248,6 @@ watch(loginDialogVisible, (newValue) => {
     }
 
     if (newValue) { // 當對話框打開時
-        const launchFirebaseUI = () => {
-            // 使用 nextTick 確保 #firebaseui-auth-container 已被渲染到 DOM 中
-            nextTick(() => {
-                // 取得或建立 FirebaseUI 實例
-                const ui = window.firebaseui.auth.AuthUI.getInstance() || new window.firebaseui.auth.AuthUI(auth);
-                const uiConfig = {
-                    // credentialHelper: 'local' 在某些瀏覽器（特別是 Safari 或啟用嚴格追蹤保護的 Chrome/Firefox）
-                    // 中會因為 iframe 跨域通訊問題導致 popup 登入流程失敗（轉圈後無反應）。
-                    // 設置為 NONE 可以停用此機制，改用更直接的方式傳遞結果，解決這個問題。
-                    credentialHelper: window.firebaseui.auth.CredentialHelper.NONE,
-                    callbacks: {
-                        signInSuccessWithAuthResult: async (authResult: any, redirectUrl?: string) => {
-                            // 此回呼是整合的核心。
-                            // 當使用者透過提供商（Google、電子郵件等）成功登入後觸發。
-                            try {
-                                // 1. 從成功的身份驗證中取得 ID Token。
-                                const idToken = await authResult.user.getIdToken();
-
-                                // 2. 將此 ID Token 發送到我們的後端。
-                                // 後端將驗證它，在我們的資料庫中尋找或建立使用者，
-                                // 並為我們的 Firebase 專案返回一個自訂 token。
-                                const apiUrl = `${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/auth/firebase`;
-                                const response = await fetch(apiUrl, {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ idToken: idToken }),
-                                });
-
-                                // 將 response body 只讀取一次，並處理非 JSON 的錯誤回應
-                                const responseData = await response.json().catch(() => null);
-
-                                if (!response.ok) {
-                                    // 在拋出錯誤前，從臨時會話中登出
-                                    await auth.signOut();
-                                    throw new Error(responseData?.message || '與後端系統同步時發生錯誤');
-                                }
-
-                                // 根據後端 API 的回傳格式，從 'customToken' 欄位取得 custom token
-                                const customToken = responseData?.customToken;
-
-                                // 3. 使用我們後端提供的自訂 token 登入 Firebase。
-                                // 如果 customToken 為空，signInWithCustomToken 會拋出 'auth/missing-custom-token' 錯誤
-                                // 這完成了身份驗證循環。agent store 中的 onAuthStateChanged 監聽器
-                                // 現在將會捕捉到正確的、經過後端驗證的使用者狀態。
-                                await signInWithCustomToken(auth, customToken);
-
-                                // 我們返回 false 來告訴 FirebaseUI 我們已經自己處理了登入流程，
-                                // 並防止任何重新導向。
-                                return false;
-
-                            } catch (error) {
-                                console.error('Custom authentication flow failed:', error);
-                                ElMessage.error((error as Error).message || '登入過程中發生未知錯誤');
-                                // 如果任何步驟失敗，確保使用者已登出
-                                await auth.signOut();
-                                return false;
-                            }
-                        },
-                        signInFailure: (error: any) => {
-                            console.error('FirebaseUI sign-in error:', error);
-                            if (error.code !== 'firebaseui/anonymous-upgrade-merge-conflict') {
-                                ElMessage.error('登入失敗，請檢查您的憑證或稍後再試。');
-                            }
-                        },
-                    },
-                    signInFlow: 'popup', // 永遠不要變更為 'redirect'，因為我們希望在單頁應用中保持狀態。
-                    signInOptions: [
-                        GoogleAuthProvider.PROVIDER_ID,
-                        {
-                            provider: EmailAuthProvider.PROVIDER_ID,
-                            signInMethod: 'password',
-                            requireDisplayName: false 
-                        },
-                    ],
-                };
-                // 在指定的容器中啟動 FirebaseUI
-                ui.start('#firebaseui-auth-container', uiConfig);
-            });
-        };
-
-        // 喚醒後端服務，並回傳是否成功
-        const wakeUpServer = async (): Promise<boolean> => {
-            serverStatus.value = 'pending';
-            try {
-                const apiUrl = `${import.meta.env.VITE_API_BASE_URL || ''}/`;
-                const response = await fetch(apiUrl);
-                const data = await response.json().catch(() => ({}));
-
-                if (!response.ok) {
-                    throw new Error(data.message || `伺服器錯誤 (狀態碼: ${response.status})`);
-                }
-
-                serverStatus.value = 'success';
-                if (data.startup_time_seconds) {
-                    serverMessage.value = `服務已啟動 (耗時 ${parseFloat(data.startup_time_seconds).toFixed(2)} 秒)，您現在可以登入。`;
-                } else {
-                    serverMessage.value = data.message || '服務已啟動，您現在可以登入。';
-                }
-                return true;
-            } catch (err: any) {
-                console.error('Server wake-up failed:', err);
-                serverStatus.value = 'error';
-                serverMessage.value = err.message || '無法連線至後端服務，請稍後再試。';
-                return false;
-            }
-        };
-
-        // 載入 FirebaseUI 腳本（如果尚未載入），然後啟動 UI
-        const loadAndLaunchFirebaseUI = () => {
-            if (window.firebaseui) {
-                launchFirebaseUI();
-            } else {
-                const script = document.createElement('script');
-                script.src = 'https://www.gstatic.com/firebasejs/ui/6.1.0/firebase-ui-auth__zh_tw.js';
-                script.async = true;
-                script.onload = launchFirebaseUI;
-                script.onerror = () => {
-                    console.error('Failed to load firebase-ui-auth script from CDN.');
-                    ElMessage.error('登入模組腳本載入失敗');
-                };
-                document.head.appendChild(script);
-            }
-        };
-
-        // 執行登入流程：先喚醒伺服器，成功後再啟動登入介面
-        const initializeLoginFlow = async () => {
-            const isServerReady = await wakeUpServer();
-            if (isServerReady) {
-                loadAndLaunchFirebaseUI();
-            }
-        }
-
         initializeLoginFlow();
 
     } else {
