@@ -17,13 +17,43 @@
     </el-space>
 
     <el-dialog v-model="loginDialogVisible" title="理財規劃系統登入" width="400px" align-center :append-to-body="true" :destroy-on-close="true">
+        <!-- Server Status Display -->
+        <div v-if="serverStatus !== 'idle'" style="text-align: center; margin-bottom: 20px;">
+            <el-alert
+                v-if="serverStatus === 'pending'"
+                title="正在喚醒後端服務..."
+                description="免費版主機可能需要約 30 秒啟動，請稍候..."
+                type="info"
+                :closable="false"
+                show-icon
+                center
+            />
+            <el-alert
+                v-if="serverStatus === 'success'"
+                title="後端服務已就緒"
+                :description="serverMessage"
+                type="success"
+                :closable="false"
+                show-icon
+                center
+            />
+            <el-alert
+                v-if="serverStatus === 'error'"
+                title="後端服務連線失敗"
+                :description="serverMessage"
+                type="error"
+                :closable="false"
+                show-icon
+                center
+            />
+        </div>
         <!-- FirebaseUI 將會在這個容器中渲染 -->
         <div id="firebaseui-auth-container"></div>
     </el-dialog>
 </template>
 
 <script setup lang="ts">
-import { watch, nextTick, computed, onMounted, onUnmounted } from 'vue';
+import { ref, watch, nextTick, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vitepress';
 import { storeToRefs } from 'pinia';
 import { ElMessage } from 'element-plus'
@@ -46,6 +76,9 @@ declare global {
         liff: any;
     }
 }
+
+const serverStatus = ref<'idle' | 'pending' | 'success' | 'error'>('idle');
+const serverMessage = ref('');
 
 const agentStore = useAgentStore()
 const { loginDialogVisible } = storeToRefs(agentStore);
@@ -84,6 +117,36 @@ watch(loginDialogVisible, (newValue) => {
     }
 
     if (newValue) { // 當對話框打開時
+        // --- Server Wake-up Call ---
+        serverStatus.value = 'pending';
+        
+        const wakeUpServer = async () => {
+            try {
+                // 使用根路徑來喚醒伺服器
+                const apiUrl = `${import.meta.env.VITE_API_BASE_URL || ''}/`;
+                const response = await fetch(apiUrl);
+                const data = await response.json().catch(() => ({}));
+
+                if (!response.ok) {
+                    throw new Error(data.message || `伺服器錯誤 (狀態碼: ${response.status})`);
+                }
+                
+                serverStatus.value = 'success';
+                if (data.startup_time_seconds) {
+                    serverMessage.value = `服務已啟動 (耗時 ${parseFloat(data.startup_time_seconds).toFixed(2)} 秒)，您現在可以登入。`;
+                } else {
+                    serverMessage.value = data.message || '服務已啟動，您現在可以登入。';
+                }
+            } catch (err: any) {
+                console.error('Server wake-up failed:', err);
+                serverStatus.value = 'error';
+                serverMessage.value = err.message || '無法連線至後端服務，您仍然可以嘗試登入，但可能會失敗。';
+            }
+        };
+        
+        wakeUpServer();
+
+
         const launchFirebaseUI = () => {
             // 使用 nextTick 確保 #firebaseui-auth-container 已被渲染到 DOM 中
             nextTick(() => {
@@ -180,6 +243,10 @@ watch(loginDialogVisible, (newValue) => {
             };
             document.head.appendChild(script);
         }
+    } else {
+        // 當對話框關閉時，重設狀態
+        serverStatus.value = 'idle';
+        serverMessage.value = '';
     }
 });
 

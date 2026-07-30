@@ -1,6 +1,8 @@
 <script setup>
 import DefaultTheme from 'vitepress/theme'
+import { useData, useRouter, useRoute } from 'vitepress'
 import { onMounted, ref, watch } from 'vue'
+import { storeToRefs } from 'pinia'
 import LIFFInspectorPlugin from '@line/liff-inspector';
 import liff from '@line/liff'
 import { useDynamicSidebar } from '@/composables/useDynamicSidebar'
@@ -12,6 +14,9 @@ import LineBrowserGuard from '@/components/domain/auth/LineBrowserGuard.vue'
 import HeroImage from './components/HeroImage.vue'
 
 const { Layout } = DefaultTheme
+const router = useRouter()
+const route = useRoute()
+const { theme } = useData()
 const isDev = import.meta.env.DEV
 const agentStore = useAgentStore()
 let vConsoleInstance = null
@@ -34,23 +39,48 @@ watch(() => agentStore.isLoggedIn, (isLoggedIn) => {
 // --- LIFF Initialization Gate ---
 // 根據使用者建議，我們在應用程式的最外層建立一個「閘門」。
 // liff.init() 必須在應用程式完全可互動之前完成，以避免競爭條件和中斷。
-const isLiffReady = ref(false)
-const liffError = ref(null)
+const isAppReady = ref(false)
+const liffInitError = ref(null)
 // 使用者強調：此 LIFF ID 為固定值，請勿改回環境變數。
 const LIFF_ID = '2009612107-QeSJSRV2'
 const { initAgentListener } = useAgent()
 
+/**
+ * 路由守衛：保護 /pro/ 底下的頁面
+ * 只有在使用者登入後，才允許存取 /pro/ 下的非儀表板頁面。
+ * 這個 watch 會監聽路徑、登入狀態和 LIFF 初始化狀態的變化。
+ */
+watch(
+  // 監聽三個關鍵狀態：路由物件、App準備狀態、使用者登入狀態
+  [route, isAppReady, () => agentStore.isLoggedIn],
+  ([currentRoute, appReady, isLoggedIn]) => {
+    const path = currentRoute?.path
+
+    // 當 App 準備就緒後，檢查使用者是否未登入就試圖存取受保護的頁面
+    if (appReady && !isLoggedIn && path && path.startsWith('/pro/') && path !== '/pro/dashboard') {
+      console.log(`[Route Guard] User not logged in. Redirecting from "${path}" to "/pro/dashboard".`)
+      router.go('/pro/dashboard')
+    }
+  },
+  {
+    deep: true,       // 深度監聽 route 物件的變化
+    immediate: true,  // 立即執行一次以處理初始載入
+    flush: 'post'     // 確保在 DOM 更新後執行，拿到最準確的 route 狀態
+  }
+)
+
 onMounted(async () => {
-  // SEO & Accessibility Fix: 確保頁面一定有 <main> landmark
+  // --- 初始設定 ---
   const content = document.querySelector('.VPContent')
   if (content && !content.querySelector('main')) {
     content.setAttribute('role', 'main')
   }
 
-  // 僅在瀏覽器環境中執行
+  // 確保在瀏覽器環境中執行
   if (typeof window !== 'undefined') {
     const urlParams = new URLSearchParams(window.location.search)
 
+    // --- 除錯工具初始化 (vConsole) ---
     // 根據使用者要求，為方便除錯，永遠在 onMounted 頂部優先載入 vConsole
     const isLiffTestMode = urlParams.has('liff-test')
     if (isProblematicWebView() || (isDev && isLiffTestMode)) {
@@ -63,8 +93,8 @@ onMounted(async () => {
       }
     }
 
+    // --- LIFF 初始化 ---
     const isLiffRedirect = urlParams.has('code') && urlParams.has('state')
-
     // 僅在開發環境中初始化 LIFF Inspector，避免在正式環境載入不必要的除錯工具
     if (isDev) {
       liff.use(new LIFFInspectorPlugin({
@@ -93,7 +123,7 @@ onMounted(async () => {
       }
     } catch (error) {
       console.error(`[Layout] LIFF (${LIFF_ID}) initialization failed:`, error)
-      liffError.value = error
+      liffInitError.value = error
     } finally {
       // 在解除 UI 閘門之前，確保 Firebase 驗證狀態的監聽器已準備就緒。
       // 這確保了 LineBrowserGuard 中的登入流程可以被正確地監聽到。
@@ -101,16 +131,16 @@ onMounted(async () => {
 
       // 無論成功或失敗，我們都將解除閘門，讓應用程式繼續渲染。
       // LineBrowserGuard 將會處理後續的登入邏輯或錯誤顯示。
-      isLiffReady.value = true
+      isAppReady.value = true
     }
   }
 })
 </script>
 
 <template>
-  <!-- 閘門：等待 LIFF 初始化完成後再渲染主要內容 -->
-  <template v-if="isLiffReady">
-    <LineBrowserGuard :liff-init-error="liffError" />
+  <!-- 閘門：等待 App 初始化完成後再渲染主要內容 -->
+  <template v-if="isAppReady">
+    <LineBrowserGuard :liff-init-error="liffInitError" />
     <Layout>
       <template #nav-bar-content-after>
         <LoginModule />
@@ -120,8 +150,44 @@ onMounted(async () => {
       </template>
     </Layout>
   </template>
-  <!-- 在此之前，頁面是空白的，可以加上一個 CSS-only 的 loading spinner -->
+  <!-- App 準備就緒前的 Loading 畫面 -->
+  <div v-else class="loading-container">
+    <div class="loading-spinner"></div>
+  </div>
 </template>
 
 <style scoped>
+/* --- Loading Spinner --- */
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: var(--vp-c-bg);
+  z-index: 999;
+}
+
+.loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 5px solid var(--vp-c-brand-1);
+  border-bottom-color: transparent;
+  border-radius: 50%;
+  display: inline-block;
+  box-sizing: border-box;
+  animation: rotation 1s linear infinite;
+}
+
+@keyframes rotation {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
 </style>

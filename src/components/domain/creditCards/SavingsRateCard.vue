@@ -1,5 +1,5 @@
 <template>
-  <el-card shadow="never" style="margin-top: 24px;">
+  <el-card v-if="monthlyExpenses > 0" shadow="never" style="margin-top: 24px;">
     <template #header>
       <div class="card-header">
         <span style="font-weight: bold; font-size: 16px;">儲蓄率健診</span>
@@ -7,62 +7,62 @@
     </template>
 
     <div v-if="monthlyIncome > 0">
-      <el-row :gutter="16" justify="center" style="text-align: center;">
-        <el-col :span="6" :xs="12">
-          <el-statistic :value="monthlyIncome" title="月收入" />
-        </el-col>
-        <el-col :span="6" :xs="12">
-          <el-statistic :value="monthlyExpenses" title="月支出 (信用卡)" />
-        </el-col>
-        <el-col :span="6" :xs="12">
-          <el-statistic
-            :value="monthlySavings"
-            title="月儲蓄"
-            :formatter="(val) => Math.round(val).toLocaleString()"
-            :value-style="{ color: monthlySavings < 0 ? 'var(--el-color-danger)' : 'var(--el-color-success)' }"
-          />
-        </el-col>
-        <el-col :span="6" :xs="12">
-          <el-statistic
-            :value="savingsRate"
-            title="儲蓄率"
-            :formatter="() => formattedSavingsRate"
-            suffix="%"
-            :value-style="{ color: savingsRate < 10 ? 'var(--el-color-danger)' : 'inherit' }"
-          />
-        </el-col>
-      </el-row>
+        <el-row :gutter="16" justify="center" style="text-align: center;">
+          <el-col :span="6" :xs="12">
+            <el-statistic :value="monthlyIncome" title="月收入" />
+          </el-col>
+          <el-col :span="6" :xs="12">
+            <el-statistic :value="monthlyExpenses" title="月支出 (信用卡)" />
+          </el-col>
+          <el-col :span="6" :xs="12">
+            <el-statistic
+              :value="monthlySavings"
+              title="月儲蓄"
+              :formatter="(val:any) => Math.round(val).toLocaleString()"
+              :value-style="{ color: monthlySavings < 0 ? 'var(--el-color-danger)' : 'var(--el-color-success)' }"
+            />
+          </el-col>
+          <el-col :span="6" :xs="12">
+            <el-statistic
+              :value="savingsRate"
+              title="儲蓄率"
+              :formatter="() => formattedSavingsRate"
+              suffix="%"
+              :value-style="{ color: savingsRate < 10 ? 'var(--el-color-danger)' : 'inherit' }"
+            />
+          </el-col>
+        </el-row>
 
-      <el-divider style="margin: 24px 0;" />
+        <el-divider style="margin: 24px 0;" />
 
-      <el-alert
-        v-if="savingsRate > 0"
-        :title="`恭喜！您 ${formattedSavingsRate}% 的儲蓄率，已超越了全國約 ${userPercentile.toFixed(0)}% 的人！`"
-        type="success"
-        :closable="false"
-        show-icon
-        style="margin-bottom: 20px;"
-      />
-      <el-alert
-        v-else-if="savingsRate === 0"
-        title="您的收支剛好平衡，試著找出可優化的支出，開始累積資產吧！"
-        type="info"
-        :closable="false"
-        show-icon
-        style="margin-bottom: 20px;"
-      />
-       <el-alert
-        v-else
-        title="您的支出已大於收入，請檢視消費習慣，或尋求專業顧問協助。"
-        type="warning"
-        :closable="false"
-        show-icon
-        style="margin-bottom: 20px;"
-      />
+        <el-alert
+          v-if="savingsRate > 0"
+          :title="`恭喜！您 ${formattedSavingsRate}% 的儲蓄率，已超越了全國約 ${userPercentile.toFixed(0)}% 的人！`"
+          type="success"
+          :closable="false"
+          show-icon
+          style="margin-bottom: 20px;"
+        />
+        <el-alert
+          v-else-if="savingsRate === 0"
+          title="您的收支剛好平衡，試著找出可優化的支出，開始累積資產吧！"
+          type="info"
+          :closable="false"
+          show-icon
+          style="margin-bottom: 20px;"
+        />
+        <el-alert
+          v-else
+          title="您的支出已大於收入，請檢視消費習慣，或尋求專業顧問協助。"
+          type="warning"
+          :closable="false"
+          show-icon
+          style="margin-bottom: 20px;"
+        />
 
-      <div style="position: relative; height: 350px;">
-        <canvas ref="chartCanvas"></canvas>
-      </div>
+        <div style="position: relative; height: 350px;">
+          <canvas ref="chartCanvas"></canvas>
+        </div>
     </div>
 
     <el-empty v-else description="請先至「勞保與勞退」分頁填寫職業收入，以進行儲蓄率分析。">
